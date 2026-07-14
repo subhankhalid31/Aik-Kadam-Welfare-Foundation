@@ -1,7 +1,7 @@
 # Aik Kadam Welfare Foundation
 
 <p align="center">
-  <img src="assets/logo.png" alt="Aik Kadam Welfare Foundation Logo" width="150"/>
+  <img src="client/public/logo.png" alt="Aik Kadam Welfare Foundation Logo" width="150"/>
 </p>
 
 <p align="center">
