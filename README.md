@@ -142,10 +142,10 @@ This project is licensed under the MIT License — feel free to use, modify, and
 
 **Aik Kadam Welfare Foundation**
 
-- 🌐 Website: www.aikkadam.org
+- 🌐 Website: www.aikkadamwelfare.org
 - 📧 Email: info@aikkadam.org
-- 📞 Phone: +92-XXX-XXXXXXX
-- 📍 Address: [City, Pakistan]
+- 📞 Phone: +92-309-6888160
+- 📍 Address: [Lahore, Pakistan]
 - 📸 Instagram | 📘 Facebook | 🐦 Twitter
 - 💻 GitHub: @subhankhalid31
 
