@@ -1,6 +1,6 @@
-<h2 align="center">
-  # Aik Kadam Welfare Foundation
-</h2>
+<h1 align="center">
+  Aik Kadam Welfare Foundation
+</h1>
 
 
 <p align="center">
