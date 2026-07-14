@@ -1,4 +1,7 @@
-# Aik Kadam Welfare Foundation
+<p align="center">
+  # Aik Kadam Welfare Foundation
+</p>
+
 
 <p align="center">
   <img src="client/public/logo.png" alt="Aik Kadam Welfare Foundation Logo" width="150"/>
