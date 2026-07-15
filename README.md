@@ -151,4 +151,4 @@ This project is licensed under the MIT License — feel free to use, modify, and
 
 ---
 
-<p align="center">Made with ❤️ for a better tomorrow.</p>
+<p align="center">Made with ❤️ for a better a tomorrow.</p>
