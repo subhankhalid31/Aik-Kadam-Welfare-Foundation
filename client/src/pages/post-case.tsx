@@ -23,11 +23,11 @@ export default function PostCasePage() {
   const [amountNeeded, setAmountNeeded] = useState("");
   const [description, setDescription] = useState("");
   const [images, setImages] = useState<File[]>([]);
-  const [limit, setLimit] = useState<{ used: number; limit: number; resetsInHours: number } | null>(null);
+  const [limit, setLimit] = useState<{ used: number; limit: number | null; resetsInHours: number; unlimited?: boolean } | null>(null);
 
   useEffect(() => {
     if (user) {
-      api.get<{ used: number; limit: number; resetsInHours: number }>("/api/cases/my-daily-limit").then(setLimit);
+      api.get<{ used: number; limit: number | null; resetsInHours: number; unlimited?: boolean }>("/api/cases/my-daily-limit").then(setLimit);
     }
   }, [user]);
 
@@ -44,7 +44,7 @@ export default function PostCasePage() {
     e.preventDefault();
     setError("");
 
-    if (limit && limit.used >= limit.limit) {
+    if (limit && !limit.unlimited && limit.limit !== null && limit.used >= limit.limit) {
       await dialog.alert(
         `You can submit up to ${limit.limit} cases per day (${limit.used}/${limit.limit} used). This resets in about ${limit.resetsInHours} hour(s).`,
         "Daily limit reached",
@@ -125,9 +125,13 @@ export default function PostCasePage() {
         </p>
 
         {limit && (
-          <div className={`mt-4 rounded-xl border p-3 text-sm ${limit.used >= limit.limit ? "border-accent/40 bg-accent/10 text-ink/80" : "border-border bg-white text-muted"}`}>
-            {limit.used}/{limit.limit} cases submitted today
-            {limit.used >= limit.limit && `, resets in about ${limit.resetsInHours} hour(s)`}
+          <div className={`mt-4 rounded-xl border p-3 text-sm ${!limit.unlimited && limit.limit !== null && limit.used >= limit.limit ? "border-accent/40 bg-accent/10 text-ink/80" : "border-border bg-white text-muted"}`}>
+            {limit.unlimited
+              ? "Unlimited case submissions (admin account)"
+              : <>
+                  {limit.used}/{limit.limit} cases submitted today
+                  {limit.limit !== null && limit.used >= limit.limit && `, resets in about ${limit.resetsInHours} hour(s)`}
+                </>}
           </div>
         )}
 

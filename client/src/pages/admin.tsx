@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { AdminLayout, type AdminTabKey, PillTabs, VOLUNTEER_SUBTABS, PROJECT_SUBTABS } from "@/components/layout/AdminLayout";
 import { CityPicker } from "@/components/ui/CityPicker";
 import { ImageCarousel } from "@/components/ui/ImageCarousel";
@@ -917,9 +917,13 @@ function CompletedCasesPanel({ dialog }: { dialog: ReturnType<typeof useDialog> 
 function TaglineSettingCard() {
   const [tagline, setTagline] = useState("");
   const [taglineCaseId, setTaglineCaseId] = useState<string>("");
+  const [caseSearch, setCaseSearch] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [ongoingCases, setOngoingCases] = useState<{ id: string; title: string }[]>([]);
   const [saved, setSaved] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [confirmation, setConfirmation] = useState("");
+  const searchBoxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     api
@@ -927,15 +931,46 @@ function TaglineSettingCard() {
       .then((d) => {
         setTagline(d.tagline ?? "");
         setTaglineCaseId(d.taglineCase?.id ?? "");
+        setCaseSearch(d.taglineCase?.title ?? "");
       });
     api.get<{ cases: { id: string; title: string }[] }>("/api/cases?status=ongoing").then((d) => setOngoingCases(d.cases));
   }, []);
+
+  // Close the suggestions dropdown on outside click.
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  const filteredCases = caseSearch.trim()
+    ? ongoingCases.filter((c) => c.title.toLowerCase().includes(caseSearch.trim().toLowerCase()))
+    : ongoingCases;
+
+  function selectCase(c: { id: string; title: string }) {
+    setTaglineCaseId(c.id);
+    setCaseSearch(c.title);
+    setShowSuggestions(false);
+    setSaved(false);
+  }
+
+  function clearCaseSelection() {
+    setTaglineCaseId("");
+    setCaseSearch("");
+    setSaved(false);
+  }
 
   async function save() {
     setSaving(true);
     try {
       await api.post("/api/admin/site-settings", { tagline, taglineCaseId: taglineCaseId || null });
       setSaved(true);
+      setConfirmation(taglineCaseId ? "Tagline & case link added" : tagline.trim() ? "Tagline added" : "Tagline cleared");
+      setTimeout(() => setConfirmation(""), 3000);
     } finally {
       setSaving(false);
     }
@@ -962,20 +997,50 @@ function TaglineSettingCard() {
         </button>
       </div>
 
-      <div className="mt-3">
+      {confirmation && (
+        <p className="mt-2 text-xs font-semibold text-primary">✓ {confirmation}</p>
+      )}
+
+      <div className="mt-3" ref={searchBoxRef}>
         <label className="text-xs font-semibold text-muted uppercase tracking-wide">
           Link a "Support Now" button to a case (optional)
         </label>
-        <select
-          value={taglineCaseId}
-          onChange={(e) => { setTaglineCaseId(e.target.value); setSaved(false); }}
-          className="mt-1.5 w-full rounded-full border border-border px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
-        >
-          <option value="">No link, plain text only</option>
-          {ongoingCases.map((c) => (
-            <option key={c.id} value={c.id}>{c.title}</option>
-          ))}
-        </select>
+        <div className="relative mt-1.5">
+          <input
+            value={caseSearch}
+            onChange={(e) => { setCaseSearch(e.target.value); setTaglineCaseId(""); setShowSuggestions(true); setSaved(false); }}
+            onFocus={() => setShowSuggestions(true)}
+            placeholder="Search a case by title..."
+            className="w-full rounded-full border border-border px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+          {taglineCaseId && (
+            <button
+              type="button"
+              onClick={clearCaseSelection}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted hover:text-ink"
+            >
+              Clear
+            </button>
+          )}
+          {showSuggestions && (
+            <div className="absolute z-10 mt-1.5 w-full max-h-56 overflow-y-auto rounded-2xl border border-border bg-white shadow-lg">
+              {filteredCases.length === 0 ? (
+                <div className="px-4 py-2.5 text-sm text-muted">No matching ongoing cases</div>
+              ) : (
+                filteredCases.map((c) => (
+                  <button
+                    type="button"
+                    key={c.id}
+                    onClick={() => selectCase(c)}
+                    className={`block w-full text-left px-4 py-2.5 text-sm hover:bg-primary/5 ${c.id === taglineCaseId ? "bg-primary/10 font-semibold text-primary" : "text-ink"}`}
+                  >
+                    {c.title}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
         <p className="text-xs text-muted mt-1.5">
           When set, a "Support Now" button appears next to your tagline and takes visitors straight to that case.
         </p>

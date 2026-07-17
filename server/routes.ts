@@ -314,17 +314,19 @@ export function registerRoutes(app: Express) {
   app.post("/api/cases", requireAuth, uploadImage.array("images", 5), async (req, res) => {
     const user = (req as any).user;
 
-    const submittedToday = await storage.countCasesSubmittedToday(user.id);
-    if (submittedToday >= 2) {
-      const resetAt = new Date();
-      resetAt.setHours(24, 0, 0, 0);
-      const hoursLeft = Math.ceil((resetAt.getTime() - Date.now()) / (60 * 60 * 1000));
-      return res.status(429).json({
-        message: `You've reached today's limit of 2 case submissions (${submittedToday}/2). This resets at midnight, about ${hoursLeft} hour(s) from now.`,
-        limit: 2,
-        used: submittedToday,
-        resetsInHours: hoursLeft,
-      });
+    if (user.role !== "admin") {
+      const submittedToday = await storage.countCasesSubmittedToday(user.id);
+      if (submittedToday >= 2) {
+        const resetAt = new Date();
+        resetAt.setHours(24, 0, 0, 0);
+        const hoursLeft = Math.ceil((resetAt.getTime() - Date.now()) / (60 * 60 * 1000));
+        return res.status(429).json({
+          message: `You've reached today's limit of 2 case submissions (${submittedToday}/2). This resets at midnight, about ${hoursLeft} hour(s) from now.`,
+          limit: 2,
+          used: submittedToday,
+          resetsInHours: hoursLeft,
+        });
+      }
     }
 
     const parsed = insertCaseSchema.safeParse({
@@ -351,13 +353,17 @@ export function registerRoutes(app: Express) {
     const resetAt = new Date();
     resetAt.setHours(24, 0, 0, 0);
     const hoursLeft = Math.ceil((resetAt.getTime() - Date.now()) / (60 * 60 * 1000));
+    if (user.role === "admin") {
+      return res.json({ used, limit: null, unlimited: true, resetsInHours: hoursLeft });
+    }
     res.json({ used, limit: 2, resetsInHours: hoursLeft });
   });
 
   app.get("/api/cases", async (req, res) => {
     const status = (req.query.status as string) || "ongoing";
     const list = await storage.listCasesByStatus(status as any);
-    res.json({ cases: list });
+    const donorCounts = await storage.countDonorsForCases(list.map((c) => c.id));
+    res.json({ cases: list.map((c) => ({ ...c, donorCount: donorCounts[c.id] ?? 0 })) });
   });
 
   app.get("/api/cases/:id", async (req, res) => {
@@ -378,7 +384,8 @@ export function registerRoutes(app: Express) {
       pendingRequestType = pending?.type ?? null;
     }
 
-    res.json({ case: c, isAssigned, pendingRequestType });
+    const donorCount = await storage.countDonorsForCase(c.id);
+    res.json({ case: { ...c, donorCount }, isAssigned, pendingRequestType });
   });
 
   app.post("/api/cases/:id/request-join", requireAuth, async (req, res) => {
@@ -468,6 +475,27 @@ export function registerRoutes(app: Express) {
 
   app.get("/api/gallery", async (_req, res) => {
     res.json({ events: await storage.listGalleryEvents() });
+  });
+
+  app.get("/api/gallery/:id", async (req, res) => {
+    const event = await storage.getGalleryEventById(String(req.params.id));
+    if (!event) return res.status(404).json({ message: "Project not found" });
+
+    let sourceCase: { amountNeeded: number; amountCollected: number; createdAt: Date; approvedAt: Date | null; completedAt: Date | null } | null = null;
+    if (event.sourceCaseId) {
+      const c = await storage.getCaseById(event.sourceCaseId);
+      if (c && !c.isHidden) {
+        sourceCase = {
+          amountNeeded: c.amountNeeded,
+          amountCollected: c.amountCollected,
+          createdAt: c.createdAt,
+          approvedAt: c.approvedAt,
+          completedAt: c.completedAt,
+        };
+      }
+    }
+
+    res.json({ event, sourceCase });
   });
 
   app.get("/api/success-stories", async (_req, res) => {

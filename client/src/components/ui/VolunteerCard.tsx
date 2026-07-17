@@ -1,4 +1,5 @@
-import { MapPin, Mail, Clock, Calendar, BadgeCheck, ShieldCheck } from "lucide-react";
+import { useRef, useState } from "react";
+import { MapPin, Clock, Briefcase, ShieldCheck, BadgeCheck } from "lucide-react";
 
 const avatarColors = ["#3087F8", "#72ADFA", "#FFD662", "#0260D8"];
 
@@ -11,33 +12,81 @@ export type VolunteerCardProps = {
   name: string;
   role?: string;
   city?: string | null;
-  email?: string;
   avatarUrl?: string | null;
   category?: string | null;
   projects?: string[];
   quote?: string | null;
   hours: number;
+  casesCompleted?: number;
   joined: string; // preformatted label, e.g. "Mar 2024"
   active?: boolean;
   servedUntil?: string | null;
+  onOpen?: () => void;
 };
 
-export function VolunteerCard({ badgeId, name, role, city, email, avatarUrl, category, projects, quote, hours, joined, active = true, servedUntil }: VolunteerCardProps) {
+export function VolunteerCard({ badgeId, name, role, city, avatarUrl, category, hours, casesCompleted = 0, active = true, servedUntil, onOpen }: VolunteerCardProps) {
   const color = avatarColors[name.length % avatarColors.length];
+  const spotlightRef = useRef<HTMLButtonElement>(null);
+  const [imgLoaded, setImgLoaded] = useState(false);
+
+  // Soft radial highlight that follows the cursor — updated directly on the DOM node for smoothness.
+  function onMouseMove(e: React.MouseEvent<HTMLButtonElement>) {
+    const el = spotlightRef.current;
+    if (!el) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    el.style.setProperty("--spot-x", `${x}px`);
+    el.style.setProperty("--spot-y", `${y}px`);
+    el.style.setProperty("--spot-opacity", "1");
+  }
+  function onMouseLeave() {
+    spotlightRef.current?.style.setProperty("--spot-opacity", "0");
+  }
 
   return (
-    <div className="rounded-2xl border border-border bg-white p-6 hover:shadow-md transition-shadow flex flex-col">
-      <div className="flex items-start justify-between">
-        <div className="relative">
+    <button
+      ref={spotlightRef}
+      onClick={onOpen}
+      onMouseMove={onMouseMove}
+      onMouseLeave={onMouseLeave}
+      style={{
+        // @ts-ignore custom properties for the spotlight gradient
+        "--spot-x": "50%",
+        "--spot-y": "0px",
+        "--spot-opacity": "0",
+      }}
+      className="group relative w-full text-left rounded-2xl border border-border bg-white p-6 flex flex-col transition-all duration-[250ms] hover:-translate-y-2 hover:shadow-xl hover:border-primary/40"
+    >
+      {/* Mouse spotlight */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-2xl transition-opacity duration-300"
+        style={{
+          opacity: "var(--spot-opacity)",
+          background: "radial-gradient(circle 200px at var(--spot-x) var(--spot-y), rgba(48,135,248,0.05), transparent 80%)",
+        }}
+      />
+      {/* Signature interaction: soft blue gradient along the top edge on hover */}
+      <span className="pointer-events-none absolute inset-x-0 top-0 h-16 rounded-t-2xl bg-gradient-to-b from-primary/[0.06] to-transparent opacity-0 transition-opacity duration-250 group-hover:opacity-100" />
+
+      <div className="relative flex items-start justify-between">
+        <div className="relative shrink-0">
           {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={name}
-              className="h-16 w-16 rounded-full object-cover"
-            />
+            <div className="h-16 w-16 rounded-full overflow-hidden bg-border/30">
+              <img
+                src={avatarUrl}
+                alt={name}
+                className={`h-full w-full object-cover transition-all duration-[600ms] group-hover:scale-[1.08] ${
+                  imgLoaded ? "opacity-100 scale-100 blur-0" : "opacity-0 scale-105 blur-md"
+                }`}
+                loading="lazy"
+                onLoad={() => setImgLoaded(true)}
+              />
+            </div>
           ) : (
             <div
-              className="h-16 w-16 rounded-full flex items-center justify-center font-display text-xl text-background"
+              className="h-16 w-16 rounded-full flex items-center justify-center font-display text-xl text-background transition-transform duration-250 group-hover:scale-105"
               style={{ backgroundColor: color }}
             >
               {initials(name)}
@@ -60,7 +109,7 @@ export function VolunteerCard({ badgeId, name, role, city, email, avatarUrl, cat
             </span>
           ) : (
             active && (
-              <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 rounded-full px-2.5 py-1">
+              <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 rounded-full px-2.5 py-1 transition-all duration-200 group-hover:bg-emerald-100">
                 ACTIVE
               </span>
             )
@@ -68,39 +117,27 @@ export function VolunteerCard({ badgeId, name, role, city, email, avatarUrl, cat
         </div>
       </div>
 
-      <div className="mt-4 flex items-center gap-1.5">
-        <h3 className="font-display text-lg text-ink">{name}</h3>
-        <BadgeCheck size={16} className="text-primary" />
+      <div className="relative mt-4 flex items-center gap-1.5">
+        <h3 className="font-display text-lg text-ink transition-colors duration-250 group-hover:text-primary">{name}</h3>
+        <BadgeCheck size={16} className="text-primary shrink-0" />
       </div>
-      {(role || category) && <p className="text-sm font-medium text-primary">{role || category}</p>}
-
-      <ul className="mt-3 space-y-1.5 text-sm text-ink/70">
-        {city && <li className="flex items-center gap-2"><MapPin size={13} className="text-muted" /> {city}</li>}
-        {email && <li className="flex items-center gap-2"><Mail size={13} className="text-muted" /> {email}</li>}
-      </ul>
-
-      {projects && projects.length > 0 && (
-        <div className="mt-4">
-          <span className="text-[11px] font-semibold tracking-wide text-ink/60 uppercase">Top Projects</span>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {projects.map((p) => (
-              <span
-                key={p}
-                className="text-xs font-medium rounded-full bg-emerald-50 border border-emerald-100 text-primary px-3 py-1.5"
-              >
-                {p}
-              </span>
-            ))}
-          </div>
-        </div>
+      {(role || category) && <p className="relative text-sm font-medium text-primary">{role || category}</p>}
+      {city && (
+        <p className="relative mt-1.5 flex items-center gap-1.5 text-xs text-muted">
+          <MapPin size={12} /> {city}
+        </p>
       )}
 
-      {quote && <p className="mt-4 text-sm italic text-ink/70 leading-relaxed">&ldquo;{quote}&rdquo;</p>}
-
-      <div className="mt-5 pt-4 border-t border-border flex items-center justify-between text-xs text-muted">
-        <span className="flex items-center gap-1.5"><Clock size={13} /> {hours} hrs</span>
-        <span className="flex items-center gap-1.5"><Calendar size={13} /> Joined {joined}</span>
+      <div className="relative mt-5 pt-4 border-t border-border flex items-center gap-5 text-xs text-ink/70">
+        <span className="flex items-center gap-1.5">
+          <Clock size={13} className="text-muted" />
+          <span className="font-semibold text-ink">{hours}</span> Hours
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Briefcase size={13} className="text-muted" />
+          <span className="font-semibold text-ink">{casesCompleted}</span> Events
+        </span>
       </div>
-    </div>
+    </button>
   );
 }

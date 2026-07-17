@@ -10,7 +10,7 @@ function parseValue(raw: string) {
   return { prefix, number: parseInt(numStr.replace(/,/g, ""), 10), suffix, hasNumber: true };
 }
 
-export function CountUpStat({ value, className = "" }: { value: string; className?: string }) {
+export function CountUpStat({ value, className = "", durationMs = 800 }: { value: string; className?: string; durationMs?: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const [display, setDisplay] = useState<string>(parseValue(value).hasNumber ? "0" : value);
   const [started, setStarted] = useState(false);
@@ -38,7 +38,7 @@ export function CountUpStat({ value, className = "" }: { value: string; classNam
       setDisplay(value);
       return;
     }
-    const duration = 1100;
+    const duration = durationMs;
     const start = performance.now();
     let raf: number;
     function tick(now: number) {
@@ -50,7 +50,7 @@ export function CountUpStat({ value, className = "" }: { value: string; classNam
     }
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [started, value]);
+  }, [started, value, durationMs]);
 
   return (
     <div ref={ref} className={className}>
