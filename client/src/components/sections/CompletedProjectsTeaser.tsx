@@ -45,6 +45,7 @@ export function CompletedProjectsTeaser() {
             height={540}
             renderItem={(event) => (
               <GalleryCard
+                id={event.id}
                 title={event.title}
                 date={event.eventDate}
                 location={event.location}
@@ -53,6 +54,7 @@ export function CompletedProjectsTeaser() {
                 families={event.families}
                 items={event.items}
                 funds={event.funds}
+                onViewDetails={() => { window.location.href = "/completed-projects"; }}
               />
             )}
           />

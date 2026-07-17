@@ -3,7 +3,7 @@ import { Heart } from "lucide-react";
 // Donate Now uses its own slightly deeper gold, kept local to this button so
 // the shared `accent` yellow used elsewhere on the site is untouched.
 const DONATE_GOLD = "#ffcb40";
-const DONATE_GOLD_HOVER = "#bababa";
+const DONATE_GOLD_HOVER = "#E0AC2E";
 
 export function DonateButton({
   size = "md",

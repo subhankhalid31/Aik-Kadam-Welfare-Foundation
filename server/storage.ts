@@ -1,4 +1,4 @@
-import { eq, and, or, ilike, desc, sql } from "drizzle-orm";
+import { eq, and, or, ilike, desc, sql, inArray } from "drizzle-orm";
 import { db } from "./db";
 import {
   users,
@@ -328,6 +328,28 @@ export const storage = {
   async getCaseById(caseId: string): Promise<Case | undefined> {
     const [c] = await db.select().from(cases).where(eq(cases.id, caseId));
     return c;
+  },
+
+  // Distinct confirmed donors for a case — powers the "N donors" line on case cards.
+  async countDonorsForCase(caseId: string): Promise<number> {
+    const [row] = await db
+      .select({ donorCount: sql<number>`count(distinct ${donations.userId})` })
+      .from(donations)
+      .where(and(eq(donations.caseId, caseId), eq(donations.status, "confirmed")));
+    return Number(row?.donorCount ?? 0);
+  },
+
+  // Batched donor-count lookup for a list of cases (avoids N+1 queries).
+  async countDonorsForCases(caseIds: string[]): Promise<Record<string, number>> {
+    if (caseIds.length === 0) return {};
+    const rows = await db
+      .select({ caseId: donations.caseId, donorCount: sql<number>`count(distinct ${donations.userId})` })
+      .from(donations)
+      .where(and(inArray(donations.caseId, caseIds), eq(donations.status, "confirmed")))
+      .groupBy(donations.caseId);
+    const map: Record<string, number> = {};
+    for (const row of rows) map[row.caseId] = Number(row.donorCount);
+    return map;
   },
 
   // By default excludes hidden cases (public + normal admin tabs). Pass
