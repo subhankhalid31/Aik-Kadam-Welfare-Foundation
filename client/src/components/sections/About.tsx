@@ -4,6 +4,7 @@ import girlImg from "@assets/gallery/happy_young_girl_holding_books_in_classroom
 import pakistanImg from "@assets/gallery/charitable_work_in_pakistan_background.webp";
 import foodImg from "@assets/gallery/volunteers_handing_out_food_to_community.webp";
 import familyImg from "@assets/gallery/family_enjoying_a_healthy_meal_together.webp";
+import { motion } from "framer-motion";
 import { NgoImageSlideshow } from "@/components/ui/NgoImageSlideshow";
 
 // Placeholder set — swap these for real NGO/on-the-ground photos any time
@@ -29,7 +30,12 @@ export function About() {
       <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-14 items-center">
         <NgoImageSlideshow images={NGO_IMAGES} />
 
-        <div>
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        >
           <span className="text-xs font-semibold tracking-wide text-primary uppercase">
             Our Story
           </span>
@@ -46,19 +52,35 @@ export function About() {
 
           <ol className="mt-8 space-y-5">
             {milestones.map((m, i) => (
-              <li key={m.year} className="flex gap-4">
+              <motion.li
+                key={m.year}
+                className="group flex gap-4 rounded-xl -mx-2 px-2 py-1 transition-all duration-250 hover:bg-primary/5 hover:translate-x-1"
+                initial={{ opacity: 0, x: -12 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, amount: 0.8 }}
+                transition={{ duration: 0.5, ease: "easeOut", delay: i * 0.1 }}
+              >
                 <div className="flex flex-col items-center">
-                  <span className="font-mono text-xs text-primary">{m.year}</span>
-                  <span className="mt-1.5 h-2 w-2 rounded-full bg-primary" />
+                  <span className="font-mono text-xs text-primary transition-colors duration-250 group-hover:text-primary-dark">{m.year}</span>
+                  <div className="relative mt-1.5 h-2 w-2 shrink-0">
+                    <motion.span
+                      className="absolute -inset-1.5 rounded-full bg-primary/60 blur-[3px]"
+                      initial={{ opacity: 0.25 }}
+                      whileInView={{ opacity: [0.25, 0.85, 0.25] }}
+                      viewport={{ once: false, amount: 0.8 }}
+                      transition={{ duration: 2.2, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
+                    />
+                    <span className="relative block h-2 w-2 rounded-full bg-primary shadow-[0_0_6px_2px_rgba(48,135,248,0.55)] transition-transform duration-250 group-hover:scale-125" />
+                  </div>
                   {i < milestones.length - 1 && (
                     <span className="mt-1.5 w-px flex-1 bg-border" />
                   )}
                 </div>
-                <p className="text-sm text-ink/80 pb-4">{m.label}</p>
-              </li>
+                <p className="text-sm text-ink/80 pb-4 transition-colors duration-250 group-hover:text-ink">{m.label}</p>
+              </motion.li>
             ))}
           </ol>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

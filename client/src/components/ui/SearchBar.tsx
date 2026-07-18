@@ -31,18 +31,22 @@ export function FilterPills<T extends string>({
   options,
   active,
   onChange,
+  compact,
 }: {
   options: { key: T; label: string }[];
   active: T;
   onChange: (v: T) => void;
+  compact?: boolean;
 }) {
   return (
-    <div className="flex gap-2 shrink-0">
+    <div className={`flex shrink-0 ${compact ? "gap-1.5 sm:gap-2" : "gap-2"}`}>
       {options.map((f) => (
         <button
           key={f.key}
           onClick={() => onChange(f.key)}
-          className={`rounded-full px-4 py-2.5 text-sm font-semibold border transition-colors ${
+          className={`rounded-full font-semibold border transition-colors ${
+            compact ? "px-3 py-2 text-xs sm:px-4 sm:py-2.5 sm:text-sm" : "px-4 py-2.5 text-sm"
+          } ${
             active === f.key
               ? "bg-primary text-background border-primary"
               : "bg-white text-ink border-border hover:bg-background"
@@ -59,14 +63,16 @@ export function FilterDropdown<T extends string>({
   options,
   active,
   onChange,
+  placeholder = "Filter",
 }: {
   options: { key: T; label: string }[];
   active: T;
   onChange: (v: T) => void;
+  placeholder?: string;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const activeLabel = options.find((o) => o.key === active)?.label ?? "Filter";
+  const activeLabel = options.find((o) => o.key === active)?.label ?? placeholder;
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -81,10 +87,10 @@ export function FilterDropdown<T extends string>({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-2 rounded-full border border-border bg-white pl-4 pr-3.5 py-2.5 text-sm font-medium text-ink transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-primary/30 active:scale-105"
+        className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-border bg-white pl-3 pr-2.5 py-2 text-xs sm:pl-4 sm:pr-3.5 sm:py-2.5 sm:text-sm font-medium text-ink transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-primary/30 active:scale-105"
       >
         <SlidersHorizontal size={14} className="text-muted" />
-        {active === options[0]?.key ? "Filter" : activeLabel}
+        {active === options[0]?.key ? placeholder : activeLabel}
         <svg className={`h-3 w-3 text-muted transition-transform duration-200 ${open ? "rotate-180" : ""}`} viewBox="0 0 12 12" fill="none">
           <path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -119,23 +125,48 @@ export function SortDropdown<T extends string>({
   onChange: (v: T) => void;
   options: { key: T; label: string }[];
 }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const activeLabel = options.find((o) => o.key === value)?.label ?? "";
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
   return (
-    <div className="relative shrink-0 group transition-transform duration-200 hover:-translate-y-0.5">
-      <ArrowUpDown size={14} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value as T)}
-        className="peer appearance-none rounded-full border border-border bg-white pl-9 pr-8 py-2.5 text-sm font-medium text-ink transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary group-hover:shadow-md"
+    <div className="relative shrink-0" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-border bg-white pl-3 pr-2.5 py-2 text-xs sm:pl-4 sm:pr-3.5 sm:py-2.5 sm:text-sm font-medium text-ink transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-primary/30 active:scale-105"
       >
-        {options.map((o) => (
-          <option key={o.key} value={o.key}>
-            Sort: {o.label}
-          </option>
-        ))}
-      </select>
-      <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted transition-transform duration-200 peer-focus:rotate-180" viewBox="0 0 12 12" fill="none">
-        <path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+        <ArrowUpDown size={14} className="text-muted" />
+        Sort: {activeLabel}
+        <svg className={`h-3 w-3 text-muted transition-transform duration-200 ${open ? "rotate-180" : ""}`} viewBox="0 0 12 12" fill="none">
+          <path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-1.5 z-20 w-52 rounded-2xl border border-border bg-white p-1.5 shadow-lg">
+          {options.map((o) => (
+            <button
+              key={o.key}
+              onClick={() => { onChange(o.key); setOpen(false); }}
+              className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm text-left transition-colors ${
+                value === o.key ? "bg-primary/10 text-primary font-semibold" : "text-ink hover:bg-background"
+              }`}
+            >
+              {o.label}
+              {value === o.key && <Check size={14} />}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

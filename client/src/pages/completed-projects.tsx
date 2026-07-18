@@ -113,7 +113,7 @@ export default function CompletedProjectsPage() {
         </motion.div>
 
         {loading ? (
-          <div className="mt-10 grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-7">
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-7">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="rounded-2xl border border-border overflow-hidden bg-white">
                 <div className="aspect-[16/10] bg-border/50 animate-pulse" />
@@ -132,7 +132,7 @@ export default function CompletedProjectsPage() {
             {events.length === 0 ? "No completed projects posted yet." : `No projects match "${query}".`}
           </p>
         ) : (
-          <div className="mt-10 grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-7">
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-7">
             {filtered.map((event, i) => (
               <motion.div
                 key={event.id}

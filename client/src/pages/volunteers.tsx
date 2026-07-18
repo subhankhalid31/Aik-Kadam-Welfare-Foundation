@@ -6,7 +6,7 @@ import { VolunteersStatsBar } from "@/components/sections/VolunteersStatsBar";
 import { VerificationBanner } from "@/components/sections/VerificationBanner";
 import { VolunteerCard, type VolunteerCardProps } from "@/components/ui/VolunteerCard";
 import { VolunteerDetailModal, type VolunteerDetail } from "@/components/ui/VolunteerDetailModal";
-import { SearchBar, FilterPills, SortDropdown } from "@/components/ui/SearchBar";
+import { SearchBar, FilterDropdown, FilterPills, SortDropdown } from "@/components/ui/SearchBar";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
@@ -34,7 +34,7 @@ const SORT_OPTIONS: { key: Sort; label: string }[] = [
   { key: "az", label: "A–Z" },
 ];
 
-const CATEGORY_OPTIONS = ["All Categories", "Medical Assistant", "Food Drive", "Education", "Logistics", "Fundraising", "Field Coordinator", "Other"];
+const CATEGORY_OPTIONS = ["All Categories", "Medical Assistant", "Food Drive", "Education", "Logistics", "Fundraising", "Field Coordinator", "Other"].map((c) => ({ key: c, label: c }));
 
 function formatMonthYear(iso: string) {
   const d = new Date(iso);
@@ -116,7 +116,9 @@ export default function VolunteersPage() {
   const hoursServed = useMemo(() => volunteers.reduce((sum, v) => sum + v.hours, 0), [volunteers]);
   const projectsSupported = useMemo(() => new Set(volunteers.flatMap((v) => v.projects)).size, [volunteers]);
 
-  const showRegisterCta = user?.role !== "admin" && user?.volunteerStatus !== "pending" && user?.volunteerStatus !== "approved";
+  const isApprovedVolunteer = user?.volunteerStatus === "approved";
+  const ctaHidden = user?.role === "admin" || isApprovedVolunteer;
+  const showRegisterCta = !ctaHidden && user?.volunteerStatus !== "pending";
   const ctaLabel = user?.volunteerStatus === "rejected" ? "Apply Again" : user?.volunteerStatus === "pending" ? "Application Pending" : "Become a Volunteer";
 
   return (
@@ -125,6 +127,7 @@ export default function VolunteersPage() {
         ctaLabel={user?.volunteerStatus === "pending" ? "Application Pending" : ctaLabel}
         ctaHref="/volunteers/register"
         ctaDisabled={!showRegisterCta}
+        ctaHidden={ctaHidden}
       />
       <main className="max-w-6xl mx-auto px-6 pb-24">
         <VolunteersStatsBar
@@ -134,36 +137,33 @@ export default function VolunteersPage() {
         />
 
         <motion.div
-          className="mt-14 flex flex-wrap gap-3"
+          className="mt-14 flex flex-col gap-3"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.6 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
           <SearchBar value={query} onChange={setQuery} placeholder="Search by name, ID, or location..." />
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="shrink-0 rounded-full border border-border bg-white px-4 py-2.5 text-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/30"
-          >
-            {CATEGORY_OPTIONS.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-          <FilterPills
-            options={[
-              { key: "all", label: "All" },
-              { key: "active", label: "Active" },
-              { key: "past", label: "Past" },
-            ]}
-            active={filter}
-            onChange={setFilter}
-          />
-          <SortDropdown value={sort} onChange={setSort} options={SORT_OPTIONS} />
+          <div className="flex items-center justify-between gap-2 sm:gap-3">
+            <FilterDropdown options={CATEGORY_OPTIONS} active={category} onChange={setCategory} placeholder="All Categories" />
+            <FilterPills
+              options={[
+                { key: "all", label: "All" },
+                { key: "active", label: "Active" },
+                { key: "past", label: "Past" },
+              ]}
+              active={filter}
+              onChange={setFilter}
+              compact
+            />
+          </div>
+          <div className="flex justify-end">
+            <SortDropdown value={sort} onChange={setSort} options={SORT_OPTIONS} />
+          </div>
         </motion.div>
 
         {loading ? (
-          <div className="mt-10 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="rounded-2xl border border-border bg-white p-6">
                 <div className="flex items-start justify-between">
@@ -184,7 +184,7 @@ export default function VolunteersPage() {
               : `No volunteers match "${query}".`}
           </p>
         ) : (
-          <div className="mt-10 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filtered.map((v, i) => (
               <motion.div
                 key={v.badgeId}

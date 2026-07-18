@@ -11,7 +11,7 @@ const fadeUp = {
 
 const CONTAINER_INSET = "max(1.5rem,calc((100vw - 72rem) / 2 + 1.5rem))";
 
-export function VolunteersHero({ ctaLabel, ctaHref, ctaDisabled }: { ctaLabel: string; ctaHref: string; ctaDisabled?: boolean }) {
+export function VolunteersHero({ ctaLabel, ctaHref, ctaDisabled, ctaHidden }: { ctaLabel: string; ctaHref: string; ctaDisabled?: boolean; ctaHidden?: boolean }) {
   const imgWrapRef = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState(0);
 
@@ -86,7 +86,7 @@ export function VolunteersHero({ ctaLabel, ctaHref, ctaDisabled }: { ctaLabel: s
           variants={fadeUp}
           transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
         >
-          {!ctaDisabled && (
+          {!ctaHidden && !ctaDisabled && (
             <Link
               href={ctaHref}
               className="group/cta inline-flex items-center gap-1.5 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-background transition-all duration-200 hover:bg-primary-dark hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98]"
@@ -95,14 +95,24 @@ export function VolunteersHero({ ctaLabel, ctaHref, ctaDisabled }: { ctaLabel: s
               <ArrowRight size={14} className="transition-transform duration-200 group-hover/cta:translate-x-1" />
             </Link>
           )}
-          {ctaDisabled && (
+          {!ctaHidden && ctaDisabled && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-6 py-3 text-sm font-semibold">
               {ctaLabel}
             </span>
           )}
-          <a href="#verification" className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink hover:text-primary transition-colors">
-            <ShieldCheck size={15} className="text-primary" /> How We Verify
-          </a>
+          {ctaHidden ? (
+            <a
+              href="#verification"
+              className="group/cta inline-flex items-center gap-1.5 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-background transition-all duration-200 hover:bg-primary-dark hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98]"
+            >
+              <ShieldCheck size={15} /> How We Verify
+              <ArrowRight size={14} className="transition-transform duration-200 group-hover/cta:translate-x-1" />
+            </a>
+          ) : (
+            <a href="#verification" className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink hover:text-primary transition-colors">
+              <ShieldCheck size={15} className="text-primary" /> How We Verify
+            </a>
+          )}
         </motion.div>
       </div>
     </section>

@@ -1,5 +1,5 @@
 import { Modal } from "@/components/ui/Modal";
-import { MapPin, X, Clock, Briefcase, Calendar, ShieldCheck, BadgeCheck } from "lucide-react";
+import { MapPin, Clock, Briefcase, Calendar, ShieldCheck, BadgeCheck } from "lucide-react";
 
 export type VolunteerDetail = {
   badgeId: string | null;
@@ -25,11 +25,7 @@ export function VolunteerDetailModal({ volunteer, onClose }: { volunteer: Volunt
   const color = avatarColors[volunteer.name.length % avatarColors.length];
 
   return (
-    <Modal onBackdropClick={onClose}>
-      <button onClick={onClose} className="absolute top-4 right-4 h-8 w-8 rounded-full bg-background flex items-center justify-center">
-        <X size={16} />
-      </button>
-
+    <Modal onBackdropClick={onClose} onClose={onClose}>
       <div className="max-w-md">
         <div className="flex items-start gap-4">
           <div className="relative shrink-0">
