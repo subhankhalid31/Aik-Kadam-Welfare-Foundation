@@ -29,7 +29,7 @@ export function OngoingHero({ showSubmitCta }: { showSubmitCta: boolean }) {
         <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 to-white/10" />
       </div>
 
-      <div className="relative min-h-[420px] sm:min-h-[480px] lg:min-h-[520px] flex items-center py-14">
+      <div className="relative min-h-[420px] sm:min-h-[480px] lg:min-h-[520px] flex flex-col sm:flex-row sm:items-center gap-8 sm:gap-0 py-10 sm:py-14">
         {/* Text, aligned to the page's standard left inset */}
         <div className="pr-6 max-w-xl" style={{ paddingLeft: CONTAINER_INSET }}>
           <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-wide text-primary uppercase">
@@ -88,7 +88,7 @@ export function OngoingHero({ showSubmitCta }: { showSubmitCta: boolean }) {
         {/* Floating "submit a case" card, overlaid on the image on the right */}
         {showSubmitCta && (
           <motion.div
-            className="absolute bottom-6 right-4 sm:right-6 lg:right-10 w-[200px] sm:w-[240px] rounded-2xl border border-border bg-white shadow-lg p-4 sm:p-5"
+            className="self-end mr-4 sm:mr-0 sm:absolute sm:bottom-6 sm:right-6 lg:right-10 w-[200px] sm:w-[240px] rounded-2xl border border-border bg-white shadow-lg p-4 sm:p-5"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}

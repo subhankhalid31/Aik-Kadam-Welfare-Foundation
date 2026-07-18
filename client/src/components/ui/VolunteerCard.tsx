@@ -56,7 +56,7 @@ export function VolunteerCard({ badgeId, name, role, city, avatarUrl, category, 
         "--spot-y": "0px",
         "--spot-opacity": "0",
       }}
-      className="group relative w-full text-left rounded-2xl border border-border bg-white p-6 flex flex-col transition-all duration-[250ms] hover:-translate-y-2 hover:shadow-xl hover:border-primary/40"
+      className="group relative w-full min-w-0 text-left rounded-2xl border border-border bg-white p-6 flex flex-col transition-all duration-[250ms] hover:-translate-y-2 hover:shadow-xl hover:border-primary/40"
     >
       {/* Mouse spotlight */}
       <span
@@ -117,18 +117,18 @@ export function VolunteerCard({ badgeId, name, role, city, avatarUrl, category, 
         </div>
       </div>
 
-      <div className="relative mt-4 flex items-center gap-1.5">
-        <h3 className="font-display text-lg text-ink transition-colors duration-250 group-hover:text-primary">{name}</h3>
+      <div className="relative mt-4 flex items-center gap-1.5 min-w-0">
+        <h3 className="font-display text-lg text-ink transition-colors duration-250 group-hover:text-primary truncate">{name}</h3>
         <BadgeCheck size={16} className="text-primary shrink-0" />
       </div>
-      {(role || category) && <p className="relative text-sm font-medium text-primary">{role || category}</p>}
+      {(role || category) && <p className="relative text-sm font-medium text-primary truncate">{role || category}</p>}
       {city && (
-        <p className="relative mt-1.5 flex items-center gap-1.5 text-xs text-muted">
-          <MapPin size={12} /> {city}
+        <p className="relative mt-1.5 flex items-center gap-1.5 text-xs text-muted min-w-0">
+          <MapPin size={12} className="shrink-0" /> <span className="truncate">{city}</span>
         </p>
       )}
 
-      <div className="relative mt-5 pt-4 border-t border-border flex items-center gap-5 text-xs text-ink/70">
+      <div className="relative mt-5 pt-4 border-t border-border flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-ink/70">
         <span className="flex items-center gap-1.5">
           <Clock size={13} className="text-muted" />
           <span className="font-semibold text-ink">{hours}</span> Hours

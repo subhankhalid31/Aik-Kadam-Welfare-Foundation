@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { ImageCarousel } from "@/components/ui/ImageCarousel";
 import { api } from "@/lib/api";
-import { MapPin, X, Calendar, ShieldCheck, Users, Package, Wallet, CheckCircle2 } from "lucide-react";
+import { MapPin, Calendar, ShieldCheck, Users, Package, Wallet, CheckCircle2 } from "lucide-react";
 
 type GalleryEventDetail = {
   id: string;
@@ -43,11 +43,7 @@ export function GalleryDetailModal({ eventId, onClose }: { eventId: string; onCl
   }, [eventId]);
 
   return (
-    <Modal onBackdropClick={onClose}>
-      <button onClick={onClose} className="absolute top-4 right-4 h-8 w-8 rounded-full bg-background flex items-center justify-center">
-        <X size={16} />
-      </button>
-
+    <Modal onBackdropClick={onClose} onClose={onClose}>
       {loading || !data ? (
         <p className="text-muted text-sm py-8 text-center">Loading...</p>
       ) : (

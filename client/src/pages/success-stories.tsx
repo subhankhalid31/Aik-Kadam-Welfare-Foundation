@@ -94,7 +94,7 @@ export default function SuccessStoriesPage() {
         </motion.div>
 
         {loading ? (
-          <div className="mt-10 grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-7">
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-7">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="rounded-2xl border border-border overflow-hidden bg-white">
                 <div className="aspect-[16/9] bg-border/50 animate-pulse" />
@@ -113,7 +113,7 @@ export default function SuccessStoriesPage() {
             {stories.length === 0 ? "No success stories posted yet." : `No stories match "${query}".`}
           </p>
         ) : (
-          <div className="mt-10 grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-7">
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-7">
             {filtered.map((story, i) => (
               <motion.div
                 key={story.id}

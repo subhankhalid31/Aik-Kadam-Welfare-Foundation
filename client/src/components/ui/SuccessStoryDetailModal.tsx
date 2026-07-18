@@ -1,5 +1,5 @@
 import { Modal } from "@/components/ui/Modal";
-import { X, ShieldCheck, Calendar, Quote } from "lucide-react";
+import { ShieldCheck, Calendar, Quote } from "lucide-react";
 
 export type SuccessStoryDetail = {
   title: string;
@@ -12,11 +12,7 @@ export type SuccessStoryDetail = {
 
 export function SuccessStoryDetailModal({ story, onClose }: { story: SuccessStoryDetail; onClose: () => void }) {
   return (
-    <Modal onBackdropClick={onClose}>
-      <button onClick={onClose} className="absolute top-4 right-4 h-8 w-8 rounded-full bg-background flex items-center justify-center">
-        <X size={16} />
-      </button>
-
+    <Modal onBackdropClick={onClose} onClose={onClose}>
       <div className="max-w-md">
         <div className="grid grid-cols-2 gap-1.5 rounded-xl overflow-hidden">
           <div className="relative">

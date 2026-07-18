@@ -4,7 +4,7 @@ import { ImageCarousel } from "@/components/ui/ImageCarousel";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useDialog } from "@/lib/dialog-context";
-import { MapPin, X, Clock3, CheckCircle2 } from "lucide-react";
+import { MapPin, Clock3, CheckCircle2 } from "lucide-react";
 
 type CaseDetail = {
   id: string;
@@ -67,11 +67,7 @@ export function CaseDetailModal({ caseId, onClose }: { caseId: string; onClose: 
   }
 
   return (
-    <Modal onBackdropClick={onClose}>
-      <button onClick={onClose} className="absolute top-4 right-4 h-8 w-8 rounded-full bg-background flex items-center justify-center">
-        <X size={16} />
-      </button>
-
+    <Modal onBackdropClick={onClose} onClose={onClose}>
       {loading || !data ? (
         <p className="text-muted text-sm py-8 text-center">Loading...</p>
       ) : (
