@@ -564,7 +564,7 @@ function OngoingRow({
           <CityPicker city={city} province={province} onChange={(c, p) => { setCity(c); setProvince(p); }} />
           <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="Contact phone" className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" rows={3} className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
-          <input type="number" value={amountNeeded} onChange={(e) => setAmountNeeded(e.target.value)} placeholder="Amount needed" className="block w-40 rounded-lg border border-border px-3 py-2 text-sm" />
+          <input type="number" value={amountNeeded} onChange={(e) => setAmountNeeded(e.target.value)} onWheel={(e) => e.currentTarget.blur()} placeholder="Amount needed" className="block w-40 rounded-lg border border-border px-3 py-2 text-sm" />
           <select value={category} onChange={(e) => setCategory(e.target.value)} className="block w-48 rounded-lg border border-border px-3 py-2 text-sm bg-white">
             {["Medical", "Food Drive", "Education", "Shelter", "Emergency Relief", "Other"].map((c) => (
               <option key={c} value={c}>{c}</option>
@@ -617,7 +617,7 @@ function OngoingRow({
       <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-end gap-3">
         <div>
           <label className="text-xs font-medium text-ink">Collected (PKR)</label>
-          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="mt-1 block w-36 rounded-lg border border-border px-3 py-2 text-sm" />
+          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} onWheel={(e) => e.currentTarget.blur()} className="mt-1 block w-36 rounded-lg border border-border px-3 py-2 text-sm" />
         </div>
         <button
           disabled={busy}
@@ -629,7 +629,7 @@ function OngoingRow({
 
         <div className="ml-4">
           <label className="text-xs font-medium text-ink">Hours (credited to every assigned volunteer)</label>
-          <input type="number" value={hours} onChange={(e) => setHours(e.target.value)} className="mt-1 block w-28 rounded-lg border border-border px-3 py-2 text-sm" />
+          <input type="number" value={hours} onChange={(e) => setHours(e.target.value)} onWheel={(e) => e.currentTarget.blur()} className="mt-1 block w-28 rounded-lg border border-border px-3 py-2 text-sm" />
         </div>
         <button
           disabled={busy}
@@ -736,8 +736,8 @@ function VolunteerEditRow({
           <input value={motto} onChange={(e) => setMotto(e.target.value)} placeholder="Public motto (one line)" className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
           <textarea value={motivation} onChange={(e) => setMotivation(e.target.value)} placeholder="Internal notes / motivation" rows={2} className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
           <div className="flex gap-3">
-            <input type="number" value={hours} onChange={(e) => setHours(e.target.value)} placeholder="Total hours" className="block w-32 rounded-lg border border-border px-3 py-2 text-sm" />
-            <input type="number" value={cases} onChange={(e) => setCases(e.target.value)} placeholder="Cases completed" className="block w-32 rounded-lg border border-border px-3 py-2 text-sm" />
+            <input type="number" value={hours} onChange={(e) => setHours(e.target.value)} onWheel={(e) => e.currentTarget.blur()} placeholder="Total hours" className="block w-32 rounded-lg border border-border px-3 py-2 text-sm" />
+            <input type="number" value={cases} onChange={(e) => setCases(e.target.value)} onWheel={(e) => e.currentTarget.blur()} placeholder="Cases completed" className="block w-32 rounded-lg border border-border px-3 py-2 text-sm" />
           </div>
           <div>
             <label className="text-xs text-muted">Volunteer status</label>
