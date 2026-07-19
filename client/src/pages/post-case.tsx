@@ -156,7 +156,7 @@ export default function PostCasePage() {
             </select>
           </FormField>
           <FormField label="Amount needed (Rs.)">
-            <input required type="number" min="0" value={amountNeeded} onChange={(e) => setAmountNeeded(e.target.value)} className={inputClass} placeholder="0" />
+            <input required type="number" min="0" value={amountNeeded} onChange={(e) => setAmountNeeded(e.target.value)} onWheel={(e) => e.currentTarget.blur()} className={inputClass} placeholder="0" />
           </FormField>
           <FormField label="Details">
             <textarea required rows={5} value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} placeholder="Describe the situation and what the funds are needed for" />

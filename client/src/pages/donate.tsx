@@ -5,14 +5,14 @@ import { FormField, inputClass } from "@/components/ui/FormField";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { CheckCircle2, LogIn, Copy } from "lucide-react";
-import { JazzCashLogo, EasypaisaLogo } from "@/components/ui/PaymentLogos";
+import { JazzCashLogo, EasypaisaLogo, HblLogo } from "@/components/ui/PaymentLogos";
 
 type ApiCase = { id: string; title: string; amountNeeded: number; amountCollected: number };
 
 type PaymentDetail = { label: string; account: string; logo?: typeof JazzCashLogo };
 
 const PAYMENT_DETAILS: Record<"bank_transfer" | "jazzcash" | "easypaisa" | "cash", PaymentDetail> = {
-  bank_transfer: { label: "Bank Transfer", account: "Aik Kadam Trust, Account #: 0123-4567890-01, Meezan Bank" },
+  bank_transfer: { label: "Bank Transfer", account: "Aik Kadam Trust, Account #: 01607992369899, HBL", logo: HblLogo },
   jazzcash: { label: "JazzCash", account: "0313-6758644 (Subhan Khalid)", logo: JazzCashLogo },
   easypaisa: { label: "Easypaisa", account: "0313-6758644 (Subhan Khalid)", logo: EasypaisaLogo },
   cash: { label: "Cash / In Person", account: "Contact us at help@aikkadam.org to arrange a handover" },
@@ -117,7 +117,7 @@ export default function DonatePage() {
                 <div key={key} className="rounded-2xl border border-border bg-white p-4 flex items-start justify-between gap-3">
                   <div>
                     {LogoComp ? (
-                      <LogoComp className="h-6 w-auto mb-1.5" />
+                      <LogoComp className="h-10 w-10 mb-1.5" />
                     ) : (
                       <p className="text-xs font-semibold text-primary uppercase tracking-wide">{v.label}</p>
                     )}
@@ -176,7 +176,7 @@ export default function DonatePage() {
             )}
 
             <FormField label="Amount (Rs.)">
-              <input required type="number" min="1" value={amount} onChange={(e) => setAmount(e.target.value)} className={inputClass} placeholder="0" />
+              <input required type="number" min="1" value={amount} onChange={(e) => setAmount(e.target.value)} onWheel={(e) => e.currentTarget.blur()} className={inputClass} placeholder="0" />
             </FormField>
 
             <FormField label="Payment method">

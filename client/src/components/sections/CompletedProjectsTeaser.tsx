@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { GalleryCard } from "@/components/ui/GalleryCard";
+import { GalleryDetailModal } from "@/components/ui/GalleryDetailModal";
 import { WheelCarousel } from "@/components/ui/WheelCarousel";
 import { api } from "@/lib/api";
 
@@ -18,6 +19,7 @@ type ApiGalleryEvent = {
 
 export function CompletedProjectsTeaser() {
   const [events, setEvents] = useState<ApiGalleryEvent[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   useEffect(() => {
     api.get<{ events: ApiGalleryEvent[] }>("/api/gallery").then((data) => setEvents(data.events.slice(0, 8)));
@@ -54,7 +56,7 @@ export function CompletedProjectsTeaser() {
                 families={event.families}
                 items={event.items}
                 funds={event.funds}
-                onViewDetails={() => { window.location.href = "/completed-projects"; }}
+                onViewDetails={setSelectedEventId}
               />
             )}
           />
@@ -69,6 +71,8 @@ export function CompletedProjectsTeaser() {
           </a>
         </div>
       </div>
+
+      {selectedEventId && <GalleryDetailModal eventId={selectedEventId} onClose={() => setSelectedEventId(null)} />}
     </section>
   );
 }

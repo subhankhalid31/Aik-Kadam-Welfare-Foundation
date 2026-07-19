@@ -28,6 +28,7 @@ export function WheelCarousel<T>({
   const [active, setActive] = useState(0);
   const pausedRef = useRef(false);
   const dragStartX = useRef<number | null>(null);
+  const isDraggingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -77,14 +78,29 @@ export function WheelCarousel<T>({
   function onPointerDown(e: React.PointerEvent) {
     pausedRef.current = true;
     dragStartX.current = e.clientX;
-    e.currentTarget.setPointerCapture(e.pointerId);
+    isDraggingRef.current = false;
+    // Deliberately not capturing yet — see onPointerMove. Capturing here would
+    // redirect the eventual click to the container even for a plain tap/click,
+    // since capture retargets click for the whole gesture, not just from the
+    // moment it's set.
+  }
+  function onPointerMove(e: React.PointerEvent) {
+    if (dragStartX.current === null || isDraggingRef.current) return;
+    if (Math.abs(e.clientX - dragStartX.current) > 8) {
+      isDraggingRef.current = true;
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
   }
   function onPointerUp(e: React.PointerEvent) {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
     if (dragStartX.current !== null) {
       const delta = e.clientX - dragStartX.current;
       if (Math.abs(delta) > 40) go(delta > 0 ? -1 : 1);
     }
     dragStartX.current = null;
+    isDraggingRef.current = false;
     if (e.pointerType !== "mouse") pausedRef.current = false;
   }
 
@@ -97,6 +113,7 @@ export function WheelCarousel<T>({
         onPointerEnter={onPointerEnter}
         onPointerLeave={onPointerLeaveContainer}
         onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
       >
         {items.map((item, i) => {
