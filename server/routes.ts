@@ -1,10 +1,11 @@
 import type { Express } from "express";
 import bcrypt from "bcryptjs";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { sendOtpEmail, sendNotificationEmail } from "./lib/email";
 import { generateOtpCode, hashOtpCode, otpExpiresAt, isOtpExpired, MAX_ATTEMPTS } from "./lib/otp";
 import { requireAuth, requireRole } from "./middleware/auth";
-import { uploadImage, uploadedFileUrl } from "./lib/upload";
+import { uploadImage, uploadReceipt, uploadedFileUrl, receiptUrl, receiptFilePath, verifyIsRealImage } from "./lib/upload";
 import { streamVolunteerCertificate } from "./lib/certificate";
 import {
   signupSchema,
@@ -16,6 +17,7 @@ import {
   insertCaseSchema,
   updateCaseSchema,
   insertDonationSchema,
+  insertRecurringDonationSchema,
   rejectWithReasonSchema,
   updateGalleryEventSchema,
   assignVolunteersSchema,
@@ -30,10 +32,37 @@ import {
 const RESEND_COOLDOWN_MS = 45_000;
 const lastResendAt = new Map<string, number>();
 
+// Brute-force protection on auth endpoints. Keyed by IP; a legitimate user
+// mistyping their password a few times will never hit this, but scripted
+// credential-stuffing attempts get locked out.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many login attempts. Please wait a few minutes and try again." },
+});
+
+const passwordResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many requests. Please wait a few minutes and try again." },
+});
+
+const signupLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many signup attempts from this network. Please try again later." },
+});
+
 export function registerRoutes(app: Express) {
   // ─── Auth ─────────────────────────────────────────────────────────────
 
-  app.post("/api/auth/signup", async (req, res) => {
+  app.post("/api/auth/signup", signupLimiter, async (req, res) => {
     const parsed = signupSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Invalid input" });
@@ -105,7 +134,7 @@ export function registerRoutes(app: Express) {
     res.json({ message: "A new code has been sent" });
   });
 
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", loginLimiter, async (req, res) => {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: "Invalid input" });
     const { email, password } = parsed.data;
@@ -135,7 +164,7 @@ export function registerRoutes(app: Express) {
     req.session.destroy(() => res.json({ message: "Logged out" }));
   });
 
-  app.post("/api/auth/forgot-password", async (req, res) => {
+  app.post("/api/auth/forgot-password", passwordResetLimiter, async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: "Email is required" });
     const user = await storage.getUserByEmail(email);
@@ -148,7 +177,7 @@ export function registerRoutes(app: Express) {
     res.json({ message: "If an account exists for that email, a reset code has been sent." });
   });
 
-  app.post("/api/auth/reset-password", async (req, res) => {
+  app.post("/api/auth/reset-password", passwordResetLimiter, async (req, res) => {
     const { email, code, newPassword } = req.body;
     if (!email || !code || !newPassword || newPassword.length < 8) {
       return res.status(400).json({ message: "Email, code, and a password of at least 8 characters are required" });
@@ -179,7 +208,7 @@ export function registerRoutes(app: Express) {
 
   // ─── Account ──────────────────────────────────────────────────────────
 
-  app.post("/api/account/avatar", requireAuth, uploadImage.single("avatar"), async (req, res) => {
+  app.post("/api/account/avatar", requireAuth, uploadImage.single("avatar"), verifyIsRealImage, async (req, res) => {
     if (!req.file) return res.status(400).json({ message: "No image uploaded" });
     const user = (req as any).user;
     const url = uploadedFileUrl(req.file.filename);
@@ -225,6 +254,58 @@ export function registerRoutes(app: Express) {
     const user = (req as any).user;
     const rows = await storage.listDonationsByUser(user.id);
     res.json({ donations: rows.map((r) => ({ ...r.donation, caseTitle: r.caseTitle })) });
+  });
+
+  app.get("/api/account/my-recurring-donations", requireAuth, async (req, res) => {
+    const user = (req as any).user;
+    const rows = await storage.listMyRecurringDonations(user.id);
+    res.json({ pledges: rows.map((r) => ({ ...r.pledge, caseTitle: r.caseTitle })) });
+  });
+
+  app.post("/api/recurring-donations", requireAuth, async (req, res) => {
+    const parsed = insertRecurringDonationSchema.safeParse({
+      caseId: req.body.caseId,
+      amount: Number(req.body.amount),
+      method: req.body.method,
+    });
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Invalid input" });
+    }
+
+    const c = await storage.getCaseById(parsed.data.caseId);
+    if (!c || c.status !== "ongoing" || c.isHidden) {
+      return res.status(400).json({ message: "This case isn't accepting donations right now" });
+    }
+
+    const user = (req as any).user;
+    const existing = await storage.findActiveRecurringDonation(user.id, parsed.data.caseId);
+    if (existing) {
+      return res.status(409).json({ message: "You already have an active monthly pledge for this case" });
+    }
+
+    const pledge = await storage.createRecurringDonation(user.id, parsed.data);
+    res.status(201).json({ pledge, message: "Your monthly pledge is set up. We'll email you a reminder each month." });
+  });
+
+  app.post("/api/recurring-donations/:id/pause", requireAuth, async (req, res) => {
+    const user = (req as any).user;
+    const updated = await storage.setRecurringDonationStatus(String(req.params.id), user.id, "paused");
+    if (!updated) return res.status(404).json({ message: "Pledge not found" });
+    res.json({ pledge: updated, message: "Pledge paused" });
+  });
+
+  app.post("/api/recurring-donations/:id/resume", requireAuth, async (req, res) => {
+    const user = (req as any).user;
+    const updated = await storage.setRecurringDonationStatus(String(req.params.id), user.id, "active");
+    if (!updated) return res.status(404).json({ message: "Pledge not found" });
+    res.json({ pledge: updated, message: "Pledge resumed" });
+  });
+
+  app.post("/api/recurring-donations/:id/cancel", requireAuth, async (req, res) => {
+    const user = (req as any).user;
+    const updated = await storage.setRecurringDonationStatus(String(req.params.id), user.id, "cancelled");
+    if (!updated) return res.status(404).json({ message: "Pledge not found" });
+    res.json({ pledge: updated, message: "Pledge cancelled" });
   });
 
   app.get("/api/account/certificate", requireAuth, async (req, res) => {
@@ -311,7 +392,7 @@ export function registerRoutes(app: Express) {
 
   // ─── Cases ────────────────────────────────────────────────────────────
 
-  app.post("/api/cases", requireAuth, uploadImage.array("images", 5), async (req, res) => {
+  app.post("/api/cases", requireAuth, uploadImage.array("images", 5), verifyIsRealImage, async (req, res) => {
     const user = (req as any).user;
 
     if (user.role !== "admin") {
@@ -426,13 +507,14 @@ export function registerRoutes(app: Express) {
 
   // ─── Donations (manual-confirm) ──────────────────────────────────────
 
-  app.post("/api/donations", requireAuth, uploadImage.single("receipt"), async (req, res) => {
+  app.post("/api/donations", requireAuth, uploadReceipt.single("receipt"), verifyIsRealImage, async (req, res) => {
     const parsed = insertDonationSchema.safeParse({
       caseId: req.body.caseId,
       amount: Number(req.body.amount),
       method: req.body.method,
       senderAccount: req.body.senderAccount,
       referenceNote: req.body.referenceNote || undefined,
+      recurringDonationId: req.body.recurringDonationId || undefined,
     });
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Invalid input" });
@@ -447,11 +529,45 @@ export function registerRoutes(app: Express) {
       return res.status(429).json({ message: "You've submitted several pending donations recently. Please wait for those to be confirmed before submitting more." });
     }
 
+    // Never trust the client's claim that a payment belongs to a given pledge —
+    // confirm that pledge actually belongs to this user first.
+    let recurringDonationId: string | undefined;
+    if (parsed.data.recurringDonationId) {
+      const pledge = await storage.getRecurringDonationById(parsed.data.recurringDonationId);
+      if (pledge && pledge.userId === user.id) {
+        recurringDonationId = pledge.id;
+      }
+    } else {
+      // No pledge was explicitly attached (e.g. they forgot to re-check
+      // "Monthly" this time) — if they already have an active pledge for
+      // this same case, count this payment toward it automatically.
+      const activePledge = await storage.findActiveRecurringDonation(user.id, parsed.data.caseId);
+      if (activePledge) recurringDonationId = activePledge.id;
+    }
+
     const donation = await storage.createDonation(user.id, {
       ...parsed.data,
-      receiptImage: uploadedFileUrl(req.file.filename),
+      recurringDonationId,
+      receiptImage: receiptUrl(req.file.filename),
     });
     res.status(201).json({ donation, message: "Thanks! An admin will confirm your donation once payment is verified." });
+  });
+
+  // Donation receipts are private — only the donor who submitted this one,
+  // or an admin, may view it. The file itself lives outside the publicly
+  // static-served uploads/ directory (see lib/upload.ts), so this route is
+  // the only path to it.
+  app.get("/api/receipts/:filename", requireAuth, async (req, res) => {
+    const user = (req as any).user;
+    const filename = String(req.params.filename);
+    const donation = await storage.getDonationByReceiptFilename(filename);
+    if (!donation) return res.status(404).json({ message: "Not found" });
+    if (donation.userId !== user.id && user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized to view this receipt" });
+    }
+    res.sendFile(receiptFilePath(filename), (err) => {
+      if (err && !res.headersSent) res.status(404).json({ message: "Not found" });
+    });
   });
 
   // ─── Contact form ─────────────────────────────────────────────────────
@@ -689,7 +805,7 @@ export function registerRoutes(app: Express) {
     res.json({ message: "Collected amount updated" });
   });
 
-  app.patch("/api/admin/cases/:id", requireAuth, requireRole("admin"), uploadImage.array("images", 5), async (req, res) => {
+  app.patch("/api/admin/cases/:id", requireAuth, requireRole("admin"), uploadImage.array("images", 5), verifyIsRealImage, async (req, res) => {
     const parsed = updateCaseSchema.safeParse({
       title: req.body.title || undefined,
       description: req.body.description || undefined,
@@ -764,11 +880,12 @@ export function registerRoutes(app: Express) {
 
   app.get("/api/admin/donations", requireAuth, requireRole("admin"), async (req, res) => {
     await storage.expireStalePendingDonations(7);
-    const status = (req.query.status as string) || "pending";
+    const recurringDonationId = req.query.recurringDonationId as string | undefined;
+    const status = (req.query.status as string) || (recurringDonationId ? "all" : "pending");
     const search = (req.query.search as string) || "";
     const from = req.query.from as string | undefined;
     const to = req.query.to as string | undefined;
-    const rows = await storage.listDonationsFiltered({ status: status as any, search, from, to });
+    const rows = await storage.listDonationsFiltered({ status: status as any, search, from, to, recurringDonationId });
     res.json({ donations: rows.map((r) => ({ ...r.donation, caseTitle: r.caseTitle, donorName: r.donorName, donorEmail: r.donorEmail })) });
   });
 
@@ -845,6 +962,54 @@ export function registerRoutes(app: Express) {
     res.json({ message: "Donation moved back to pending for re-review", donation });
   });
 
+  // ─── Admin: Recurring donations ────────────────────────────────────────
+
+  app.get("/api/admin/recurring-donations", requireAuth, requireRole("admin"), async (_req, res) => {
+    const rows = await storage.listAllRecurringDonations();
+    res.json({ pledges: rows.map((r) => ({ ...r.pledge, caseTitle: r.caseTitle, donorName: r.donorName, donorEmail: r.donorEmail })) });
+  });
+
+  app.post("/api/admin/recurring-donations/:id/cancel", requireAuth, requireRole("admin"), async (req, res) => {
+    const pledge = await storage.getRecurringDonationById(String(req.params.id));
+    if (!pledge) return res.status(404).json({ message: "Pledge not found" });
+    const updated = await storage.setRecurringDonationStatus(pledge.id, pledge.userId, "cancelled");
+    res.json({ message: "Pledge cancelled", pledge: updated });
+  });
+
+  // Sends the monthly "your pledge is due" reminder email for every pledge
+  // that's reached its due date, then advances it to next month. No payment
+  // is ever charged automatically — this only nudges the donor to go send
+  // it manually and confirm it the same way a one-time donation works.
+  //
+  // Call this once a day from an external scheduler (e.g. a cron job or a
+  // scheduled GitHub Action) that sends the CRON_SECRET header. Set
+  // CRON_SECRET in the environment before relying on this in production —
+  // if it's unset, the endpoint refuses every request.
+  app.post("/api/cron/recurring-reminders", async (req, res) => {
+    const cronSecret = process.env.CRON_SECRET;
+    const providedSecret = req.header("x-cron-secret");
+    if (!cronSecret || providedSecret !== cronSecret) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const due = await storage.listDueRecurringDonations();
+    let sent = 0;
+    for (const pledge of due) {
+      const donor = await storage.getUserById(pledge.userId);
+      const c = await storage.getCaseById(pledge.caseId);
+      if (donor && c) {
+        await sendNotificationEmail(
+          donor.email,
+          "Your monthly Aik Kadam pledge is due",
+          `Hi ${donor.name}, this is your monthly reminder for your PKR ${pledge.amount.toLocaleString()} pledge to "${c.title}". Please send the payment using your usual method and confirm it on the Donate page, the same way you did last time. You can pause or cancel this pledge any time from My Donations.`,
+        );
+        sent++;
+      }
+      await storage.advanceRecurringDonation(pledge.id);
+    }
+    res.json({ message: `Sent ${sent} reminder(s)`, count: sent });
+  });
+
   // ─── Admin: Gallery ───────────────────────────────────────────────────
 
   app.post(
@@ -852,6 +1017,7 @@ export function registerRoutes(app: Express) {
     requireAuth,
     requireRole("admin"),
     uploadImage.array("images", 5),
+    verifyIsRealImage,
     async (req, res) => {
       const files = (req.files as Express.Multer.File[]) || [];
       if (files.length === 0) {
@@ -880,6 +1046,7 @@ export function registerRoutes(app: Express) {
     requireAuth,
     requireRole("admin"),
     uploadImage.array("images", 5),
+    verifyIsRealImage,
     async (req, res) => {
       const parsed = updateGalleryEventSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -910,6 +1077,7 @@ export function registerRoutes(app: Express) {
       { name: "before", maxCount: 1 },
       { name: "after", maxCount: 1 },
     ]),
+    verifyIsRealImage,
     async (req, res) => {
       const files = req.files as { before?: Express.Multer.File[]; after?: Express.Multer.File[] };
       const before = files.before?.[0];
@@ -941,6 +1109,7 @@ export function registerRoutes(app: Express) {
       { name: "before", maxCount: 1 },
       { name: "after", maxCount: 1 },
     ]),
+    verifyIsRealImage,
     async (req, res) => {
       const files = req.files as { before?: Express.Multer.File[]; after?: Express.Multer.File[] };
       const patch: Record<string, unknown> = {};

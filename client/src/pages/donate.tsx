@@ -26,6 +26,7 @@ export default function DonatePage() {
 
   const [cases, setCases] = useState<ApiCase[]>([]);
   const [caseId, setCaseId] = useState(preselectedCaseId);
+  const [frequency, setFrequency] = useState<"one_time" | "monthly">("one_time");
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<keyof typeof PAYMENT_DETAILS>("bank_transfer");
   const [senderAccount, setSenderAccount] = useState("");
@@ -61,12 +62,29 @@ export default function DonatePage() {
     }
     setLoading(true);
     try {
+      let recurringDonationId: string | undefined;
+      if (frequency === "monthly") {
+        try {
+          const { pledge } = await api.post<{ pledge: { id: string } }>("/api/recurring-donations", {
+            caseId,
+            amount,
+            method,
+          });
+          recurringDonationId = pledge.id;
+        } catch (pledgeErr) {
+          // A 409 means they already have an active pledge on this case — that's
+          // fine, this payment just counts toward the existing one instead.
+          if (!(pledgeErr instanceof ApiError && pledgeErr.status === 409)) throw pledgeErr;
+        }
+      }
+
       const formData = new FormData();
       formData.append("caseId", caseId);
       formData.append("amount", amount);
       formData.append("method", method);
       formData.append("senderAccount", senderAccount);
       if (referenceNote) formData.append("referenceNote", referenceNote);
+      if (recurringDonationId) formData.append("recurringDonationId", recurringDonationId);
       formData.append("receipt", receipt);
 
       await api.postForm("/api/donations", formData);
@@ -89,6 +107,7 @@ export default function DonatePage() {
           <p className="mt-3 text-muted leading-relaxed">
             Once we verify your payment against the receipt, it'll be confirmed and reflected
             on the case's progress, and you'll see it in your donation history.
+            {frequency === "monthly" && " We've also set up your monthly pledge, we'll email you a reminder each month."}
           </p>
           <a href="/my-donations" className="mt-8 inline-flex items-center justify-center rounded-full border border-border px-6 py-2.5 text-sm font-semibold text-ink hover:bg-white transition-colors">
             View My Donations
@@ -175,6 +194,35 @@ export default function DonatePage() {
               </p>
             )}
 
+            <FormField label="How often?">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFrequency("one_time")}
+                  className={`flex-1 rounded-full border px-4 py-2.5 text-sm font-semibold transition-colors ${
+                    frequency === "one_time" ? "bg-primary text-background border-primary" : "bg-white text-ink border-border hover:bg-background"
+                  }`}
+                >
+                  One-time
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFrequency("monthly")}
+                  className={`flex-1 rounded-full border px-4 py-2.5 text-sm font-semibold transition-colors ${
+                    frequency === "monthly" ? "bg-primary text-background border-primary" : "bg-white text-ink border-border hover:bg-background"
+                  }`}
+                >
+                  Monthly
+                </button>
+              </div>
+              {frequency === "monthly" && (
+                <p className="mt-2 text-xs text-muted leading-relaxed">
+                  We'll set up a monthly pledge and email you a reminder each month, you'll still send and confirm each
+                  month's payment yourself, just like a one-time donation. Pause or cancel any time from My Donations.
+                </p>
+              )}
+            </FormField>
+
             <FormField label="Amount (Rs.)">
               <input required type="number" min="1" value={amount} onChange={(e) => setAmount(e.target.value)} onWheel={(e) => e.currentTarget.blur()} className={inputClass} placeholder="0" />
             </FormField>
@@ -205,7 +253,7 @@ export default function DonatePage() {
             {error && <p className="text-sm text-red-600">{error}</p>}
 
             <button type="submit" disabled={loading || !caseId} className="w-full rounded-full bg-accent px-7 py-3.5 font-semibold text-ink hover:bg-accent-dark transition-colors disabled:opacity-60">
-              {loading ? "Submitting..." : "I've Sent the Payment"}
+              {loading ? "Submitting..." : frequency === "monthly" ? "I've Sent This Month's Payment" : "I've Sent the Payment"}
             </button>
           </form>
             </>

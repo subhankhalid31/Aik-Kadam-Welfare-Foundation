@@ -2,13 +2,29 @@ import "dotenv/config";
 import express from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
+import helmet from "helmet";
 import { createServer } from "http";
 import path from "path";
 import { pool } from "./db";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic } from "./vite";
 
+if (process.env.NODE_ENV === "production" && !process.env.SESSION_SECRET) {
+  console.error(
+    "FATAL: SESSION_SECRET is not set. Refusing to start in production with a default/guessable secret — set SESSION_SECRET in your environment.",
+  );
+  process.exit(1);
+}
+
 const app = express();
+app.use(
+  helmet({
+    // Disabled for now — the app doesn't yet declare its own script/style
+    // sources, and a default CSP would break the Vite dev client and
+    // inline styles. Worth revisiting with a tailored policy before launch.
+    contentSecurityPolicy: false,
+  }),
+);
 app.use(express.json());
 app.use("/uploads", express.static(path.resolve(import.meta.dirname, "..", "uploads")));
 

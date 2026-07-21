@@ -9,6 +9,7 @@ import {
   galleryEvents,
   successStories,
   donations,
+  recurringDonations,
   bannedEmails,
   siteSettings,
   type User,
@@ -18,6 +19,7 @@ import {
   type GalleryEvent,
   type SuccessStory,
   type Donation,
+  type RecurringDonation,
   type CaseVolunteerRequest,
 } from "@shared/schema";
 
@@ -675,13 +677,14 @@ export const storage = {
   // ─── Donations (manual-confirm) ──────────────────────────────────────────
   async createDonation(
     userId: string,
-    data: { caseId: string; amount: number; method: string; senderAccount: string; receiptImage: string; referenceNote?: string },
+    data: { caseId: string; amount: number; method: string; senderAccount: string; receiptImage: string; referenceNote?: string; recurringDonationId?: string },
   ): Promise<Donation> {
     const [donation] = await db
       .insert(donations)
       .values({
         userId,
         caseId: data.caseId,
+        recurringDonationId: data.recurringDonationId,
         amount: data.amount,
         method: data.method as any,
         senderAccount: data.senderAccount,
@@ -733,11 +736,12 @@ export const storage = {
   // Powers the admin Donations tab: filter by status (or "all"), and free-text
   // search across sender account/phone, donor name/email, and case title —
   // this is what lets an admin cross-check a JazzCash statement number directly.
-  async listDonationsFiltered(filter: { status?: "pending" | "confirmed" | "rejected" | "all"; search?: string; from?: string; to?: string }) {
+  async listDonationsFiltered(filter: { status?: "pending" | "confirmed" | "rejected" | "all"; search?: string; from?: string; to?: string; recurringDonationId?: string }) {
     const conditions = [];
     if (filter.status && filter.status !== "all") {
       conditions.push(eq(donations.status, filter.status));
     }
+    if (filter.recurringDonationId) conditions.push(eq(donations.recurringDonationId, filter.recurringDonationId));
     if (filter.from) conditions.push(sql`${donations.createdAt} >= ${new Date(filter.from)}`);
     if (filter.to) conditions.push(sql`${donations.createdAt} <= ${new Date(filter.to)}`);
     if (filter.search && filter.search.trim()) {
@@ -774,6 +778,13 @@ export const storage = {
     return d;
   },
 
+  // Used by GET /api/receipts/:filename to check ownership before streaming
+  // a receipt file back — never trust the filename alone as authorization.
+  async getDonationByReceiptFilename(filename: string): Promise<Donation | undefined> {
+    const [d] = await db.select().from(donations).where(eq(donations.receiptImage, `/api/receipts/${filename}`));
+    return d;
+  },
+
   async confirmDonation(donationId: string): Promise<Donation> {
     const donation = await this.getDonationById(donationId);
     if (!donation) throw new Error("Donation not found");
@@ -793,6 +804,13 @@ export const storage = {
         .where(eq(cases.id, c.id));
     }
 
+    if (donation.recurringDonationId) {
+      await db
+        .update(recurringDonations)
+        .set({ lastDonationDate: updated.confirmedAt })
+        .where(eq(recurringDonations.id, donation.recurringDonationId));
+    }
+
     return updated;
   },
 
@@ -803,6 +821,92 @@ export const storage = {
       .where(eq(donations.id, donationId))
       .returning();
     return updated;
+  },
+
+  // ─── Recurring donations (monthly pledge — see shared/schema.ts) ───────
+
+  async createRecurringDonation(
+    userId: string,
+    data: { caseId: string; amount: number; method: string },
+  ): Promise<RecurringDonation> {
+    const nextDueDate = new Date();
+    nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+    const [pledge] = await db
+      .insert(recurringDonations)
+      .values({ userId, caseId: data.caseId, amount: data.amount, method: data.method as any, nextDueDate })
+      .returning();
+    return pledge;
+  },
+
+  async getRecurringDonationById(id: string): Promise<RecurringDonation | undefined> {
+    const [r] = await db.select().from(recurringDonations).where(eq(recurringDonations.id, id));
+    return r;
+  },
+
+  // Does an ACTIVE pledge for this exact case already exist for this donor?
+  // Prevents accidentally stacking duplicate monthly commitments.
+  async findActiveRecurringDonation(userId: string, caseId: string): Promise<RecurringDonation | undefined> {
+    const [r] = await db
+      .select()
+      .from(recurringDonations)
+      .where(and(eq(recurringDonations.userId, userId), eq(recurringDonations.caseId, caseId), eq(recurringDonations.status, "active")));
+    return r;
+  },
+
+  async listMyRecurringDonations(userId: string) {
+    return db
+      .select({ pledge: recurringDonations, caseTitle: cases.title })
+      .from(recurringDonations)
+      .innerJoin(cases, eq(recurringDonations.caseId, cases.id))
+      .where(eq(recurringDonations.userId, userId))
+      .orderBy(desc(recurringDonations.createdAt));
+  },
+
+  async listAllRecurringDonations() {
+    return db
+      .select({ pledge: recurringDonations, caseTitle: cases.title, donorName: users.name, donorEmail: users.email })
+      .from(recurringDonations)
+      .innerJoin(cases, eq(recurringDonations.caseId, cases.id))
+      .innerJoin(users, eq(recurringDonations.userId, users.id))
+      .orderBy(desc(recurringDonations.createdAt));
+  },
+
+  // All three mutations require the caller to pass the acting user's id, and
+  // only ever affect a row that belongs to that user — never trust an id
+  // from the client alone to mean "this is yours to change".
+  async setRecurringDonationStatus(
+    id: string,
+    userId: string,
+    status: "active" | "paused" | "cancelled",
+  ): Promise<RecurringDonation | undefined> {
+    const [updated] = await db
+      .update(recurringDonations)
+      .set({ status, cancelledAt: status === "cancelled" ? new Date() : null })
+      .where(and(eq(recurringDonations.id, id), eq(recurringDonations.userId, userId)))
+      .returning();
+    return updated;
+  },
+
+  // Pledges whose next monthly reminder is due — used by the reminder job.
+  async listDueRecurringDonations(): Promise<RecurringDonation[]> {
+    const now = new Date();
+    return db
+      .select()
+      .from(recurringDonations)
+      .where(and(eq(recurringDonations.status, "active"), sql`${recurringDonations.nextDueDate} <= ${now}`));
+  },
+
+  // Advances a pledge to next month after its reminder goes out, so the same
+  // due date can't fire the reminder twice.
+  async advanceRecurringDonation(id: string): Promise<void> {
+    const pledge = await this.getRecurringDonationById(id);
+    if (!pledge) return;
+    const next = new Date(pledge.nextDueDate);
+    next.setMonth(next.getMonth() + 1);
+    await db
+      .update(recurringDonations)
+      .set({ nextDueDate: next, lastReminderSentAt: new Date() })
+      .where(eq(recurringDonations.id, id));
   },
 
   // Undo an accidental confirm or reject, putting the donation back to "pending"

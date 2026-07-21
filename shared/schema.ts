@@ -248,6 +248,9 @@ export const donations = pgTable("donations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   caseId: varchar("case_id").notNull().references(() => cases.id),
+  // Set only when this specific payment is fulfilling a recurring pledge below —
+  // lets a donor's monthly submissions roll up under one commitment.
+  recurringDonationId: varchar("recurring_donation_id").references(() => recurringDonations.id),
   amount: integer("amount").notNull(),
   method: donationMethodEnum("method").notNull(),
   senderAccount: text("sender_account").notNull(),
@@ -267,10 +270,52 @@ export const insertDonationSchema = z.object({
   method: z.enum(["bank_transfer", "jazzcash", "easypaisa", "cash"]),
   senderAccount: z.string().min(4, "Enter the account/phone number the payment was sent from"),
   referenceNote: z.string().optional(),
+  // Optional — links this payment to an existing pledge. Ownership of the
+  // pledge is verified server-side against the authenticated user, never
+  // trusted from the client alone.
+  recurringDonationId: z.string().optional(),
 });
 
 export const rejectWithReasonSchema = z.object({
   reason: z.string().optional(),
+});
+
+// ─── Recurring donations (monthly giving pledge — no card data stored) ────
+// This tracks the donor's *commitment* to give monthly. Actual payment for
+// each month still goes through the same manual-confirm + receipt-upload
+// flow as a one-time donation (see `donations` above), just tagged with
+// this pledge's id. There is no automatic charging and no card/account
+// numbers are ever stored — nothing here can move money on its own.
+
+export const recurringDonationStatusEnum = pgEnum("recurring_donation_status", [
+  "active",
+  "paused",
+  "cancelled",
+]);
+
+export const recurringDonations = pgTable("recurring_donations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  caseId: varchar("case_id").notNull().references(() => cases.id),
+  amount: integer("amount").notNull(),
+  method: donationMethodEnum("method").notNull(),
+  status: recurringDonationStatusEnum("status").notNull().default("active"),
+  nextDueDate: timestamp("next_due_date").notNull(),
+  lastReminderSentAt: timestamp("last_reminder_sent_at"),
+  // Set automatically whenever an admin confirms a donation linked to this
+  // pledge — not user-editable, this is the real signal of "did they
+  // actually pay", separate from nextDueDate which is just the reminder clock.
+  lastDonationDate: timestamp("last_donation_date"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  cancelledAt: timestamp("cancelled_at"),
+});
+
+export type RecurringDonation = typeof recurringDonations.$inferSelect;
+
+export const insertRecurringDonationSchema = z.object({
+  caseId: z.string().min(1),
+  amount: z.coerce.number().int().positive(),
+  method: z.enum(["bank_transfer", "jazzcash", "easypaisa", "cash"]),
 });
 
 export const updateGalleryEventSchema = z.object({

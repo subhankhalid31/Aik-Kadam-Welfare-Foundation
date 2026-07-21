@@ -18,6 +18,7 @@ import {
   Plus,
   UserCog,
   FolderKanban,
+  Repeat,
 } from "lucide-react";
 
 export type AdminTabKey =
@@ -25,6 +26,7 @@ export type AdminTabKey =
   | "cases"
   | "ongoing"
   | "donations"
+  | "recurring"
   | "approved"
   | "gallery"
   | "stories"
@@ -59,6 +61,7 @@ const NAV_ITEMS: NavEntry[] = [
   { type: "tab", label: "Volunteer Services", icon: UserCog, key: "approved", group: VOLUNTEER_SUBTABS.map((t) => t.key) },
   { type: "tab", label: "Projects", icon: FolderKanban, key: "cases", group: PROJECT_SUBTABS.map((t) => t.key) },
   { type: "tab", label: "Donations", icon: Wallet, key: "donations" },
+  { type: "tab", label: "Monthly Pledges", icon: Repeat, key: "recurring" },
   { type: "tab", label: "Success Stories", icon: Heart, key: "stories" },
   { type: "tab", label: "All Users", icon: ShieldOff, key: "users" },
   { type: "tab", label: "Daily Summary", icon: BarChart3, key: "summary" },
