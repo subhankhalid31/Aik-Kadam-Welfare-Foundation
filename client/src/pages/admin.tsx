@@ -85,6 +85,19 @@ type DonationRow = {
   createdAt: string;
 };
 
+type PledgeRow = {
+  id: string;
+  caseTitle: string;
+  donorName: string;
+  donorEmail: string;
+  amount: number;
+  method: string;
+  status: "active" | "paused" | "cancelled";
+  nextDueDate: string;
+  lastDonationDate: string | null;
+  createdAt: string;
+};
+
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth();
   const [tab, setTab] = useState<AdminTabKey>(() => {
@@ -376,6 +389,17 @@ export default function AdminPage() {
         <div>
           <h1 className="font-display text-2xl text-ink">Donations</h1>
           <DonationsPanel dialog={dialog} />
+        </div>
+      )}
+
+      {tab === "recurring" && (
+        <div>
+          <h1 className="font-display text-2xl text-ink">Monthly Pledges</h1>
+          <p className="text-sm text-muted mt-1">
+            Donors who've committed to giving monthly. Each month's actual payment still shows up in Donations once they
+            send and confirm it, this is just the standing commitment.
+          </p>
+          <RecurringDonationsPanel dialog={dialog} />
         </div>
       )}
 
@@ -1405,6 +1429,156 @@ function DonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
               </div>
             </div>
           ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+type PledgeStatusFilter = "active" | "paused" | "cancelled" | "all";
+
+function RecurringDonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
+  const [statusFilter, setStatusFilter] = useState<PledgeStatusFilter>("active");
+  const [pledges, setPledges] = useState<PledgeRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [expandedPledgeId, setExpandedPledgeId] = useState<string | null>(null);
+  const [history, setHistory] = useState<Record<string, DonationRow[]>>({});
+  const [historyLoading, setHistoryLoading] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const data = await api.get<{ pledges: PledgeRow[] }>("/api/admin/recurring-donations");
+    setPledges(data.pledges);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const filtered = statusFilter === "all" ? pledges : pledges.filter((p) => p.status === statusFilter);
+
+  async function cancelPledge(p: PledgeRow) {
+    if (!(await dialog.confirm(`Cancel ${p.donorName}'s monthly PKR ${p.amount.toLocaleString()} pledge for "${p.caseTitle}"?`))) return;
+    setBusy(p.id);
+    try {
+      await api.post(`/api/admin/recurring-donations/${p.id}/cancel`);
+      await load();
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function toggleHistory(p: PledgeRow) {
+    if (expandedPledgeId === p.id) {
+      setExpandedPledgeId(null);
+      return;
+    }
+    setExpandedPledgeId(p.id);
+    if (!history[p.id]) {
+      setHistoryLoading(p.id);
+      const data = await api.get<{ donations: DonationRow[] }>(`/api/admin/donations?recurringDonationId=${p.id}`);
+      setHistory((prev) => ({ ...prev, [p.id]: data.donations }));
+      setHistoryLoading(null);
+    }
+  }
+
+  return (
+    <div className="mt-5">
+      <div className="flex gap-2">
+        {(["active", "paused", "cancelled", "all"] as PledgeStatusFilter[]).map((s) => (
+          <button
+            key={s}
+            onClick={() => setStatusFilter(s)}
+            className={`rounded-full px-4 py-1.5 text-sm font-semibold border transition-colors capitalize ${
+              statusFilter === s ? "bg-primary text-background border-primary" : "bg-white text-ink border-border hover:bg-background"
+            }`}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-6 space-y-4">
+        {loading ? (
+          <p className="text-muted">Loading...</p>
+        ) : filtered.length === 0 ? (
+          <p className="text-muted">No {statusFilter !== "all" ? statusFilter : ""} pledges found.</p>
+        ) : (
+          filtered.map((p) => {
+            const isExpanded = expandedPledgeId === p.id;
+            return (
+              <div key={p.id} className="rounded-2xl border border-border bg-white p-5">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div>
+                    <h3 className="font-display text-lg text-ink">PKR {p.amount.toLocaleString()}/month, {p.caseTitle}</h3>
+                    <p className="text-sm text-muted">{p.donorName} ({p.donorEmail}) &middot; {p.method.replace("_", " ")}</p>
+                    {p.status === "active" && (
+                      <p className="mt-1 text-xs text-muted">Next due: {new Date(p.nextDueDate).toLocaleDateString()}</p>
+                    )}
+                    <p className="mt-1 text-xs text-muted">
+                      {p.lastDonationDate ? <>Last payment: {new Date(p.lastDonationDate).toLocaleDateString()}</> : "No confirmed payment yet"}
+                      {" "}&middot; Started {new Date(p.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span
+                      className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold capitalize ${
+                        p.status === "active" ? "text-emerald-700 bg-emerald-50" : p.status === "paused" ? "text-accent-dark bg-accent/10" : "text-muted bg-background"
+                      }`}
+                    >
+                      {p.status}
+                    </span>
+                    {p.status !== "cancelled" && (
+                      <button
+                        disabled={busy === p.id}
+                        onClick={() => cancelPledge(p)}
+                        className="h-9 w-9 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 disabled:opacity-50"
+                        title="Cancel pledge"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => toggleHistory(p)}
+                  className="mt-3 text-xs font-semibold text-primary hover:text-primary-dark"
+                >
+                  {isExpanded ? "Hide" : "View"} full donation history
+                </button>
+
+                {isExpanded && (
+                  <div className="mt-2 border-t border-border pt-3">
+                    {historyLoading === p.id ? (
+                      <p className="text-xs text-muted">Loading history...</p>
+                    ) : (history[p.id]?.length ?? 0) === 0 ? (
+                      <p className="text-xs text-muted">No payments recorded against this pledge yet.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {history[p.id].map((d) => (
+                          <div key={d.id} className="flex items-center justify-between text-xs">
+                            <span className="text-ink/80">{new Date(d.createdAt).toLocaleDateString()} &middot; PKR {d.amount.toLocaleString()}</span>
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 font-semibold capitalize ${
+                                d.status === "confirmed" ? "text-emerald-700 bg-emerald-50" : d.status === "pending" ? "text-accent-dark bg-accent/10" : "text-red-600 bg-red-50"
+                              }`}
+                            >
+                              {d.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
     </div>
