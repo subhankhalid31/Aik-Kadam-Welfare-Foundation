@@ -40,8 +40,8 @@ export function FundTransparency() {
               "Zero hidden platform fees for donors",
             ].map((point) => (
               <li key={point} className="flex items-start gap-3">
-                <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-emerald-50 flex items-center justify-center">
-                  <Check size={12} className="text-emerald-700" />
+                <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Check size={12} className="text-primary-dark" />
                 </span>
                 <span className="text-sm text-ink/80">{point}</span>
               </li>
@@ -81,7 +81,7 @@ export function FundTransparency() {
                 fontSize="34"
                 fontWeight="700"
                 fill={activeSegment.color}
-                fontFamily="Inter, sans-serif"
+                fontFamily="'JetBrains Mono', monospace"
               >
                 {activeSegment.value}%
               </text>
@@ -92,7 +92,7 @@ export function FundTransparency() {
                 style={{ transform: "rotate(90deg)", transformOrigin: "110px 110px" }}
                 fontSize="11"
                 fill="#6B7280"
-                fontFamily="Inter, sans-serif"
+                fontFamily="'Niveau Grotesk', sans-serif"
                 letterSpacing="0.05em"
               >
                 {activeSegment.label.toUpperCase()}
