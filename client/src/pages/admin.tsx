@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef, type Dispatch, type SetStateAction } from "react";
 import { AdminLayout, type AdminTabKey, PillTabs, VOLUNTEER_SUBTABS, PROJECT_SUBTABS } from "@/components/layout/AdminLayout";
 import { CityPicker } from "@/components/ui/CityPicker";
 import { ImageCarousel } from "@/components/ui/ImageCarousel";
@@ -21,10 +21,10 @@ function ExportButton({ baseUrl }: { baseUrl: string }) {
 
   return (
     <div className="flex items-center gap-2 shrink-0">
-      <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} title="From date" className="rounded-full border border-border bg-white px-3 py-2.5 text-xs" />
+      <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} title="From date" className="rounded-lg border border-border bg-white px-3 py-2.5 text-xs" />
       <span className="text-xs text-muted">to</span>
-      <input type="date" value={to} onChange={(e) => setTo(e.target.value)} title="To date" className="rounded-full border border-border bg-white px-3 py-2.5 text-xs" />
-      <a href={href} download className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-4 py-2.5 text-sm font-semibold text-ink hover:bg-background transition-colors">
+      <input type="date" value={to} onChange={(e) => setTo(e.target.value)} title="To date" className="rounded-lg border border-border bg-white px-3 py-2.5 text-xs" />
+      <a href={href} download className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-semibold text-ink hover:bg-background transition-colors">
         <Download size={15} /> Export CSV
       </a>
     </div>
@@ -98,6 +98,60 @@ type PledgeRow = {
   createdAt: string;
 };
 
+function BulkActionBar({
+  count,
+  onApproveAll,
+  onRejectAll,
+  onClear,
+  busy,
+  approveLabel = "Approve All",
+  rejectLabel = "Reject All",
+}: {
+  count: number;
+  onApproveAll: () => void;
+  onRejectAll: () => void;
+  onClear: () => void;
+  busy: boolean;
+  approveLabel?: string;
+  rejectLabel?: string;
+}) {
+  if (count === 0) return null;
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5">
+      <span className="text-sm font-semibold text-ink">{count} selected</span>
+      <div className="ml-auto flex items-center gap-2">
+        <button
+          disabled={busy}
+          onClick={onApproveAll}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-success px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-success-dark disabled:opacity-50"
+        >
+          <Check size={13} /> {approveLabel}
+        </button>
+        <button
+          disabled={busy}
+          onClick={onRejectAll}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-danger/10 px-3.5 py-1.5 text-xs font-semibold text-danger hover:bg-danger/20 disabled:opacity-50"
+        >
+          <X size={13} /> {rejectLabel}
+        </button>
+        <button onClick={onClear} className="text-xs font-semibold text-muted hover:text-ink">
+          Clear
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SelectAllCheckbox({ ids, selected, onToggle }: { ids: string[]; selected: Set<string>; onToggle: () => void }) {
+  const allSelected = ids.length > 0 && ids.every((id) => selected.has(id));
+  const someSelected = ids.some((id) => selected.has(id));
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = someSelected && !allSelected;
+  }, [someSelected, allSelected]);
+  return <input ref={ref} type="checkbox" className="accent-primary" checked={allSelected} onChange={onToggle} disabled={ids.length === 0} />;
+}
+
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth();
   const [tab, setTab] = useState<AdminTabKey>(() => {
@@ -117,7 +171,77 @@ export default function AdminPage() {
   const [casesTo, setCasesTo] = useState("");
   const [searchOngoing, setSearchOngoing] = useState("");
   const [searchApproved, setSearchApproved] = useState("");
+  const [selectedVolunteers, setSelectedVolunteers] = useState<Set<string>>(new Set());
+  const [selectedCases, setSelectedCases] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
   const dialog = useDialog();
+
+  function toggleOne(setSel: Dispatch<SetStateAction<Set<string>>>, id: string) {
+    setSel((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAllIds(setSel: Dispatch<SetStateAction<Set<string>>>, ids: string[]) {
+    setSel((prev) => (ids.length > 0 && ids.every((id) => prev.has(id)) ? new Set() : new Set(ids)));
+  }
+
+  async function bulkApproveVolunteers() {
+    if (selectedVolunteers.size === 0) return;
+    if (!(await dialog.confirm(`Approve ${selectedVolunteers.size} volunteer application(s)?`))) return;
+    setBulkBusy(true);
+    try {
+      await Promise.all([...selectedVolunteers].map((id) => api.post(`/api/admin/volunteers/${id}/approve`)));
+      setSelectedVolunteers(new Set());
+      await loadAll();
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function bulkRejectVolunteers() {
+    if (selectedVolunteers.size === 0) return;
+    const reason = await dialog.prompt(`Reason for rejecting ${selectedVolunteers.size} application(s) (optional, shown to them):`);
+    if (reason === null) return;
+    setBulkBusy(true);
+    try {
+      await Promise.all([...selectedVolunteers].map((id) => api.post(`/api/admin/volunteers/${id}/reject`, { reason: reason || undefined })));
+      setSelectedVolunteers(new Set());
+      await loadAll();
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function bulkApproveCases() {
+    if (selectedCases.size === 0) return;
+    if (!(await dialog.confirm(`Approve ${selectedCases.size} case(s) and make them live?`))) return;
+    setBulkBusy(true);
+    try {
+      await Promise.all([...selectedCases].map((id) => api.post(`/api/admin/cases/${id}/approve`)));
+      setSelectedCases(new Set());
+      await loadAll();
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function bulkRejectCases() {
+    if (selectedCases.size === 0) return;
+    const reason = await dialog.prompt(`Reason for rejecting ${selectedCases.size} case(s) (optional, shown to the submitters):`);
+    if (reason === null) return;
+    setBulkBusy(true);
+    try {
+      await Promise.all([...selectedCases].map((id) => api.post(`/api/admin/cases/${id}/reject`, { reason: reason || undefined })));
+      setSelectedCases(new Set());
+      await loadAll();
+    } finally {
+      setBulkBusy(false);
+    }
+  }
 
   const loadAll = useCallback(async () => {
     const [v, brief, pc, oc] = await Promise.all([
@@ -221,47 +345,93 @@ export default function AdminPage() {
                 value={searchVolunteers}
                 onChange={(e) => setSearchVolunteers(e.target.value)}
                 placeholder="Search by name, email, or city..."
-                className="w-full rounded-full border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full rounded-lg border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
             <ExportButton baseUrl="/api/admin/volunteers/export?status=pending" />
           </div>
 
-          <div className="mt-6 space-y-4">
-            {filteredPendingVolunteers.length === 0 && <p className="text-muted">No pending applications.</p>}
-            {filteredPendingVolunteers.map((v) => (
-              <div key={v.id} className="rounded-2xl border border-border bg-white p-5 flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="font-display text-lg text-ink">{v.name}</h3>
-                  <p className="text-sm text-muted">{v.email} &middot; {v.city} &middot; {v.volunteerPhone}</p>
-                  {v.volunteerMotto && <p className="mt-1 text-sm text-primary font-medium">"{v.volunteerMotto}"</p>}
-                  <p className="mt-2 text-sm text-ink/80 italic max-w-xl">{v.volunteerMotivation}</p>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <button
-                    disabled={busy === v.id}
-                    onClick={async () => {
-                      if (!(await dialog.confirm(`Approve ${v.name} as a volunteer?`))) return;
-                      act(v.id, () => api.post(`/api/admin/volunteers/${v.id}/approve`));
-                    }}
-                    className="h-9 w-9 rounded-full bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700 disabled:opacity-50"
-                  >
-                    <Check size={16} />
-                  </button>
-                  <button
-                    disabled={busy === v.id}
-                    onClick={async () => {
-                      const reason = await dialog.prompt(`Reason for rejecting ${v.name}'s application (optional, shown to them):`);
-                      if (reason === null) return;
-                      act(v.id, () => api.post(`/api/admin/volunteers/${v.id}/reject`, { reason: reason || undefined }));
-                    }}
-                    className="h-9 w-9 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 disabled:opacity-50"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
+          <BulkActionBar
+            count={selectedVolunteers.size}
+            busy={bulkBusy}
+            onApproveAll={bulkApproveVolunteers}
+            onRejectAll={bulkRejectVolunteers}
+            onClear={() => setSelectedVolunteers(new Set())}
+          />
+
+          <div className="mt-5 overflow-x-auto rounded-lg border border-border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-background/60 text-left text-xs font-semibold text-muted uppercase tracking-wide">
+                  <th className="w-10 px-3.5 py-2.5">
+                    <SelectAllCheckbox
+                      ids={filteredPendingVolunteers.map((v) => v.id)}
+                      selected={selectedVolunteers}
+                      onToggle={() => toggleAllIds(setSelectedVolunteers, filteredPendingVolunteers.map((v) => v.id))}
+                    />
+                  </th>
+                  <th className="px-3.5 py-2.5">Name</th>
+                  <th className="px-3.5 py-2.5">Contact</th>
+                  <th className="px-3.5 py-2.5">Motivation</th>
+                  <th className="px-3.5 py-2.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filteredPendingVolunteers.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-3.5 py-6 text-center text-muted">No pending applications.</td>
+                  </tr>
+                )}
+                {filteredPendingVolunteers.map((v) => (
+                  <tr key={v.id} className={`hover:bg-background/40 transition-colors ${selectedVolunteers.has(v.id) ? "bg-primary/5" : ""}`}>
+                    <td className="px-3.5 py-3 align-top">
+                      <input
+                        type="checkbox"
+                        className="accent-primary"
+                        checked={selectedVolunteers.has(v.id)}
+                        onChange={() => toggleOne(setSelectedVolunteers, v.id)}
+                      />
+                    </td>
+                    <td className="px-3.5 py-3 align-top">
+                      <div className="font-display text-ink">{v.name}</div>
+                      {v.volunteerMotto && <div className="mt-0.5 text-xs text-primary font-medium">"{v.volunteerMotto}"</div>}
+                    </td>
+                    <td className="px-3.5 py-3 align-top text-ink/80">
+                      <div>{v.email}</div>
+                      <div className="mt-0.5 text-xs text-muted">{v.city} &middot; {v.volunteerPhone}</div>
+                    </td>
+                    <td className="px-3.5 py-3 align-top text-ink/70 max-w-xs">
+                      <span className="line-clamp-2">{v.volunteerMotivation}</span>
+                    </td>
+                    <td className="px-3.5 py-3 align-top">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          disabled={busy === v.id}
+                          onClick={async () => {
+                            if (!(await dialog.confirm(`Approve ${v.name} as a volunteer?`))) return;
+                            act(v.id, () => api.post(`/api/admin/volunteers/${v.id}/approve`));
+                          }}
+                          className="h-8 w-8 rounded-lg bg-success text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
+                        >
+                          <Check size={16} />
+                        </button>
+                        <button
+                          disabled={busy === v.id}
+                          onClick={async () => {
+                            const reason = await dialog.prompt(`Reason for rejecting ${v.name}'s application (optional, shown to them):`);
+                            if (reason === null) return;
+                            act(v.id, () => api.post(`/api/admin/volunteers/${v.id}/reject`, { reason: reason || undefined }));
+                          }}
+                          className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -276,63 +446,109 @@ export default function AdminPage() {
                 value={searchCases}
                 onChange={(e) => setSearchCases(e.target.value)}
                 placeholder="Search by title or location..."
-                className="w-full rounded-full border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full rounded-lg border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
             <ExportButton baseUrl="/api/admin/cases/export?status=pending_review" />
           </div>
           <div className="mt-3 flex items-center gap-2">
             <span className="text-xs text-muted">Filter by submitted date:</span>
-            <input type="date" value={casesFrom} onChange={(e) => setCasesFrom(e.target.value)} className="rounded-full border border-border bg-white px-3 py-2 text-xs" />
+            <input type="date" value={casesFrom} onChange={(e) => setCasesFrom(e.target.value)} className="rounded-lg border border-border bg-white px-3 py-2 text-xs" />
             <span className="text-xs text-muted">to</span>
-            <input type="date" value={casesTo} onChange={(e) => setCasesTo(e.target.value)} className="rounded-full border border-border bg-white px-3 py-2 text-xs" />
+            <input type="date" value={casesTo} onChange={(e) => setCasesTo(e.target.value)} className="rounded-lg border border-border bg-white px-3 py-2 text-xs" />
             {(casesFrom || casesTo) && (
               <button onClick={() => { setCasesFrom(""); setCasesTo(""); }} className="text-xs text-primary font-semibold">Clear</button>
             )}
           </div>
 
-          <div className="mt-6 space-y-4">
-            {filteredPendingCases.length === 0 && <p className="text-muted">No pending cases.</p>}
-            {filteredPendingCases.map((c) => (
-              <div
-                key={c.id}
-                onClick={() => setReviewCase(c)}
-                className="rounded-2xl border border-border bg-white p-5 flex items-start justify-between gap-4 cursor-pointer hover:border-primary/40 transition-colors"
-              >
-                <div className="flex gap-4">
-                  {c.imageUrl && <img src={c.imageUrl} alt="" className="h-20 w-20 rounded-lg object-cover shrink-0" />}
-                  <div>
-                    <h3 className="font-display text-lg text-ink">{c.title}</h3>
-                    <p className="text-sm text-muted">{c.location} &middot; PKR {c.amountNeeded.toLocaleString()} needed</p>
-                    <p className="mt-2 text-sm text-ink/80 max-w-xl line-clamp-2">{c.description}</p>
-                    {c.submitterName && <p className="mt-1 text-xs text-muted">Submitted by {c.submitterName}</p>}
-                  </div>
-                </div>
-                <div className="flex gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    disabled={busy === c.id}
-                    onClick={async () => {
-                      if (!(await dialog.confirm(`Approve "${c.title}" and make it live?`))) return;
-                      act(c.id, () => api.post(`/api/admin/cases/${c.id}/approve`));
-                    }}
-                    className="h-9 w-9 rounded-full bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700 disabled:opacity-50"
+          <BulkActionBar
+            count={selectedCases.size}
+            busy={bulkBusy}
+            onApproveAll={bulkApproveCases}
+            onRejectAll={bulkRejectCases}
+            onClear={() => setSelectedCases(new Set())}
+          />
+
+          <div className="mt-5 overflow-x-auto rounded-lg border border-border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-background/60 text-left text-xs font-semibold text-muted uppercase tracking-wide">
+                  <th className="w-10 px-3.5 py-2.5">
+                    <SelectAllCheckbox
+                      ids={filteredPendingCases.map((c) => c.id)}
+                      selected={selectedCases}
+                      onToggle={() => toggleAllIds(setSelectedCases, filteredPendingCases.map((c) => c.id))}
+                    />
+                  </th>
+                  <th className="px-3.5 py-2.5">Case</th>
+                  <th className="px-3.5 py-2.5">Location / Amount</th>
+                  <th className="px-3.5 py-2.5">Submitted by</th>
+                  <th className="px-3.5 py-2.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filteredPendingCases.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-3.5 py-6 text-center text-muted">No pending cases.</td>
+                  </tr>
+                )}
+                {filteredPendingCases.map((c) => (
+                  <tr
+                    key={c.id}
+                    onClick={() => setReviewCase(c)}
+                    className={`cursor-pointer hover:bg-background/40 transition-colors ${selectedCases.has(c.id) ? "bg-primary/5" : ""}`}
                   >
-                    <Check size={16} />
-                  </button>
-                  <button
-                    disabled={busy === c.id}
-                    onClick={async () => {
-                      const reason = await dialog.prompt(`Reason for rejecting "${c.title}" (optional, shown to the submitter):`);
-                      if (reason === null) return;
-                      act(c.id, () => api.post(`/api/admin/cases/${c.id}/reject`, { reason: reason || undefined }));
-                    }}
-                    className="h-9 w-9 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 disabled:opacity-50"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
+                    <td className="px-3.5 py-3 align-top" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        className="accent-primary"
+                        checked={selectedCases.has(c.id)}
+                        onChange={() => toggleOne(setSelectedCases, c.id)}
+                      />
+                    </td>
+                    <td className="px-3.5 py-3 align-top">
+                      <div className="flex gap-3">
+                        {c.imageUrl && <img src={c.imageUrl} alt="" className="h-12 w-12 rounded-lg object-cover shrink-0" />}
+                        <div>
+                          <div className="font-display text-ink">{c.title}</div>
+                          <div className="mt-0.5 text-xs text-ink/70 max-w-xs line-clamp-2">{c.description}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3.5 py-3 align-top text-ink/80">
+                      <div>{c.location}</div>
+                      <div className="mt-0.5 text-xs font-mono text-muted">PKR {c.amountNeeded.toLocaleString()}</div>
+                    </td>
+                    <td className="px-3.5 py-3 align-top text-ink/70 text-xs">{c.submitterName || "—"}</td>
+                    <td className="px-3.5 py-3 align-top" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          disabled={busy === c.id}
+                          onClick={async () => {
+                            if (!(await dialog.confirm(`Approve "${c.title}" and make it live?`))) return;
+                            act(c.id, () => api.post(`/api/admin/cases/${c.id}/approve`));
+                          }}
+                          className="h-8 w-8 rounded-lg bg-success text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
+                        >
+                          <Check size={16} />
+                        </button>
+                        <button
+                          disabled={busy === c.id}
+                          onClick={async () => {
+                            const reason = await dialog.prompt(`Reason for rejecting "${c.title}" (optional, shown to the submitter):`);
+                            if (reason === null) return;
+                            act(c.id, () => api.post(`/api/admin/cases/${c.id}/reject`, { reason: reason || undefined }));
+                          }}
+                          className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           {reviewCase && (
@@ -370,13 +586,13 @@ export default function AdminPage() {
                 value={searchOngoing}
                 onChange={(e) => setSearchOngoing(e.target.value)}
                 placeholder="Search by title or location..."
-                className="w-full rounded-full border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full rounded-lg border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
             <ExportButton baseUrl="/api/admin/cases/export?status=ongoing" />
           </div>
 
-          <div className="mt-6 space-y-4">
+          <div className="mt-5 space-y-2">
             {filteredOngoingCases.length === 0 && <p className="text-muted">No ongoing cases.</p>}
             {filteredOngoingCases.map((c) => (
               <OngoingRow key={c.id} caseRow={c} volunteers={volunteerBriefs} busy={busy === c.id} onChange={(fn) => act(c.id, fn)} dialog={dialog} />
@@ -412,13 +628,13 @@ export default function AdminPage() {
                 value={searchApproved}
                 onChange={(e) => setSearchApproved(e.target.value)}
                 placeholder="Search by name, badge ID, or city..."
-                className="w-full rounded-full border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full rounded-lg border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
             <ExportButton baseUrl="/api/admin/volunteers/export?status=approved" />
           </div>
 
-          <div className="mt-6 space-y-4">
+          <div className="mt-5 space-y-2">
             {filteredApproved.length === 0 && <p className="text-muted">No approved volunteers yet.</p>}
             {filteredApproved.map((v) => (
               <VolunteerEditRow key={v.id} volunteer={v} busy={busy === v.id} onChange={(fn) => act(v.id, fn)} dialog={dialog} />
@@ -555,7 +771,7 @@ function OngoingRow({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-white p-5">
+    <div className="rounded-lg border border-border bg-white p-3.5">
       <div className="flex items-start justify-between gap-4">
         <div className="flex gap-4">
           {caseRow.imageUrl && <img src={caseRow.imageUrl} alt="" className="h-16 w-16 rounded-lg object-cover shrink-0" />}
@@ -566,7 +782,7 @@ function OngoingRow({
           </div>
         </div>
         <div className="flex gap-2 shrink-0">
-          <button onClick={() => setEditing((e) => !e)} className="h-9 w-9 rounded-full border border-border flex items-center justify-center hover:bg-background">
+          <button onClick={() => setEditing((e) => !e)} className="h-8 w-8 rounded-lg border border-border flex items-center justify-center hover:bg-background">
             <Pencil size={14} />
           </button>
           <button
@@ -575,7 +791,7 @@ function OngoingRow({
               if (!(await dialog.confirm(`Delete "${caseRow.title}"? This removes it entirely, including its volunteer assignments. This can't be undone.`))) return;
               onChange(() => api.delete(`/api/admin/cases/${caseRow.id}`));
             }}
-            className="h-9 w-9 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 disabled:opacity-50"
+            className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
           >
             <X size={14} />
           </button>
@@ -728,15 +944,15 @@ function VolunteerEditRow({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-white p-5">
+    <div className="rounded-lg border border-border bg-white p-3.5">
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
             <h3 className="font-display text-lg text-ink">{volunteer.name}</h3>
             {isAlumni ? (
-              <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700">Alumni</span>
+              <span className="rounded-full bg-warning/10 px-2.5 py-0.5 text-xs font-semibold text-warning-dark">Alumni</span>
             ) : (
-              <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">Active</span>
+              <span className="rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-semibold text-success-dark">Active</span>
             )}
           </div>
           <p className="text-sm text-muted font-mono">{volunteer.badgeId} &middot; {volunteer.city}</p>
@@ -745,10 +961,10 @@ function VolunteerEditRow({
           )}
         </div>
         <div className="flex gap-2 shrink-0">
-          <button onClick={() => setEditing((e) => !e)} className="h-9 w-9 rounded-full border border-border flex items-center justify-center hover:bg-background">
+          <button onClick={() => setEditing((e) => !e)} className="h-8 w-8 rounded-lg border border-border flex items-center justify-center hover:bg-background">
             <Pencil size={14} />
           </button>
-          <button disabled={busy} onClick={handleDelete} className="h-9 w-9 rounded-full border border-border text-red-600 flex items-center justify-center hover:bg-red-50 disabled:opacity-50" title="Delete volunteer">
+          <button disabled={busy} onClick={handleDelete} className="h-8 w-8 rounded-lg border border-border text-danger flex items-center justify-center hover:bg-danger/10 disabled:opacity-50" title="Delete volunteer">
             <Trash2 size={14} />
           </button>
         </div>
@@ -788,7 +1004,7 @@ function VolunteerEditRow({
               <input value={servedUntil} onChange={(e) => setServedUntil(e.target.value)} placeholder="e.g. 2026 or December 2026" className="mt-1 block w-full rounded-lg border border-border px-3 py-2 text-sm" />
             </div>
           )}
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-danger">{error}</p>}
           <button disabled={busy} onClick={() => onChange(save)} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">
             Save Changes
           </button>
@@ -850,10 +1066,10 @@ function PendingCaseReviewModal({
         </div>
 
         <div className="mt-6 flex gap-3">
-          <button disabled={busy} onClick={onApprove} className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">
+          <button disabled={busy} onClick={onApprove} className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-success px-5 py-3 text-sm font-semibold text-white hover:bg-success-dark disabled:opacity-50">
             <Check size={16} /> Approve
           </button>
-          <button disabled={busy} onClick={onReject} className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-red-50 px-5 py-3 text-sm font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50">
+          <button disabled={busy} onClick={onReject} className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-danger/10 px-5 py-3 text-sm font-semibold text-danger hover:bg-danger/20 disabled:opacity-50">
             <X size={16} /> Reject
           </button>
         </div>
@@ -904,17 +1120,17 @@ function CompletedCasesPanel({ dialog }: { dialog: ReturnType<typeof useDialog> 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by title or location..."
-            className="w-full rounded-full border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full rounded-lg border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
         <ExportButton baseUrl="/api/admin/cases/export?status=completed" />
       </div>
 
-      <div className="mt-6 space-y-4">
+      <div className="mt-5 space-y-2">
         {loading && <p className="text-muted">Loading...</p>}
         {!loading && filtered.length === 0 && <p className="text-muted">No completed cases yet.</p>}
         {filtered.map((c) => (
-          <div key={c.id} className="rounded-2xl border border-border bg-white p-5 flex items-start justify-between gap-4">
+          <div key={c.id} className="rounded-lg border border-border bg-white p-3.5 flex items-start justify-between gap-4">
             <div className="flex gap-4">
               {c.imageUrl && <img src={c.imageUrl} alt="" className="h-16 w-16 rounded-lg object-cover shrink-0" />}
               <div>
@@ -925,7 +1141,7 @@ function CompletedCasesPanel({ dialog }: { dialog: ReturnType<typeof useDialog> 
             <button
               disabled={busy === c.id}
               onClick={() => hide(c)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50 shrink-0"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10 disabled:opacity-50 shrink-0"
             >
               <EyeOff size={14} /> Hide
             </button>
@@ -1001,7 +1217,7 @@ function TaglineSettingCard() {
   }
 
   return (
-    <div className="mt-5 mb-8 rounded-2xl border border-border bg-white p-5">
+    <div className="mt-5 mb-8 rounded-lg border border-border bg-white p-3.5">
       <h2 className="font-display text-base text-ink">Homepage Tagline</h2>
       <p className="text-sm text-muted mt-1">Shown as a blue strip at the very top of every page. Leave blank to hide it.</p>
       <div className="mt-3 flex flex-col sm:flex-row gap-3">
@@ -1123,28 +1339,28 @@ function RejectedCasesPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by title or location..."
-          className="w-full rounded-full border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="w-full rounded-lg border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
       </div>
 
-      <div className="mt-6 space-y-4">
+      <div className="mt-5 space-y-2">
         {loading && <p className="text-muted">Loading...</p>}
         {!loading && filtered.length === 0 && <p className="text-muted">No rejected cases.</p>}
         {filtered.map((c) => (
-          <div key={c.id} className="rounded-2xl border border-border bg-white p-5 flex items-start justify-between gap-4">
+          <div key={c.id} className="rounded-lg border border-border bg-white p-3.5 flex items-start justify-between gap-4">
             <div className="flex gap-4">
               {c.imageUrl && <img src={c.imageUrl} alt="" className="h-16 w-16 rounded-lg object-cover shrink-0" />}
               <div>
                 <h3 className="font-display text-base text-ink">{c.title}</h3>
                 <p className="text-sm text-muted">{c.location}</p>
-                {(c as any).rejectionReason && <p className="mt-1 text-sm text-red-600">Reason: {(c as any).rejectionReason}</p>}
+                {(c as any).rejectionReason && <p className="mt-1 text-sm text-danger">Reason: {(c as any).rejectionReason}</p>}
               </div>
             </div>
             <div className="flex gap-2 shrink-0">
               <button disabled={busy === c.id} onClick={() => restore(c)} className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-semibold text-ink hover:bg-background disabled:opacity-50">
                 <Undo2 size={14} /> Restore
               </button>
-              <button disabled={busy === c.id} onClick={() => remove(c)} className="h-9 w-9 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 disabled:opacity-50">
+              <button disabled={busy === c.id} onClick={() => remove(c)} className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50">
                 <Trash2 size={14} />
               </button>
             </div>
@@ -1187,7 +1403,7 @@ function NameChangeRequestsPanel({ dialog }: { dialog: ReturnType<typeof useDial
       {!loading && rows.length === 0 && <p className="text-muted">No pending name change requests.</p>}
       <div className="space-y-3">
         {rows.map((r) => (
-          <div key={r.id} className="rounded-2xl border border-border bg-white p-5 flex items-center justify-between gap-4">
+          <div key={r.id} className="rounded-lg border border-border bg-white p-3.5 flex items-center justify-between gap-4">
             <div>
               <p className="text-sm text-muted">{r.email}</p>
               <p className="mt-1 text-ink">
@@ -1200,7 +1416,7 @@ function NameChangeRequestsPanel({ dialog }: { dialog: ReturnType<typeof useDial
               <button
                 disabled={busy === r.id}
                 onClick={() => act(r.id, () => api.post(`/api/admin/name-change-requests/${r.id}/approve`))}
-                className="h-9 w-9 rounded-full bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700 disabled:opacity-50"
+                className="h-8 w-8 rounded-lg bg-success text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
               >
                 <Check size={16} />
               </button>
@@ -1210,7 +1426,7 @@ function NameChangeRequestsPanel({ dialog }: { dialog: ReturnType<typeof useDial
                   if (!(await dialog.confirm(`Reject ${r.name}'s name change request?`))) return;
                   act(r.id, () => api.post(`/api/admin/name-change-requests/${r.id}/reject`));
                 }}
-                className="h-9 w-9 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 disabled:opacity-50"
+                className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
               >
                 <X size={16} />
               </button>
@@ -1258,23 +1474,23 @@ function HiddenCasesPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by title or location..."
-            className="w-full rounded-full border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full rounded-lg border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
         <ExportButton baseUrl="/api/admin/cases/export?status=all" />
       </div>
 
-      <div className="mt-6 space-y-4">
+      <div className="mt-5 space-y-2">
         {loading && <p className="text-muted">Loading...</p>}
         {!loading && rows.length === 0 && <p className="text-muted">No hidden cases. Only admins can see this tab.</p>}
         {rows.map((c) => (
-          <div key={c.id} className="rounded-2xl border border-border bg-white p-5 flex items-start justify-between gap-4">
+          <div key={c.id} className="rounded-lg border border-border bg-white p-3.5 flex items-start justify-between gap-4">
             <div className="flex gap-4">
               {c.imageUrl && <img src={c.imageUrl} alt="" className="h-20 w-20 rounded-lg object-cover shrink-0 grayscale" />}
               <div>
                 <h3 className="font-display text-lg text-ink">{c.title}</h3>
                 <p className="text-sm text-muted">{c.location} &middot; status: {c.status}</p>
-                {c.hiddenReason && <p className="mt-1 text-sm text-red-600">Hidden: {c.hiddenReason}</p>}
+                {c.hiddenReason && <p className="mt-1 text-sm text-danger">Hidden: {c.hiddenReason}</p>}
               </div>
             </div>
             <button
@@ -1301,6 +1517,8 @@ function DonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
   const [donations, setDonations] = useState<DonationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1315,6 +1533,10 @@ function DonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
     return () => clearTimeout(timer);
   }, [load]);
 
+  useEffect(() => {
+    setSelected(new Set());
+  }, [statusFilter, search]);
+
   async function act(id: string, action: () => Promise<unknown>) {
     setBusy(id);
     try {
@@ -1322,6 +1544,42 @@ function DonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
       await load();
     } finally {
       setBusy(null);
+    }
+  }
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function bulkConfirm() {
+    if (selected.size === 0) return;
+    if (!(await dialog.confirm(`Confirm ${selected.size} donation(s)? This adds each to its case's collected total.`))) return;
+    setBulkBusy(true);
+    try {
+      await Promise.all([...selected].map((id) => api.post(`/api/admin/donations/${id}/confirm`)));
+      setSelected(new Set());
+      await load();
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function bulkReject() {
+    if (selected.size === 0) return;
+    const reason = await dialog.prompt(`Reason for rejecting ${selected.size} donation(s) (optional, shown to the donors):`);
+    if (reason === null) return;
+    setBulkBusy(true);
+    try {
+      await Promise.all([...selected].map((id) => api.post(`/api/admin/donations/${id}/reject`, { reason: reason || undefined })));
+      setSelected(new Set());
+      await load();
+    } finally {
+      setBulkBusy(false);
     }
   }
 
@@ -1335,7 +1593,7 @@ function DonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by sender account/phone, donor name, email, or case..."
-            className="w-full rounded-full border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full rounded-lg border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
         <ExportButton baseUrl={`/api/admin/donations/export?${new URLSearchParams({ status: statusFilter, search })}`} />
@@ -1355,81 +1613,125 @@ function DonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
         ))}
       </div>
 
-      <div className="mt-6 space-y-4">
-        {loading ? (
-          <p className="text-muted">Loading...</p>
-        ) : donations.length === 0 ? (
-          <p className="text-muted">No {statusFilter !== "all" ? statusFilter : ""} donations found.</p>
-        ) : (
-          donations.map((d) => (
-            <div key={d.id} className="rounded-2xl border border-border bg-white p-5 flex items-start justify-between gap-4 flex-wrap">
-              <div className="flex gap-4">
-                <a href={d.receiptImage} target="_blank" rel="noopener noreferrer" className="shrink-0">
-                  <img src={d.receiptImage} alt="Payment receipt" className="h-20 w-20 rounded-lg object-cover border border-border hover:opacity-80 transition-opacity" />
-                </a>
-                <div>
-                  <h3 className="font-display text-lg text-ink">PKR {d.amount.toLocaleString()}, {d.caseTitle}</h3>
-                  <p className="text-sm text-muted">{d.donorName} ({d.donorEmail}) &middot; {d.method.replace("_", " ")}</p>
-                  <p className="mt-1 text-xs font-mono text-ink/70">Sent from: {d.senderAccount}</p>
-                  {d.referenceNote && <p className="text-xs text-muted">Ref: {d.referenceNote}</p>}
-                  {d.status === "rejected" && d.rejectionReason && <p className="text-xs text-red-600 mt-1">Rejected: {d.rejectionReason}</p>}
-                  <p className="mt-1 text-xs text-muted">{new Date(d.createdAt).toLocaleString()}</p>
-                </div>
-              </div>
+      {statusFilter === "pending" && (
+        <BulkActionBar
+          count={selected.size}
+          busy={bulkBusy}
+          onApproveAll={bulkConfirm}
+          onRejectAll={bulkReject}
+          onClear={() => setSelected(new Set())}
+          approveLabel="Confirm All"
+        />
+      )}
 
-              <div className="flex gap-2 shrink-0">
-                {d.status === "pending" && (
-                  <>
-                    <button
-                      disabled={busy === d.id}
-                      onClick={async () => {
-                        if (!(await dialog.confirm(`Confirm this PKR ${d.amount.toLocaleString()} donation? This adds it to the case's collected total.`))) return;
-                        act(d.id, () => api.post(`/api/admin/donations/${d.id}/confirm`));
-                      }}
-                      className="h-9 w-9 rounded-full bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700 disabled:opacity-50"
-                    >
-                      <Check size={16} />
-                    </button>
-                    <button
-                      disabled={busy === d.id}
-                      onClick={async () => {
-                        const reason = await dialog.prompt("Reason (optional, shown to the donor):");
-                        if (reason === null) return;
-                        act(d.id, () => api.post(`/api/admin/donations/${d.id}/reject`, { reason: reason || undefined }));
-                      }}
-                      className="h-9 w-9 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 disabled:opacity-50"
-                    >
-                      <X size={16} />
-                    </button>
-                  </>
-                )}
-                {(d.status === "confirmed" || d.status === "rejected") && (
-                  <button
-                    disabled={busy === d.id}
-                    onClick={async () => {
-                      if (!(await dialog.confirm("Move this donation back to pending for re-review?"))) return;
-                      act(d.id, () => api.post(`/api/admin/donations/${d.id}/revert`));
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-semibold text-ink hover:bg-background disabled:opacity-50"
-                  >
-                    <Undo2 size={14} /> Undo
-                  </button>
-                )}
-                <button
-                  disabled={busy === d.id}
-                  onClick={async () => {
-                    if (!(await dialog.confirm(`Permanently delete this donation record (PKR ${d.amount.toLocaleString()})? This can't be undone.`))) return;
-                    act(d.id, () => api.delete(`/api/admin/donations/${d.id}`));
-                  }}
-                  className="h-9 w-9 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 disabled:opacity-50"
-                  title="Delete record"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            </div>
-          ))
-        )}
+      <div className="mt-5 overflow-x-auto rounded-lg border border-border">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border bg-background/60 text-left text-xs font-semibold text-muted uppercase tracking-wide">
+              {statusFilter === "pending" && (
+                <th className="w-10 px-3.5 py-2.5">
+                  <SelectAllCheckbox
+                    ids={donations.map((d) => d.id)}
+                    selected={selected}
+                    onToggle={() =>
+                      setSelected((prev) => {
+                        const ids = donations.map((d) => d.id);
+                        return ids.length > 0 && ids.every((id) => prev.has(id)) ? new Set() : new Set(ids);
+                      })
+                    }
+                  />
+                </th>
+              )}
+              <th className="px-3.5 py-2.5">Receipt</th>
+              <th className="px-3.5 py-2.5">Donation</th>
+              <th className="px-3.5 py-2.5">Sent from</th>
+              <th className="px-3.5 py-2.5">Date</th>
+              <th className="px-3.5 py-2.5 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {loading ? (
+              <tr><td colSpan={6} className="px-3.5 py-6 text-center text-muted">Loading...</td></tr>
+            ) : donations.length === 0 ? (
+              <tr><td colSpan={6} className="px-3.5 py-6 text-center text-muted">No {statusFilter !== "all" ? statusFilter : ""} donations found.</td></tr>
+            ) : (
+              donations.map((d) => (
+                <tr key={d.id} className={`hover:bg-background/40 transition-colors ${selected.has(d.id) ? "bg-primary/5" : ""}`}>
+                  {statusFilter === "pending" && (
+                    <td className="px-3.5 py-3 align-top">
+                      <input type="checkbox" className="accent-primary" checked={selected.has(d.id)} onChange={() => toggleOne(d.id)} />
+                    </td>
+                  )}
+                  <td className="px-3.5 py-3 align-top">
+                    <a href={d.receiptImage} target="_blank" rel="noopener noreferrer">
+                      <img src={d.receiptImage} alt="Payment receipt" className="h-12 w-12 rounded-lg object-cover border border-border hover:opacity-80 transition-opacity" />
+                    </a>
+                  </td>
+                  <td className="px-3.5 py-3 align-top">
+                    <div className="font-display text-ink">PKR {d.amount.toLocaleString()}, {d.caseTitle}</div>
+                    <div className="mt-0.5 text-xs text-muted">{d.donorName} ({d.donorEmail}) &middot; {d.method.replace("_", " ")}</div>
+                    {d.referenceNote && <div className="text-xs text-muted">Ref: {d.referenceNote}</div>}
+                    {d.status === "rejected" && d.rejectionReason && <div className="mt-1 text-xs text-danger">Rejected: {d.rejectionReason}</div>}
+                  </td>
+                  <td className="px-3.5 py-3 align-top text-xs font-mono text-ink/70">{d.senderAccount}</td>
+                  <td className="px-3.5 py-3 align-top text-xs text-muted">{new Date(d.createdAt).toLocaleString()}</td>
+                  <td className="px-3.5 py-3 align-top">
+                    <div className="flex justify-end gap-2">
+                      {d.status === "pending" && (
+                        <>
+                          <button
+                            disabled={busy === d.id}
+                            onClick={async () => {
+                              if (!(await dialog.confirm(`Confirm this PKR ${d.amount.toLocaleString()} donation? This adds it to the case's collected total.`))) return;
+                              act(d.id, () => api.post(`/api/admin/donations/${d.id}/confirm`));
+                            }}
+                            className="h-8 w-8 rounded-lg bg-success text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
+                          >
+                            <Check size={16} />
+                          </button>
+                          <button
+                            disabled={busy === d.id}
+                            onClick={async () => {
+                              const reason = await dialog.prompt("Reason (optional, shown to the donor):");
+                              if (reason === null) return;
+                              act(d.id, () => api.post(`/api/admin/donations/${d.id}/reject`, { reason: reason || undefined }));
+                            }}
+                            className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+                          >
+                            <X size={16} />
+                          </button>
+                        </>
+                      )}
+                      {(d.status === "confirmed" || d.status === "rejected") && (
+                        <button
+                          disabled={busy === d.id}
+                          onClick={async () => {
+                            if (!(await dialog.confirm("Move this donation back to pending for re-review?"))) return;
+                            act(d.id, () => api.post(`/api/admin/donations/${d.id}/revert`));
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-ink hover:bg-background disabled:opacity-50"
+                        >
+                          <Undo2 size={14} /> Undo
+                        </button>
+                      )}
+                      <button
+                        disabled={busy === d.id}
+                        onClick={async () => {
+                          if (!(await dialog.confirm(`Permanently delete this donation record (PKR ${d.amount.toLocaleString()})? This can't be undone.`))) return;
+                          act(d.id, () => api.delete(`/api/admin/donations/${d.id}`));
+                        }}
+                        className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+                        title="Delete record"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -1500,7 +1802,7 @@ function RecurringDonationsPanel({ dialog }: { dialog: ReturnType<typeof useDial
         ))}
       </div>
 
-      <div className="mt-6 space-y-4">
+      <div className="mt-5 space-y-2">
         {loading ? (
           <p className="text-muted">Loading...</p>
         ) : filtered.length === 0 ? (
@@ -1509,7 +1811,7 @@ function RecurringDonationsPanel({ dialog }: { dialog: ReturnType<typeof useDial
           filtered.map((p) => {
             const isExpanded = expandedPledgeId === p.id;
             return (
-              <div key={p.id} className="rounded-2xl border border-border bg-white p-5">
+              <div key={p.id} className="rounded-lg border border-border bg-white p-3.5">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div>
                     <h3 className="font-display text-lg text-ink">PKR {p.amount.toLocaleString()}/month, {p.caseTitle}</h3>
@@ -1526,7 +1828,7 @@ function RecurringDonationsPanel({ dialog }: { dialog: ReturnType<typeof useDial
                   <div className="flex items-center gap-2 shrink-0">
                     <span
                       className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold capitalize ${
-                        p.status === "active" ? "text-emerald-700 bg-emerald-50" : p.status === "paused" ? "text-accent-dark bg-accent/10" : "text-muted bg-background"
+                        p.status === "active" ? "text-success-dark bg-success/10" : p.status === "paused" ? "text-accent-dark bg-accent/10" : "text-muted bg-background"
                       }`}
                     >
                       {p.status}
@@ -1535,7 +1837,7 @@ function RecurringDonationsPanel({ dialog }: { dialog: ReturnType<typeof useDial
                       <button
                         disabled={busy === p.id}
                         onClick={() => cancelPledge(p)}
-                        className="h-9 w-9 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 disabled:opacity-50"
+                        className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
                         title="Cancel pledge"
                       >
                         <X size={16} />
@@ -1565,7 +1867,7 @@ function RecurringDonationsPanel({ dialog }: { dialog: ReturnType<typeof useDial
                             <span className="text-ink/80">{new Date(d.createdAt).toLocaleDateString()} &middot; PKR {d.amount.toLocaleString()}</span>
                             <span
                               className={`inline-flex items-center rounded-full px-2 py-0.5 font-semibold capitalize ${
-                                d.status === "confirmed" ? "text-emerald-700 bg-emerald-50" : d.status === "pending" ? "text-accent-dark bg-accent/10" : "text-red-600 bg-red-50"
+                                d.status === "confirmed" ? "text-success-dark bg-success/10" : d.status === "pending" ? "text-accent-dark bg-accent/10" : "text-danger bg-danger/10"
                               }`}
                             >
                               {d.status}
@@ -1620,7 +1922,7 @@ function GalleryManagementPanel({ dialog }: { dialog: ReturnType<typeof useDialo
         <Plus size={15} /> Add New Event
       </a>
 
-      <div className="mt-6 space-y-4">
+      <div className="mt-5 space-y-2">
         {loading ? (
           <p className="text-muted">Loading...</p>
         ) : events.length === 0 ? (
@@ -1657,7 +1959,7 @@ function GalleryEditRow({ event, onSaved, dialog }: { event: GalleryEventRow; on
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-white p-5">
+    <div className="rounded-lg border border-border bg-white p-3.5">
       <div className="flex items-start justify-between gap-4">
         <div className="flex gap-4">
           {event.images.length > 0 && (
@@ -1681,7 +1983,7 @@ function GalleryEditRow({ event, onSaved, dialog }: { event: GalleryEventRow; on
             <p className="mt-1 text-xs text-muted">{event.families} &middot; {event.items} &middot; {event.funds}</p>
           </div>
         </div>
-        <button onClick={() => setEditing((v) => !v)} className="h-9 w-9 rounded-full border border-border flex items-center justify-center hover:bg-background shrink-0">
+        <button onClick={() => setEditing((v) => !v)} className="h-8 w-8 rounded-lg border border-border flex items-center justify-center hover:bg-background shrink-0">
           <Pencil size={14} />
         </button>
         <button
@@ -1690,7 +1992,7 @@ function GalleryEditRow({ event, onSaved, dialog }: { event: GalleryEventRow; on
             await api.delete(`/api/admin/gallery/${event.id}`);
             onSaved();
           }}
-          className="h-9 w-9 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 shrink-0 ml-2"
+          className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 shrink-0 ml-2"
         >
           <X size={14} />
         </button>
@@ -1814,10 +2116,10 @@ function SuccessStoryEditCard({ story, dialog, onChanged }: { story: SuccessStor
           <p className="mt-1 text-xs text-ink/70 line-clamp-2">{story.quote}</p>
         </div>
         <div className="flex flex-col gap-1.5 shrink-0">
-          <button onClick={() => setEditing((v) => !v)} className="h-8 w-8 rounded-full border border-border flex items-center justify-center hover:bg-background">
+          <button onClick={() => setEditing((v) => !v)} className="h-8 w-8 rounded-lg border border-border flex items-center justify-center hover:bg-background">
             <Pencil size={13} />
           </button>
-          <button onClick={remove} disabled={busy} className="h-8 w-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 disabled:opacity-50">
+          <button onClick={remove} disabled={busy} className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50">
             <X size={13} />
           </button>
         </div>
@@ -1897,7 +2199,7 @@ function UsersPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or email..."
-          className="w-full rounded-full border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="w-full rounded-lg border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
       </div>
 
@@ -1912,7 +2214,7 @@ function UsersPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
               <div className="min-w-0">
                 <p className="font-medium text-ink text-sm truncate">{u.name} <span className="text-xs text-muted font-normal capitalize">({u.role})</span></p>
                 <p className="text-xs text-muted truncate">{u.email}</p>
-                {u.isBanned && <p className="text-xs text-red-600 mt-1">Banned{u.banReason ? `: ${u.banReason}` : ""}</p>}
+                {u.isBanned && <p className="text-xs text-danger mt-1">Banned{u.banReason ? `: ${u.banReason}` : ""}</p>}
               </div>
               {u.isBanned ? (
                 <button
@@ -1937,7 +2239,7 @@ function UsersPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
                       await dialog.alert(err instanceof ApiError ? err.message : "Couldn't ban this user, please try again.", "Ban failed");
                     }
                   }}
-                  className="shrink-0 rounded-full bg-red-50 text-red-600 px-4 py-2 text-xs font-semibold hover:bg-red-100 disabled:opacity-50"
+                  className="shrink-0 rounded-lg bg-danger/10 text-danger px-4 py-2 text-xs font-semibold hover:bg-danger/20 disabled:opacity-50"
                 >
                   Ban
                 </button>
@@ -1953,7 +2255,7 @@ function UsersPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
                       await dialog.alert(err instanceof ApiError ? err.message : "Couldn't delete this user, please try again.", "Delete failed");
                     }
                   }}
-                  className="shrink-0 h-9 w-9 rounded-full border border-border text-red-600 flex items-center justify-center hover:bg-red-50 disabled:opacity-50"
+                  className="shrink-0 h-8 w-8 rounded-lg border border-border text-danger flex items-center justify-center hover:bg-danger/10 disabled:opacity-50"
                   title="Delete user"
                 >
                   <Trash2 size={14} />
@@ -1995,11 +2297,11 @@ function DailySummaryPanel() {
   return (
     <div className="mt-5">
       <div className="flex items-center gap-3">
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-full border border-border bg-white px-4 py-2.5 text-sm" />
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border border-border bg-white px-4 py-2.5 text-sm" />
         <a
           href={`/api/admin/daily-summary/export?date=${date}`}
           download
-          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-4 py-2.5 text-sm font-semibold text-ink hover:bg-background transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-semibold text-ink hover:bg-background transition-colors"
         >
           <Download size={15} /> Export CSV
         </a>
@@ -2017,7 +2319,7 @@ function DailySummaryPanel() {
             ["Funds Confirmed", `PKR ${summary.fundsConfirmedToday.toLocaleString()}`],
             ["New Signups", summary.newSignups],
           ].map(([label, value]) => (
-            <div key={label as string} className="rounded-2xl border border-border bg-white p-5">
+            <div key={label as string} className="rounded-lg border border-border bg-white p-3.5">
               <div className="text-xs text-muted uppercase tracking-wide">{label}</div>
               <div className="mt-1.5 font-display text-2xl text-ink">{value}</div>
             </div>
@@ -2081,7 +2383,7 @@ function CaseVolunteerRequestsPanel({ dialog, onResolved }: { dialog: ReturnType
           <div key={r.id} className="rounded-xl border border-border bg-white p-4 flex items-start justify-between gap-4 flex-wrap">
             <div>
               <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-semibold rounded-full px-2 py-0.5 ${r.type === "assignment" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}>
+                <span className={`text-[10px] font-semibold rounded-full px-2 py-0.5 ${r.type === "assignment" ? "bg-success/10 text-success-dark" : "bg-danger/10 text-danger"}`}>
                   {r.type === "assignment" ? "Join Request" : "Withdrawal Request"}
                 </span>
                 <span className="text-xs text-muted">{new Date(r.createdAt).toLocaleDateString()}</span>
@@ -2099,14 +2401,14 @@ function CaseVolunteerRequestsPanel({ dialog, onResolved }: { dialog: ReturnType
                   if (!(await dialog.confirm(`${label === "assign" ? "Assign" : "Remove"} ${r.volunteerName} ${label === "assign" ? "to" : "from"} "${r.caseTitle}"?`))) return;
                   act(r.id, () => api.post(`/api/admin/case-volunteer-requests/${r.id}/approve`));
                 }}
-                className="h-9 w-9 rounded-full bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700 disabled:opacity-50"
+                className="h-8 w-8 rounded-lg bg-success text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
               >
                 <Check size={16} />
               </button>
               <button
                 disabled={busy === r.id}
                 onClick={() => act(r.id, () => api.post(`/api/admin/case-volunteer-requests/${r.id}/reject`))}
-                className="h-9 w-9 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 disabled:opacity-50"
+                className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
               >
                 <X size={16} />
               </button>
