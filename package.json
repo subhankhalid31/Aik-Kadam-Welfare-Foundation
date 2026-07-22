@@ -1,12 +1,11 @@
-"engines": {
-     "node": "20.x"
-   },
-
 {
   "name": "aik-kadam",
   "version": "1.0.0",
   "type": "module",
   "private": true,
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev:client": "vite",
     "dev": "cross-env NODE_ENV=development tsx server/index.ts",
