@@ -60,7 +60,7 @@ export function GalleryCard({ id, title, date, location, description, images, fa
     >
       {/* Mouse-spotlight: a soft radial highlight that follows the cursor across the card */}
       <div ref={spotlightRef} className="pointer-events-none absolute inset-0 z-10 transition-opacity duration-300" />
-      <div className="relative aspect-[16/10] sm:aspect-[16/10] max-h-[160px] sm:max-h-none overflow-hidden bg-border/30 shrink-0">
+      <div className="relative aspect-[4/3] sm:aspect-[16/10] overflow-hidden bg-border/30 shrink-0">
         <img
           key={images[index]}
           src={images[index]}
