@@ -90,7 +90,7 @@ Make sure you have the following installed:
 
    cp .env.example .env
 
-   Fill in the required values (database credentials, API keys, etc.)
+   Fill in the required values (database credentials, Session Secret, API keys, etc.)
 
 5. Run the development server
 
