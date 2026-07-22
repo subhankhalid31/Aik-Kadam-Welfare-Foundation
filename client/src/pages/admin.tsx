@@ -7,7 +7,7 @@ import { useDialog } from "@/lib/dialog-context";
 import { api, ApiError } from "@/lib/api";
 import {
   Check, X, ShieldAlert, Pencil, Wallet, Users, Briefcase, Clock4,
-  Undo2, Download, Search, Plus, ChevronLeft, ChevronRight, Trash2, EyeOff, Eye,
+  Undo2, Download, Search, Plus, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, EyeOff, Eye,
 } from "lucide-react";
 
 function ExportButton({ baseUrl }: { baseUrl: string }) {
@@ -139,6 +139,67 @@ function BulkActionBar({
         </button>
       </div>
     </div>
+  );
+}
+
+function useSort<T extends Record<string, any>>(rows: T[]) {
+  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const sorted = useMemo(() => {
+    if (!sortKey) return rows;
+    const arr = [...rows];
+    arr.sort((a, b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
+      let cmp: number;
+      if (typeof av === "number" && typeof bv === "number") cmp = av - bv;
+      else cmp = String(av ?? "").localeCompare(String(bv ?? ""), undefined, { numeric: true, sensitivity: "base" });
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return arr;
+  }, [rows, sortKey, sortDir]);
+
+  function requestSort(key: string) {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  return { sorted, sortKey, sortDir, requestSort };
+}
+
+function SortableTh({
+  label,
+  sortKey,
+  activeKey,
+  dir,
+  onSort,
+  className = "",
+}: {
+  label: string;
+  sortKey: string;
+  activeKey: string | null;
+  dir: "asc" | "desc";
+  onSort: (key: string) => void;
+  className?: string;
+}) {
+  const active = activeKey === sortKey;
+  return (
+    <th
+      onClick={() => onSort(sortKey)}
+      className={`px-3.5 py-2.5 cursor-pointer select-none hover:text-ink transition-colors ${className}`}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <span className="flex flex-col leading-none -space-y-1">
+          <ChevronUp size={10} className={active && dir === "asc" ? "text-primary" : "text-border"} />
+          <ChevronDown size={10} className={active && dir === "desc" ? "text-primary" : "text-border"} />
+        </span>
+      </span>
+    </th>
   );
 }
 
@@ -296,6 +357,9 @@ export default function AdminPage() {
     );
   }, [volunteerBriefs, searchApproved]);
 
+  const volunteerSort = useSort(filteredPendingVolunteers);
+  const caseSort = useSort(filteredPendingCases);
+
   async function act(key: string, action: () => Promise<unknown>) {
     setBusy(key);
     try {
@@ -370,8 +434,8 @@ export default function AdminPage() {
                       onToggle={() => toggleAllIds(setSelectedVolunteers, filteredPendingVolunteers.map((v) => v.id))}
                     />
                   </th>
-                  <th className="px-3.5 py-2.5">Name</th>
-                  <th className="px-3.5 py-2.5">Contact</th>
+                  <SortableTh label="Name" sortKey="name" activeKey={volunteerSort.sortKey} dir={volunteerSort.sortDir} onSort={volunteerSort.requestSort} />
+                  <SortableTh label="Contact" sortKey="email" activeKey={volunteerSort.sortKey} dir={volunteerSort.sortDir} onSort={volunteerSort.requestSort} />
                   <th className="px-3.5 py-2.5">Motivation</th>
                   <th className="px-3.5 py-2.5 text-right">Actions</th>
                 </tr>
@@ -382,7 +446,7 @@ export default function AdminPage() {
                     <td colSpan={5} className="px-3.5 py-6 text-center text-muted">No pending applications.</td>
                   </tr>
                 )}
-                {filteredPendingVolunteers.map((v) => (
+                {volunteerSort.sorted.map((v) => (
                   <tr key={v.id} className={`hover:bg-background/40 transition-colors ${selectedVolunteers.has(v.id) ? "bg-primary/5" : ""}`}>
                     <td className="px-3.5 py-3 align-top">
                       <input
@@ -480,9 +544,9 @@ export default function AdminPage() {
                       onToggle={() => toggleAllIds(setSelectedCases, filteredPendingCases.map((c) => c.id))}
                     />
                   </th>
-                  <th className="px-3.5 py-2.5">Case</th>
-                  <th className="px-3.5 py-2.5">Location / Amount</th>
-                  <th className="px-3.5 py-2.5">Submitted by</th>
+                  <SortableTh label="Case" sortKey="title" activeKey={caseSort.sortKey} dir={caseSort.sortDir} onSort={caseSort.requestSort} />
+                  <SortableTh label="Location / Amount" sortKey="amountNeeded" activeKey={caseSort.sortKey} dir={caseSort.sortDir} onSort={caseSort.requestSort} />
+                  <SortableTh label="Submitted by" sortKey="submitterName" activeKey={caseSort.sortKey} dir={caseSort.sortDir} onSort={caseSort.requestSort} />
                   <th className="px-3.5 py-2.5 text-right">Actions</th>
                 </tr>
               </thead>
@@ -492,7 +556,7 @@ export default function AdminPage() {
                     <td colSpan={5} className="px-3.5 py-6 text-center text-muted">No pending cases.</td>
                   </tr>
                 )}
-                {filteredPendingCases.map((c) => (
+                {caseSort.sorted.map((c) => (
                   <tr
                     key={c.id}
                     onClick={() => setReviewCase(c)}
@@ -1519,6 +1583,7 @@ function DonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  const donationSort = useSort(donations);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1643,9 +1708,9 @@ function DonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
                 </th>
               )}
               <th className="px-3.5 py-2.5">Receipt</th>
-              <th className="px-3.5 py-2.5">Donation</th>
+              <SortableTh label="Donation" sortKey="amount" activeKey={donationSort.sortKey} dir={donationSort.sortDir} onSort={donationSort.requestSort} />
               <th className="px-3.5 py-2.5">Sent from</th>
-              <th className="px-3.5 py-2.5">Date</th>
+              <SortableTh label="Date" sortKey="createdAt" activeKey={donationSort.sortKey} dir={donationSort.sortDir} onSort={donationSort.requestSort} />
               <th className="px-3.5 py-2.5 text-right">Actions</th>
             </tr>
           </thead>
@@ -1655,7 +1720,7 @@ function DonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
             ) : donations.length === 0 ? (
               <tr><td colSpan={6} className="px-3.5 py-6 text-center text-muted">No {statusFilter !== "all" ? statusFilter : ""} donations found.</td></tr>
             ) : (
-              donations.map((d) => (
+              donationSort.sorted.map((d) => (
                 <tr key={d.id} className={`hover:bg-background/40 transition-colors ${selected.has(d.id) ? "bg-primary/5" : ""}`}>
                   {statusFilter === "pending" && (
                     <td className="px-3.5 py-3 align-top">
