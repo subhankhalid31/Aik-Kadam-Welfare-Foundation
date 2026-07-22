@@ -17,6 +17,7 @@ if (process.env.NODE_ENV === "production" && !process.env.SESSION_SECRET) {
 }
 
 const app = express();
+app.set("trust proxy", 1);
 app.use(
   helmet({
     // Disabled for now — the app doesn't yet declare its own script/style
