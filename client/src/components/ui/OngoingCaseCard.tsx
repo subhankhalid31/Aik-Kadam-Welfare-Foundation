@@ -61,11 +61,12 @@ export function OngoingCaseCard({ id, title, image, location, description, colle
 
         <div className="mt-4 sm:mt-2 h-2 rounded-full bg-border overflow-hidden">
           <motion.div
-            className="h-full rounded-full bg-primary transition-shadow duration-[250ms] group-hover:shadow-[0_0_10px_rgba(48,135,248,0.7)]"
-            initial={{ width: 0 }}
-            whileInView={{ width: `${pct}%` }}
+            className="h-full origin-left rounded-full bg-primary transition-shadow duration-[250ms] group-hover:shadow-[0_0_10px_rgba(48,135,248,0.7)]"
+            style={{ width: `${pct}%` }}
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
             viewport={{ once: true, amount: 0.6 }}
-            transition={{ duration: 1, ease: "easeOut" }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           />
         </div>
         <div className="mt-1.5 flex items-center justify-between text-xs">

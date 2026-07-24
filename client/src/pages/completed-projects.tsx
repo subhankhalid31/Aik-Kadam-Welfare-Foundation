@@ -5,6 +5,7 @@ import { CompletedHero } from "@/components/sections/CompletedHero";
 import { CompletedStatsBar } from "@/components/sections/CompletedStatsBar";
 import { VerseStrip } from "@/components/sections/VerseStrip";
 import { GalleryCard } from "@/components/ui/GalleryCard";
+import { StaggerGrid, StaggerItem } from "@/components/ui/ScrollStagger";
 import { GalleryDetailModal } from "@/components/ui/GalleryDetailModal";
 import { SearchBar, SortDropdown } from "@/components/ui/SearchBar";
 import { api } from "@/lib/api";
@@ -132,15 +133,9 @@ export default function CompletedProjectsPage() {
             {events.length === 0 ? "No completed projects posted yet." : `No projects match "${query}".`}
           </p>
         ) : (
-          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-7">
-            {filtered.map((event, i) => (
-              <motion.div
-                key={event.id}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.5, delay: (i % 6) * 0.12, ease: "easeOut" }}
-              >
+          <StaggerGrid className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-7">
+            {filtered.map((event) => (
+              <StaggerItem key={event.id}>
                 <GalleryCard
                   id={event.id}
                   title={event.title}
@@ -153,9 +148,9 @@ export default function CompletedProjectsPage() {
                   funds={event.funds ?? "N/A"}
                   onViewDetails={setSelectedEventId}
                 />
-              </motion.div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerGrid>
         )}
 
         <VerseStrip />

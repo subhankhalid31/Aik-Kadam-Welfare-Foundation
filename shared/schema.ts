@@ -33,7 +33,11 @@ export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
+  // Nullable: accounts created via "Sign up with Google" have no password.
+  passwordHash: text("password_hash"),
+  // Google's stable per-account subject id ("sub" claim). Set only for
+  // accounts that signed up (or later linked) via Google Sign-In.
+  googleId: varchar("google_id").unique(),
 
   role: userRoleEnum("role").notNull().default("donor"),
   isVerified: boolean("is_verified").notNull().default(false),
@@ -82,10 +86,10 @@ export const insertUserSchema = createInsertSchema(users)
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
-export type PublicUser = Omit<User, "passwordHash">;
+export type PublicUser = Omit<User, "passwordHash" | "googleId">;
 
 export function toPublicUser(user: User): PublicUser {
-  const { passwordHash, ...publicUser } = user;
+  const { passwordHash, googleId, ...publicUser } = user;
   return publicUser;
 }
 

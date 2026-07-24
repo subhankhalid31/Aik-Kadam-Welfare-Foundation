@@ -12,8 +12,8 @@ type ApiCase = { id: string; title: string; amountNeeded: number; amountCollecte
 type PaymentDetail = { label: string; account: string; logo?: typeof JazzCashLogo };
 
 const PAYMENT_DETAILS: Record<"bank_transfer" | "jazzcash" | "easypaisa" | "cash", PaymentDetail> = {
-  bank_transfer: { label: "Bank Transfer", account: "Subhan ADA, Account #: 01607992369899, HBL", logo: HblLogo },
-  jazzcash: { label: "JazzCash", account: "0333-7430601-6758644 (Sufian Khalid)", logo: JazzCashLogo },
+  bank_transfer: { label: "Bank Transfer", account: "Aik Kadam Trust, Account #: 01607992369899, HBL", logo: HblLogo },
+  jazzcash: { label: "JazzCash", account: "0313-6758644 (Subhan Khalid)", logo: JazzCashLogo },
   easypaisa: { label: "Easypaisa", account: "0313-6758644 (Subhan Khalid)", logo: EasypaisaLogo },
   cash: { label: "Cash / In Person", account: "Contact us at help@aikkadam.org to arrange a handover" },
 };
