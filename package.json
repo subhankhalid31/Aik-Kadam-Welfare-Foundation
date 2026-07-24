@@ -3,9 +3,6 @@
   "version": "1.0.0",
   "type": "module",
   "private": true,
-  "engines": {
-    "node": "20.x"
-  },
   "scripts": {
     "dev:client": "vite",
     "dev": "cross-env NODE_ENV=development tsx server/index.ts",
@@ -27,6 +24,8 @@
     "express-rate-limit": "^8.6.0",
     "express-session": "^1.18.1",
     "framer-motion": "^12.42.2",
+    "google-auth-library": "^10.9.1",
+    "heic-convert": "^2.1.0",
     "helmet": "^8.3.0",
     "lucide-react": "^0.469.0",
     "multer": "^2.0.1",
@@ -44,6 +43,7 @@
     "@types/connect-pg-simple": "^7.0.3",
     "@types/express": "^5.0.0",
     "@types/express-session": "^1.18.0",
+    "@types/heic-convert": "^2.1.1",
     "@types/multer": "^1.4.12",
     "@types/node": "^20.19.0",
     "@types/pdfkit": "^0.13.5",

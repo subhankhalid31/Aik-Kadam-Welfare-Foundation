@@ -2,6 +2,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
+import convertHeic from "heic-convert";
 
 const PUBLIC_UPLOAD_DIR = path.resolve(import.meta.dirname, "..", "..", "uploads");
 // Kept outside the publicly-static-served uploads/ directory on purpose —
@@ -24,10 +25,10 @@ function makeStorage(dir: string) {
 }
 
 function imageFileFilter(_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) {
-  const allowed = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
+  const allowed = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".heif"];
   const ext = path.extname(file.originalname).toLowerCase();
   if (!allowed.includes(ext)) {
-    return cb(new Error("Only image files are allowed (jpg, png, webp, gif)"));
+    return cb(new Error("Only image files are allowed (jpg, png, webp, gif, heic)"));
   }
   cb(null, true);
 }
@@ -86,7 +87,42 @@ function looksLikeImage(buffer: Buffer): boolean {
   return isJpeg || isPng || isGif || isWebp;
 }
 
-export function verifyIsRealImage(req: any, res: any, next: any) {
+// HEIC/HEIF files (the default photo format on iPhones) start with an ISO
+// base media "ftyp" box: 4 bytes of box size, then the literal ASCII bytes
+// "ftyp", then a 4-byte brand like "heic", "heix", "mif1", "heim", "heis".
+// Browsers other than Safari can't render these at all, so anything that
+// looks like HEIC gets converted to JPEG below before it's ever stored.
+function looksLikeHeic(buffer: Buffer): boolean {
+  if (buffer.length < 12) return false;
+  const ftyp = buffer.subarray(4, 8).toString("ascii");
+  if (ftyp !== "ftyp") return false;
+  const brand = buffer.subarray(8, 12).toString("ascii");
+  return ["heic", "heix", "heim", "heis", "hevc", "hevx", "mif1", "msf1"].includes(brand);
+}
+
+// Reads a HEIC/HEIF file from disk, converts it to JPEG, writes the result
+// next to it with a .jpg extension, and removes the original. Mutates the
+// multer File object in place so every downstream consumer (verifyIsRealImage,
+// the route handlers building DB URLs from file.filename) transparently sees
+// the converted JPEG instead of the original HEIC.
+async function convertHeicFileToJpeg(file: Express.Multer.File): Promise<void> {
+  const inputBuffer = fs.readFileSync(file.path);
+  const outputBuffer = (await convertHeic({ buffer: inputBuffer, format: "JPEG", quality: 0.9 })) as Buffer;
+
+  const dir = path.dirname(file.path);
+  const baseName = path.basename(file.filename, path.extname(file.filename));
+  const newFilename = `${baseName}.jpg`;
+  const newPath = path.join(dir, newFilename);
+
+  fs.writeFileSync(newPath, outputBuffer);
+  fs.unlinkSync(file.path);
+
+  file.filename = newFilename;
+  file.path = newPath;
+  file.mimetype = "image/jpeg";
+}
+
+export async function verifyIsRealImage(req: any, res: any, next: any) {
   const files: Express.Multer.File[] = req.files
     ? Array.isArray(req.files)
       ? req.files
@@ -96,6 +132,22 @@ export function verifyIsRealImage(req: any, res: any, next: any) {
     : [];
 
   if (files.length === 0) return next();
+
+  try {
+    for (const file of files) {
+      const fd = fs.openSync(file.path, "r");
+      const buffer = Buffer.alloc(12);
+      fs.readSync(fd, buffer, 0, 12, 0);
+      fs.closeSync(fd);
+
+      if (looksLikeHeic(buffer)) {
+        await convertHeicFileToJpeg(file);
+      }
+    }
+  } catch {
+    for (const f of files) fs.unlink(f.path, () => {});
+    return res.status(400).json({ message: "That HEIC photo couldn't be converted. Please try a different photo, or take a screenshot and upload that instead." });
+  }
 
   for (const file of files) {
     let ok = false;
