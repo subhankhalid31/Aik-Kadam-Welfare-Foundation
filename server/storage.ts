@@ -35,9 +35,30 @@ export const storage = {
     return user;
   },
 
+  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
+    return user;
+  },
+
   async createUser(data: { name: string; email: string; passwordHash: string }): Promise<User> {
     const [user] = await db.insert(users).values(data).returning();
     return user;
+  },
+
+  // Used by "Sign up with Google" — the account has no password, and since
+  // Google has already verified the email address it's created pre-verified.
+  async createGoogleUser(data: { name: string; email: string; googleId: string }): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({ name: data.name, email: data.email, googleId: data.googleId, isVerified: true })
+      .returning();
+    return user;
+  },
+
+  // Links a Google account to an existing email/password account the first
+  // time someone uses "Continue with Google" with a matching email.
+  async linkGoogleId(userId: string, googleId: string): Promise<void> {
+    await db.update(users).set({ googleId }).where(eq(users.id, userId));
   },
 
   async markUserVerified(email: string): Promise<void> {

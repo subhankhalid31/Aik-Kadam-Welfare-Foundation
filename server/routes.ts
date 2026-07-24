@@ -7,6 +7,7 @@ import { generateOtpCode, hashOtpCode, otpExpiresAt, isOtpExpired, MAX_ATTEMPTS 
 import { requireAuth, requireRole } from "./middleware/auth";
 import { uploadImage, uploadReceipt, uploadedFileUrl, receiptUrl, receiptFilePath, verifyIsRealImage } from "./lib/upload";
 import { streamVolunteerCertificate } from "./lib/certificate";
+import { verifyGoogleIdToken } from "./lib/google-auth";
 import {
   signupSchema,
   verifyOtpSchema,
@@ -146,6 +147,10 @@ export function registerRoutes(app: Express) {
       return res.status(403).json({ message: "This account has been suspended by the platform. If you believe this is a mistake, please contact us." });
     }
 
+    if (!user.passwordHash) {
+      return res.status(401).json({ message: "This account was created with Google Sign-In. Please continue with Google instead." });
+    }
+
     const validPassword = await bcrypt.compare(password, user.passwordHash);
     if (!validPassword) return res.status(401).json({ message: "Incorrect email or password" });
 
@@ -154,6 +159,52 @@ export function registerRoutes(app: Express) {
       await storage.createOtp({ email, codeHash: hashOtpCode(code), purpose: "signup", expiresAt: otpExpiresAt() });
       await sendOtpEmail(email, code, "signup");
       return res.status(403).json({ message: "Please verify your email first. A new code has been sent.", needsVerification: true });
+    }
+
+    req.session.userId = user.id;
+    res.json({ user: toPublicUser(user) });
+  });
+
+  // Sign up or log in with "Continue with Google". The frontend hands us the
+  // ID token Google's Identity Services widget produced; we verify it
+  // server-side, then either link it to a matching existing account, log
+  // an already-linked account in, or create a brand-new (pre-verified —
+  // Google already confirmed the email) account.
+  app.post("/api/auth/google", loginLimiter, async (req, res) => {
+    const { idToken } = req.body ?? {};
+    if (!idToken || typeof idToken !== "string") {
+      return res.status(400).json({ message: "Missing Google credential" });
+    }
+
+    const profile = await verifyGoogleIdToken(idToken);
+    if (!profile) {
+      return res.status(401).json({ message: "Google sign-in failed. Please try again." });
+    }
+    if (!profile.emailVerified) {
+      return res.status(401).json({ message: "That Google account's email isn't verified." });
+    }
+
+    if (await storage.isEmailBanned(profile.email)) {
+      return res.status(403).json({ message: "This email address is not permitted to create an account. If you believe this is a mistake, please contact us." });
+    }
+
+    let user = await storage.getUserByGoogleId(profile.googleId);
+
+    if (!user) {
+      const existing = await storage.getUserByEmail(profile.email);
+      if (existing) {
+        if (existing.isBanned) {
+          return res.status(403).json({ message: "This account has been suspended by the platform. If you believe this is a mistake, please contact us." });
+        }
+        // Same email already has a password account — link Google to it
+        // rather than creating a duplicate.
+        await storage.linkGoogleId(existing.id, profile.googleId);
+        user = existing;
+      } else {
+        user = await storage.createGoogleUser({ name: profile.name, email: profile.email, googleId: profile.googleId });
+      }
+    } else if (user.isBanned) {
+      return res.status(403).json({ message: "This account has been suspended by the platform. If you believe this is a mistake, please contact us." });
     }
 
     req.session.userId = user.id;
@@ -222,6 +273,9 @@ export function registerRoutes(app: Express) {
       return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Invalid input" });
     }
     const user = (req as any).user;
+    if (!user.passwordHash) {
+      return res.status(400).json({ message: "This account was created with Google Sign-In and has no password to change." });
+    }
     const valid = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash);
     if (!valid) return res.status(400).json({ message: "Current password is incorrect" });
 

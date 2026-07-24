@@ -87,7 +87,7 @@ export function CompletedHero() {
           <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
             <ShieldCheck size={16} />
           </div>
-          <p className="mt-3 font-display text-sm text-ink leading-snug">Our Verification Process</p>
+          <p className="mt-3 font-display text-sm text-ink leading-snug">Our Process</p>
           <p className="mt-1 text-xs text-muted leading-relaxed hidden sm:block">
             From receiving a case to completing it with transparency and care.
           </p>

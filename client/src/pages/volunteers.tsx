@@ -5,6 +5,7 @@ import { VolunteersHero } from "@/components/sections/VolunteersHero";
 import { VolunteersStatsBar } from "@/components/sections/VolunteersStatsBar";
 import { VerificationBanner } from "@/components/sections/VerificationBanner";
 import { VolunteerCard, type VolunteerCardProps } from "@/components/ui/VolunteerCard";
+import { StaggerGrid, StaggerItem } from "@/components/ui/ScrollStagger";
 import { VolunteerDetailModal, type VolunteerDetail } from "@/components/ui/VolunteerDetailModal";
 import { SearchBar, FilterDropdown, FilterPills, SortDropdown } from "@/components/ui/SearchBar";
 import { api } from "@/lib/api";
@@ -184,15 +185,9 @@ export default function VolunteersPage() {
               : `No volunteers match "${query}".`}
           </p>
         ) : (
-          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {filtered.map((v, i) => (
-              <motion.div
-                key={v.badgeId}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.5, delay: (i % 6) * 0.1, ease: "easeOut" }}
-              >
+          <StaggerGrid className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {filtered.map((v) => (
+              <StaggerItem key={v.badgeId}>
                 <VolunteerCard
                   {...v}
                   onOpen={() =>
@@ -212,9 +207,9 @@ export default function VolunteersPage() {
                     })
                   }
                 />
-              </motion.div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerGrid>
         )}
 
         <VerificationBanner />
