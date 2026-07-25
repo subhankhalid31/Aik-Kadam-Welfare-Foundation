@@ -1,4 +1,5 @@
 import { Switch, Route } from "wouter";
+import { Suspense, lazy } from "react";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { AuthProvider } from "@/lib/auth-context";
 import { DialogProvider } from "@/lib/dialog-context";
@@ -15,8 +16,6 @@ import Contact from "@/pages/contact";
 import Partner from "@/pages/partner";
 import Help from "@/pages/help";
 import Verify from "@/pages/verify";
-import Signup from "@/pages/signup";
-import Login from "@/pages/login";
 import VerifyOtp from "@/pages/verify-otp";
 import ForgotPassword from "@/pages/forgot-password";
 import Admin from "@/pages/admin";
@@ -26,6 +25,13 @@ import Account from "@/pages/account";
 import AccountSettings from "@/pages/account-settings";
 import Donate from "@/pages/donate";
 import MyDonations from "@/pages/my-donations";
+
+// Lazy-loaded: both pull in three.js/@react-three/fiber for their animated
+// background, which adds ~800kb to the bundle. Splitting them out means only
+// visitors who actually go to /login or /signup pay that cost — everyone
+// browsing cases, donating, or reading About never downloads it.
+const Login = lazy(() => import("@/pages/login"));
+const Signup = lazy(() => import("@/pages/signup"));
 
 export default function App() {
   return (
@@ -47,8 +53,28 @@ export default function App() {
         <Route path="/help" component={Help} />
         <Route path="/verify/:badgeId" component={Verify} />
         <Route path="/verify" component={Verify} />
-        <Route path="/signup" component={Signup} />
-        <Route path="/login" component={Login} />
+        <Route path="/signup">
+          <Suspense
+            fallback={
+              <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              </div>
+            }
+          >
+            <Signup />
+          </Suspense>
+        </Route>
+        <Route path="/login">
+          <Suspense
+            fallback={
+              <div className="min-h-screen bg-ink flex items-center justify-center">
+                <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              </div>
+            }
+          >
+            <Login />
+          </Suspense>
+        </Route>
         <Route path="/verify-otp" component={VerifyOtp} />
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/admin" component={Admin} />

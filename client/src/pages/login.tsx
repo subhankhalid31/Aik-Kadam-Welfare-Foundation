@@ -1,21 +1,10 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { motion, useAnimation, type Variants } from "framer-motion";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { FormField, inputClass } from "@/components/ui/FormField";
-import { GoogleButton, OrDivider } from "@/components/ui/GoogleButton";
+import { GoogleSignInButton } from "@/components/ui/GoogleSignInButton";
+import { CanvasRevealEffect } from "@/components/ui/CanvasRevealEffect";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-
-const containerVariants: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
-};
-
-const fieldVariants: Variants = {
-  hidden: { opacity: 0, y: 14 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
-};
 
 export default function LoginPage() {
   const [, navigate] = useLocation();
@@ -24,15 +13,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const shakeControls = useAnimation();
-
-  function fail(message: string) {
-    setError(message);
-    shakeControls.start({
-      x: [0, -8, 8, -6, 6, -3, 3, 0],
-      transition: { duration: 0.4, ease: "easeInOut" },
-    });
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,81 +27,90 @@ export default function LoginPage() {
         navigate(`/verify-otp?email=${encodeURIComponent(email)}&purpose=signup`);
         return;
       }
-      fail(err instanceof ApiError ? err.message : "Something went wrong");
+      setError(err instanceof ApiError ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleGoogleSuccess(role: string) {
-    await refresh();
-    navigate(role === "admin" ? "/admin" : "/");
-  }
-
   return (
     <PageLayout>
-      <motion.main
-        className="max-w-md mx-auto px-6 pt-16 pb-24"
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-      >
-        <motion.span variants={fieldVariants} className="text-xs font-semibold tracking-wide text-primary uppercase">
-          Sign In
-        </motion.span>
-        <motion.h1 variants={fieldVariants} className="mt-3 font-display text-3xl sm:text-4xl text-ink">
-          Welcome back.
-        </motion.h1>
+      <main className="relative overflow-hidden bg-background min-h-[calc(100vh-4rem)] flex items-center justify-center px-6 py-16">
+        {/* Animated dot-matrix background: brand blue mixed with a touch of accent yellow */}
+        <div className="absolute inset-0">
+          <CanvasRevealEffect
+            animationSpeed={2.4}
+            containerClassName="bg-background"
+            colors={[
+              [48, 135, 248],
+              [255, 214, 98],
+            ]}
+            dotSize={5}
+            opacities={[0.12, 0.14, 0.16, 0.2, 0.22, 0.26, 0.3, 0.34, 0.4, 0.48]}
+          />
+        </div>
+        {/* Fades the dots out toward the edges so the card and text stay crisp and readable */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(246,247,245,0.25)_0%,_rgba(246,247,245,0.94)_78%)]" />
 
-        <motion.div variants={fieldVariants} className="mt-8">
-          <GoogleButton mode="signin" onSuccess={handleGoogleSuccess} onError={fail} />
-        </motion.div>
+        <div className="relative z-10 w-full max-w-md rounded-3xl border border-border bg-white/80 backdrop-blur-md p-8 sm:p-10 shadow-xl">
+          <span className="text-xs font-semibold tracking-wide text-primary uppercase">Sign In</span>
+          <h1 className="mt-3 font-display text-3xl sm:text-4xl text-ink">Welcome back.</h1>
+          <p className="mt-2 text-sm text-muted">One step closer to where it's needed.</p>
 
-        <motion.div variants={fieldVariants} className="mt-6">
-          <OrDivider />
-        </motion.div>
+          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-ink">Email</label>
+              <input
+                required
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-1.5 w-full rounded-full border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                placeholder="you@example.com"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-ink">Password</label>
+              <input
+                required
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-1.5 w-full rounded-full border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                placeholder="Your password"
+              />
+            </div>
+            <a href="/forgot-password" className="block text-sm text-primary font-medium -mt-2 hover:text-primary-dark transition-colors">
+              Forgot password?
+            </a>
 
-        <motion.form onSubmit={handleSubmit} className="mt-6 space-y-5" animate={shakeControls}>
-          <motion.div variants={fieldVariants}>
-            <FormField label="Email">
-              <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} placeholder="you@example.com" />
-            </FormField>
-          </motion.div>
-          <motion.div variants={fieldVariants}>
-            <FormField label="Password">
-              <input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} placeholder="Your password" />
-            </FormField>
-          </motion.div>
-          <motion.a variants={fieldVariants} href="/forgot-password" className="block text-sm text-primary font-medium -mt-3">
-            Forgot password?
-          </motion.a>
+            {error && <p className="text-sm text-red-600">{error}</p>}
 
-          {error && (
-            <motion.p
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-sm text-red-600"
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-white hover:bg-primary-dark transition-colors disabled:opacity-60"
             >
-              {error}
-            </motion.p>
-          )}
+              {loading ? "Signing in..." : "Sign In"}
+            </button>
+          </form>
 
-          <motion.button
-            variants={fieldVariants}
-            type="submit"
-            disabled={loading}
-            whileHover={{ scale: loading ? 1 : 1.015 }}
-            whileTap={{ scale: loading ? 1 : 0.98 }}
-            className="w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60"
-          >
-            {loading ? "Signing in..." : "Sign In"}
-          </motion.button>
-        </motion.form>
+          <GoogleSignInButton
+            onSuccess={async (role) => {
+              await refresh();
+              navigate(role === "admin" ? "/admin" : "/");
+            }}
+            onError={setError}
+          />
 
-        <motion.p variants={fieldVariants} className="mt-6 text-center text-sm text-muted">
-          Don't have an account? <a href="/signup" className="text-primary font-medium">Create one</a>
-        </motion.p>
-      </motion.main>
+          <p className="mt-6 text-center text-sm text-muted">
+            Don't have an account?{" "}
+            <a href="/signup" className="text-primary font-medium hover:text-primary-dark transition-colors">
+              Create one
+            </a>
+          </p>
+        </div>
+      </main>
     </PageLayout>
   );
 }
