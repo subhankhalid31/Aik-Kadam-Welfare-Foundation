@@ -5,7 +5,6 @@ import { OngoingHero } from "@/components/sections/OngoingHero";
 import { OngoingStatsBar } from "@/components/sections/OngoingStatsBar";
 import { VerseStrip } from "@/components/sections/VerseStrip";
 import { OngoingCaseCard } from "@/components/ui/OngoingCaseCard";
-import { StaggerGrid, StaggerItem } from "@/components/ui/ScrollStagger";
 import { CaseDetailModal } from "@/components/ui/CaseDetailModal";
 import { HeartHandIllustration } from "@/components/ui/HeartHandIllustration";
 import { SearchBar, FilterDropdown, SortDropdown } from "@/components/ui/SearchBar";
@@ -162,9 +161,15 @@ export default function OngoingProjectsPage() {
             <p className="mt-16 text-center text-muted">No cases match "{query}".</p>
           )
         ) : (
-          <StaggerGrid className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-7">
-            {filtered.map((c) => (
-              <StaggerItem key={c.id}>
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-7">
+            {filtered.map((c, i) => (
+              <motion.div
+                key={c.id}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.5, delay: (i % 6) * 0.1, ease: "easeOut" }}
+              >
                 <OngoingCaseCard
                   id={c.id}
                   title={c.title}
@@ -176,9 +181,9 @@ export default function OngoingProjectsPage() {
                   donorCount={c.donorCount}
                   onViewDetails={setSelectedCaseId}
                 />
-              </StaggerItem>
+              </motion.div>
             ))}
-          </StaggerGrid>
+          </div>
         )}
 
         <VerseStrip />

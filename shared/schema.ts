@@ -33,11 +33,7 @@ export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
-  // Nullable: accounts created via "Sign up with Google" have no password.
-  passwordHash: text("password_hash"),
-  // Google's stable per-account subject id ("sub" claim). Set only for
-  // accounts that signed up (or later linked) via Google Sign-In.
-  googleId: varchar("google_id").unique(),
+  passwordHash: text("password_hash").notNull(),
 
   role: userRoleEnum("role").notNull().default("donor"),
   isVerified: boolean("is_verified").notNull().default(false),
@@ -86,10 +82,10 @@ export const insertUserSchema = createInsertSchema(users)
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
-export type PublicUser = Omit<User, "passwordHash" | "googleId">;
+export type PublicUser = Omit<User, "passwordHash">;
 
 export function toPublicUser(user: User): PublicUser {
-  const { passwordHash, googleId, ...publicUser } = user;
+  const { passwordHash, ...publicUser } = user;
   return publicUser;
 }
 
@@ -102,8 +98,8 @@ export const otpCodes = pgTable("otp_codes", {
   purpose: otpPurposeEnum("purpose").notNull(),
   attempts: integer("attempts").notNull().default(0),
   consumed: boolean("consumed").notNull().default(false),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export type OtpCode = typeof otpCodes.$inferSelect;

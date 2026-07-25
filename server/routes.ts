@@ -1,13 +1,14 @@
 import type { Express } from "express";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import rateLimit from "express-rate-limit";
+import { OAuth2Client } from "google-auth-library";
 import { storage } from "./storage";
 import { sendOtpEmail, sendNotificationEmail } from "./lib/email";
 import { generateOtpCode, hashOtpCode, otpExpiresAt, isOtpExpired, MAX_ATTEMPTS } from "./lib/otp";
 import { requireAuth, requireRole } from "./middleware/auth";
 import { uploadImage, uploadReceipt, uploadedFileUrl, receiptUrl, receiptFilePath, verifyIsRealImage } from "./lib/upload";
 import { streamVolunteerCertificate } from "./lib/certificate";
-import { verifyGoogleIdToken } from "./lib/google-auth";
 import {
   signupSchema,
   verifyOtpSchema,
@@ -147,10 +148,6 @@ export function registerRoutes(app: Express) {
       return res.status(403).json({ message: "This account has been suspended by the platform. If you believe this is a mistake, please contact us." });
     }
 
-    if (!user.passwordHash) {
-      return res.status(401).json({ message: "This account was created with Google Sign-In. Please continue with Google instead." });
-    }
-
     const validPassword = await bcrypt.compare(password, user.passwordHash);
     if (!validPassword) return res.status(401).json({ message: "Incorrect email or password" });
 
@@ -165,54 +162,61 @@ export function registerRoutes(app: Express) {
     res.json({ user: toPublicUser(user) });
   });
 
-  // Sign up or log in with "Continue with Google". The frontend hands us the
-  // ID token Google's Identity Services widget produced; we verify it
-  // server-side, then either link it to a matching existing account, log
-  // an already-linked account in, or create a brand-new (pre-verified —
-  // Google already confirmed the email) account.
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy(() => res.json({ message: "Logged out" }));
+  });
+
   app.post("/api/auth/google", loginLimiter, async (req, res) => {
-    const { idToken } = req.body ?? {};
-    if (!idToken || typeof idToken !== "string") {
+    const { credential } = req.body;
+    if (!credential || typeof credential !== "string") {
       return res.status(400).json({ message: "Missing Google credential" });
     }
-
-    const profile = await verifyGoogleIdToken(idToken);
-    if (!profile) {
-      return res.status(401).json({ message: "Google sign-in failed. Please try again." });
-    }
-    if (!profile.emailVerified) {
-      return res.status(401).json({ message: "That Google account's email isn't verified." });
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      console.error("GOOGLE_CLIENT_ID is not set — Google Sign-In cannot verify tokens.");
+      return res.status(500).json({ message: "Google Sign-In isn't configured on this server yet." });
     }
 
-    if (await storage.isEmailBanned(profile.email)) {
+    let payload;
+    try {
+      const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+      const ticket = await client.verifyIdToken({ idToken: credential, audience: process.env.GOOGLE_CLIENT_ID });
+      payload = ticket.getPayload();
+    } catch {
+      return res.status(401).json({ message: "Invalid Google sign-in. Please try again." });
+    }
+
+    if (!payload?.email) {
+      return res.status(401).json({ message: "Invalid Google sign-in. Please try again." });
+    }
+    const email = payload.email;
+    const name = payload.name || email.split("@")[0];
+
+    if (await storage.isEmailBanned(email)) {
       return res.status(403).json({ message: "This email address is not permitted to create an account. If you believe this is a mistake, please contact us." });
     }
 
-    let user = await storage.getUserByGoogleId(profile.googleId);
-
+    let user = await storage.getUserByEmail(email);
     if (!user) {
-      const existing = await storage.getUserByEmail(profile.email);
-      if (existing) {
-        if (existing.isBanned) {
-          return res.status(403).json({ message: "This account has been suspended by the platform. If you believe this is a mistake, please contact us." });
-        }
-        // Same email already has a password account — link Google to it
-        // rather than creating a duplicate.
-        await storage.linkGoogleId(existing.id, profile.googleId);
-        user = existing;
-      } else {
-        user = await storage.createGoogleUser({ name: profile.name, email: profile.email, googleId: profile.googleId });
-      }
+      // Google has already verified this email, so the account is created
+      // pre-verified — no OTP step needed. The random password hash is a
+      // placeholder the user can never guess; they can still set a real
+      // password later via "Forgot password" if they want email+password login too.
+      const randomPassword = crypto.randomBytes(32).toString("hex");
+      const passwordHash = await bcrypt.hash(randomPassword, 10);
+      await storage.createUser({ name, email, passwordHash });
+      await storage.markUserVerified(email);
+      user = await storage.getUserByEmail(email);
     } else if (user.isBanned) {
       return res.status(403).json({ message: "This account has been suspended by the platform. If you believe this is a mistake, please contact us." });
+    } else if (!user.isVerified) {
+      await storage.markUserVerified(email);
+      user = await storage.getUserByEmail(email);
     }
+
+    if (!user) return res.status(500).json({ message: "Something went wrong" });
 
     req.session.userId = user.id;
     res.json({ user: toPublicUser(user) });
-  });
-
-  app.post("/api/auth/logout", (req, res) => {
-    req.session.destroy(() => res.json({ message: "Logged out" }));
   });
 
   app.post("/api/auth/forgot-password", passwordResetLimiter, async (req, res) => {
@@ -273,9 +277,6 @@ export function registerRoutes(app: Express) {
       return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Invalid input" });
     }
     const user = (req as any).user;
-    if (!user.passwordHash) {
-      return res.status(400).json({ message: "This account was created with Google Sign-In and has no password to change." });
-    }
     const valid = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash);
     if (!valid) return res.status(400).json({ message: "Current password is incorrect" });
 

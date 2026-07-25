@@ -1,21 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useSearch } from "wouter";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { OtpInput } from "@/components/ui/OtpInput";
+import { inputClass } from "@/components/ui/FormField";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { MailCheck, Check } from "lucide-react";
-
-const containerVariants: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
-};
-
-const fieldVariants: Variants = {
-  hidden: { opacity: 0, y: 14 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
-};
 
 export default function VerifyOtpPage() {
   const [, navigate] = useLocation();
@@ -31,7 +21,6 @@ export default function VerifyOtpPage() {
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const [verified, setVerified] = useState(false);
-  const [shakeKey, setShakeKey] = useState(0);
   const [cooldown, setCooldown] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval>>();
 
@@ -41,27 +30,19 @@ export default function VerifyOtpPage() {
     return () => clearInterval(timerRef.current);
   }, [cooldown]);
 
-  async function verifyCode(fullCode: string) {
+  async function handleVerify(e: React.FormEvent) {
+    e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      await api.post("/api/auth/verify-otp", { email, code: fullCode, purpose });
-      setVerified(true);
+      await api.post("/api/auth/verify-otp", { email, code, purpose });
       await refresh();
-      setTimeout(() => navigate("/"), 900);
+      setVerified(true);
+      setTimeout(() => navigate("/"), 1100);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong");
-      setCode("");
-      setShakeKey((k) => k + 1);
-    } finally {
       setLoading(false);
     }
-  }
-
-  async function handleVerify(e: React.FormEvent) {
-    e.preventDefault();
-    if (code.length !== 6 || loading || verified) return;
-    verifyCode(code);
   }
 
   async function handleResend() {
@@ -89,99 +70,86 @@ export default function VerifyOtpPage() {
 
   return (
     <PageLayout>
-      <motion.main
-        className="max-w-md mx-auto px-6 pt-16 pb-24 text-center"
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-      >
-        <motion.div variants={fieldVariants} className="relative mx-auto flex h-14 w-14 items-center justify-center">
-          <AnimatePresence mode="wait" initial={false}>
-            {verified ? (
-              <motion.div
-                key="success"
-                initial={{ scale: 0, rotate: -45, opacity: 0 }}
-                animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                transition={{ type: "spring", stiffness: 400, damping: 18 }}
-                className="flex h-14 w-14 items-center justify-center rounded-full bg-success/15"
-              >
-                <Check className="text-success" size={28} strokeWidth={3} />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="mail"
-                initial={{ scale: 0.7, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.7, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <MailCheck className="text-primary" size={40} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-
-        <motion.h1 variants={fieldVariants} className="mt-5 font-display text-3xl text-ink">
-          {verified ? "Verified!" : "Check your email"}
-        </motion.h1>
-        <motion.p variants={fieldVariants} className="mt-3 text-muted leading-relaxed">
+      <main className="max-w-md mx-auto px-6 pt-16 pb-24 text-center">
+        <AnimatePresence mode="wait">
           {verified ? (
-            "Taking you in..."
-          ) : (
-            <>We sent a 6-digit code to <span className="font-medium text-ink">{email}</span>.</>
-          )}
-        </motion.p>
-
-        {!verified && (
-          <motion.form onSubmit={handleVerify} className="mt-8 space-y-5" variants={fieldVariants}>
-            <OtpInput value={code} onChange={setCode} onComplete={verifyCode} shakeKey={shakeKey} disabled={loading} />
-
-            <AnimatePresence>
-              {error && (
-                <motion.p
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  className="text-sm text-red-600 text-center"
-                >
-                  {error}
-                </motion.p>
-              )}
-              {info && (
-                <motion.p
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  className="text-sm text-primary text-center"
-                >
-                  {info}
-                </motion.p>
-              )}
-            </AnimatePresence>
-
-            <motion.button
-              type="submit"
-              disabled={loading || code.length !== 6}
-              whileHover={{ scale: loading || code.length !== 6 ? 1 : 1.015 }}
-              whileTap={{ scale: loading || code.length !== 6 ? 1 : 0.98 }}
-              className="w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60"
+            <motion.div
+              key="success"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center"
             >
-              {loading ? "Verifying..." : "Verify"}
-            </motion.button>
-          </motion.form>
-        )}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-500"
+              >
+                <motion.div
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  transition={{ delay: 0.15, duration: 0.35, ease: "easeOut" }}
+                >
+                  <Check size={32} strokeWidth={3} className="text-white" />
+                </motion.div>
+              </motion.div>
+              <motion.h1
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mt-5 font-display text-3xl text-ink"
+              >
+                Verified
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="mt-2 text-muted"
+              >
+                Taking you in...
+              </motion.p>
+            </motion.div>
+          ) : (
+            <motion.div key="form" initial={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <MailCheck className="mx-auto text-primary" size={40} />
+              <h1 className="mt-5 font-display text-3xl text-ink">Check your email</h1>
+              <p className="mt-3 text-muted leading-relaxed">
+                We sent a 6-digit code to <span className="font-medium text-ink">{email}</span>.
+              </p>
 
-        {!verified && (
-          <motion.button
-            variants={fieldVariants}
-            onClick={handleResend}
-            disabled={cooldown > 0}
-            className="mt-5 text-sm text-primary font-medium disabled:text-muted disabled:cursor-not-allowed"
-          >
-            {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
-          </motion.button>
-        )}
-      </motion.main>
+              <form onSubmit={handleVerify} className="mt-8 space-y-5 text-left">
+                <input
+                  required
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                  className={`${inputClass} text-center tracking-[0.5em] text-lg font-mono`}
+                  placeholder="------"
+                  autoFocus
+                />
+
+                {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+                {info && <p className="text-sm text-primary text-center">{info}</p>}
+
+                <button type="submit" disabled={loading || code.length !== 6} className="w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60">
+                  {loading ? "Verifying..." : "Verify"}
+                </button>
+              </form>
+
+              <button
+                onClick={handleResend}
+                disabled={cooldown > 0}
+                className="mt-5 text-sm text-primary font-medium disabled:text-muted disabled:cursor-not-allowed"
+              >
+                {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
     </PageLayout>
   );
 }

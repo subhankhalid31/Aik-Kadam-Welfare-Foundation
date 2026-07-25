@@ -5,7 +5,6 @@ import { SuccessStoriesHero } from "@/components/sections/SuccessStoriesHero";
 import { SuccessStoriesStatsBar } from "@/components/sections/SuccessStoriesStatsBar";
 import { TestimonialCarousel } from "@/components/sections/TestimonialCarousel";
 import { SuccessStoryCard } from "@/components/ui/SuccessStoryCard";
-import { StaggerGrid, StaggerItem } from "@/components/ui/ScrollStagger";
 import { SuccessStoryDetailModal, type SuccessStoryDetail } from "@/components/ui/SuccessStoryDetailModal";
 import { SearchBar, SortDropdown } from "@/components/ui/SearchBar";
 import { api } from "@/lib/api";
@@ -114,9 +113,15 @@ export default function SuccessStoriesPage() {
             {stories.length === 0 ? "No success stories posted yet." : `No stories match "${query}".`}
           </p>
         ) : (
-          <StaggerGrid className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-7">
-            {filtered.map((story) => (
-              <StaggerItem key={story.id}>
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-7">
+            {filtered.map((story, i) => (
+              <motion.div
+                key={story.id}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.5, delay: (i % 6) * 0.1, ease: "easeOut" }}
+              >
                 <SuccessStoryCard
                   title={story.title}
                   date={story.storyDate}
@@ -134,9 +139,9 @@ export default function SuccessStoriesPage() {
                     })
                   }
                 />
-              </StaggerItem>
+              </motion.div>
             ))}
-          </StaggerGrid>
+          </div>
         )}
 
         <TestimonialCarousel quotes={testimonialQuotes} />

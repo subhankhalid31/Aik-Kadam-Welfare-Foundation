@@ -1,6 +1,23 @@
 import { Link } from "wouter";
+import { motion } from "framer-motion";
 import { DonateButton } from "@/components/ui/DonateButton";
 import founderPhoto from "@assets/founder.jpeg";
+
+// Each child fades up into place slightly after the one before it — the
+// overall effect is a calm, confident reveal rather than everything
+// appearing at once. Deliberately understated: this is a charity site
+// people are trusting with donations, not a SaaS product to wow them.
+const container = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.12, delayChildren: 0.05 },
+  },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 18 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] as const } },
+};
 
 export function Hero() {
   return (
@@ -28,24 +45,27 @@ export function Hero() {
 
       <div className="max-w-6xl mx-auto px-6 pt-16 pb-24 grid lg:grid-cols-[1.15fr_0.85fr] gap-16 items-center">
         {/* Left: mission + CTA */}
-        <div>
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-white/60 px-3.5 py-1 text-xs font-semibold tracking-wide text-primary uppercase">
+        <motion.div variants={container} initial="hidden" animate="show">
+          <motion.span
+            variants={item}
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-white/60 px-3.5 py-1 text-xs font-semibold tracking-wide text-primary uppercase"
+          >
             Aik Kadam, One Step
-          </span>
+          </motion.span>
 
-          <h1 className="mt-6 font-display text-4xl sm:text-5xl lg:text-[3.4rem] leading-[1.08] text-ink">
+          <motion.h1 variants={item} className="mt-6 font-display text-4xl sm:text-5xl lg:text-[3.4rem] leading-[1.08] text-ink">
             Every donation,
             <br />
             <span className="italic text-primary">a step you can trace.</span>
-          </h1>
+          </motion.h1>
 
-          <p className="mt-6 text-lg text-muted max-w-lg leading-relaxed">
+          <motion.p variants={item} className="mt-6 text-lg text-muted max-w-lg leading-relaxed">
             A giving platform built on transparency, where every rupee is
             tracked from your hand to the person it reaches, and every
             volunteer's work is verifiable.
-          </p>
+          </motion.p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-5">
+          <motion.div variants={item} className="mt-8 flex flex-wrap items-center gap-5">
             <DonateButton />
             <Link
               href="/about"
@@ -53,9 +73,9 @@ export function Hero() {
             >
               Our Story
             </Link>
-          </div>
+          </motion.div>
 
-          <div className="mt-12 grid grid-cols-3 gap-6 max-w-md">
+          <motion.div variants={item} className="mt-12 grid grid-cols-3 gap-6 max-w-md">
             {[
               ["100%", "Traceable funds"],
               ["Verified", "Volunteers"],
@@ -66,11 +86,16 @@ export function Hero() {
                 <div className="text-xs text-muted mt-1">{label}</div>
               </div>
             ))}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Right: Founder section */}
-        <div className="relative">
+        <motion.div
+          className="relative"
+          initial={{ opacity: 0, x: 28 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, delay: 0.25, ease: [0.16, 1, 0.3, 1] as const }}
+        >
           <div className="rounded-3xl border border-border bg-white shadow-sm p-6 sm:p-8">
             <div className="rounded-2xl overflow-hidden aspect-[4/5]">
               <img
@@ -98,7 +123,7 @@ export function Hero() {
               <div className="h-2 w-2 rounded-full bg-primary" />
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

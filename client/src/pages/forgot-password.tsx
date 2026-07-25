@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { FormField, inputClass } from "@/components/ui/FormField";
@@ -14,6 +14,14 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval>>();
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    timerRef.current = setInterval(() => setCooldown((c) => c - 1), 1000);
+    return () => clearInterval(timerRef.current);
+  }, [cooldown]);
 
   async function handleRequestCode(e: React.FormEvent) {
     e.preventDefault();
@@ -23,6 +31,7 @@ export default function ForgotPasswordPage() {
       await api.post("/api/auth/forgot-password", { email });
       setInfo("If an account exists for that email, a reset code has been sent.");
       setStep("reset");
+      setCooldown(45);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong");
     } finally {
@@ -41,6 +50,18 @@ export default function ForgotPasswordPage() {
       setError(err instanceof ApiError ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleResend() {
+    setError("");
+    setInfo("");
+    try {
+      await api.post("/api/auth/forgot-password", { email });
+      setInfo("A new code has been sent.");
+      setCooldown(45);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Something went wrong");
     }
   }
 
@@ -82,6 +103,14 @@ export default function ForgotPasswordPage() {
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button type="submit" disabled={loading || code.length !== 6} className="w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60">
               {loading ? "Resetting..." : "Reset Password"}
+            </button>
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={cooldown > 0}
+              className="w-full text-center text-sm text-primary font-medium disabled:text-muted disabled:cursor-not-allowed"
+            >
+              {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
             </button>
           </form>
         )}
