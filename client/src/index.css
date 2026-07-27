@@ -1,4 +1,12 @@
 @font-face {
+  font-family: "Bastliga One";
+  src: url("/fonts/Bastliga-One.ttf") format("truetype"),
+       url("/fonts/Bastliga-One.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
   font-family: "Niveau Grotesk";
   src: url("/fonts/NiveauGrotesk-ExtraLight.otf") format("opentype");
   font-weight: 200;

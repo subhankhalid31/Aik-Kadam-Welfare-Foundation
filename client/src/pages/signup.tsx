@@ -39,14 +39,15 @@ export default function SignupPage() {
             containerClassName="bg-background"
             colors={[
               [48, 135, 248],
-              [255, 214, 98],
+              [114, 173, 250],
+              [180, 212, 252],
             ]}
-            dotSize={5}
-            opacities={[0.12, 0.14, 0.16, 0.2, 0.22, 0.26, 0.3, 0.34, 0.4, 0.48]}
+            dotSize={4}
+            opacities={[0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.85, 0.9, 0.95, 1]}
           />
         </div>
         {/* Fades the dots out toward the edges so the card and text stay crisp and readable */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(246,247,245,0.25)_0%,_rgba(246,247,245,0.94)_78%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(246,247,245,0.02)_0%,_rgba(246,247,245,0.45)_85%)]" />
 
         <div className="relative z-10 w-full max-w-md rounded-3xl border border-border bg-white/80 backdrop-blur-md p-8 sm:p-10 shadow-xl">
           <span className="text-xs font-semibold tracking-wide text-primary uppercase">Create Account</span>
