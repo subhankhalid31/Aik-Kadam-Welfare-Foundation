@@ -26,10 +26,6 @@ import AccountSettings from "@/pages/account-settings";
 import Donate from "@/pages/donate";
 import MyDonations from "@/pages/my-donations";
 
-// Lazy-loaded: both pull in three.js/@react-three/fiber for their animated
-// background, which adds ~800kb to the bundle. Splitting them out means only
-// visitors who actually go to /login or /signup pay that cost — everyone
-// browsing cases, donating, or reading About never downloads it.
 const Login = lazy(() => import("@/pages/login"));
 const Signup = lazy(() => import("@/pages/signup"));
 
@@ -67,7 +63,7 @@ export default function App() {
         <Route path="/login">
           <Suspense
             fallback={
-              <div className="min-h-screen bg-ink flex items-center justify-center">
+              <div className="min-h-screen bg-background flex items-center justify-center">
                 <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
               </div>
             }
