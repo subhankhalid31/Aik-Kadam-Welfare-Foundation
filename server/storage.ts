@@ -23,10 +23,23 @@ import {
   type CaseVolunteerRequest,
 } from "@shared/schema";
 
+// Emails are matched case-insensitively everywhere and always stored
+// lowercased on write. Without this, "John@x.com" at signup vs "john@x.com"
+// at login (extremely common on mobile — the keyboard auto-capitalizes the
+// first letter) would silently fail to match and look like a wrong password.
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
 export const storage = {
   // ─── Users ──────────────────────────────────────────────────────────────
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(sql`lower(${users.email}) = ${normalizeEmail(email)}`)
+      .orderBy(users.createdAt)
+      .limit(1);
     return user;
   },
 
@@ -36,12 +49,18 @@ export const storage = {
   },
 
   async createUser(data: { name: string; email: string; passwordHash: string }): Promise<User> {
-    const [user] = await db.insert(users).values(data).returning();
+    const [user] = await db
+      .insert(users)
+      .values({ ...data, email: normalizeEmail(data.email) })
+      .returning();
     return user;
   },
 
   async markUserVerified(email: string): Promise<void> {
-    await db.update(users).set({ isVerified: true }).where(eq(users.email, email));
+    await db
+      .update(users)
+      .set({ isVerified: true })
+      .where(sql`lower(${users.email}) = ${normalizeEmail(email)}`);
   },
 
   async updateAvatar(userId: string, avatarUrl: string): Promise<void> {
@@ -177,11 +196,12 @@ export const storage = {
   // the account is later deleted — this is what stops a banned person from
   // simply signing up again with the same email.
   async banUserByEmail(email: string, reason?: string): Promise<void> {
-    await db.update(users).set({ isBanned: true, banReason: reason || null }).where(eq(users.email, email));
+    const normalized = normalizeEmail(email);
+    await db.update(users).set({ isBanned: true, banReason: reason || null }).where(sql`lower(${users.email}) = ${normalized}`);
     try {
       await db
         .insert(bannedEmails)
-        .values({ email, reason: reason || null })
+        .values({ email: normalized, reason: reason || null })
         .onConflictDoUpdate({ target: bannedEmails.email, set: { reason: reason || null } });
     } catch (err) {
       // If the banned_emails table doesn't exist yet (migration not run),
@@ -196,7 +216,7 @@ export const storage = {
     await db.update(users).set({ isBanned: false, banReason: null }).where(eq(users.id, userId));
     if (user) {
       try {
-        await db.delete(bannedEmails).where(eq(bannedEmails.email, user.email));
+        await db.delete(bannedEmails).where(sql`lower(${bannedEmails.email}) = ${normalizeEmail(user.email)}`);
       } catch (err) {
         console.error("unbanUser: could not clear banned_emails", err);
       }
@@ -204,8 +224,9 @@ export const storage = {
   },
 
   async isEmailBanned(email: string): Promise<boolean> {
+    const normalized = normalizeEmail(email);
     try {
-      const [row] = await db.select().from(bannedEmails).where(eq(bannedEmails.email, email));
+      const [row] = await db.select().from(bannedEmails).where(sql`lower(${bannedEmails.email}) = ${normalized}`);
       if (row) return true;
     } catch (err) {
       console.error("isEmailBanned: banned_emails table unavailable (has `npm run db:push` been run?)", err);
@@ -274,7 +295,7 @@ export const storage = {
 
   // ─── OTP codes ──────────────────────────────────────────────────────────
   async createOtp(data: { email: string; codeHash: string; purpose: "signup" | "login" | "reset_password"; expiresAt: Date }): Promise<OtpCode> {
-    const [otp] = await db.insert(otpCodes).values(data).returning();
+    const [otp] = await db.insert(otpCodes).values({ ...data, email: normalizeEmail(data.email) }).returning();
     return otp;
   },
 
@@ -282,7 +303,7 @@ export const storage = {
     const [otp] = await db
       .select()
       .from(otpCodes)
-      .where(and(eq(otpCodes.email, email), eq(otpCodes.purpose, purpose as any), eq(otpCodes.consumed, false)))
+      .where(and(sql`lower(${otpCodes.email}) = ${normalizeEmail(email)}`, eq(otpCodes.purpose, purpose as any), eq(otpCodes.consumed, false)))
       .orderBy(desc(otpCodes.createdAt))
       .limit(1);
     return otp;

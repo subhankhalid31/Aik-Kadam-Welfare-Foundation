@@ -27,7 +27,17 @@ export async function sendOtpEmail(to: string, code: string, purpose: "signup" |
     return;
   }
 
-  await resend.emails.send({ from: FROM, to, subject, html });
+  try {
+    const result = await resend.emails.send({ from: FROM, to, subject, html });
+    if (result.error) {
+      // Resend's SDK often resolves successfully with an `error` field rather
+      // than throwing — e.g. sending domain not verified, invalid API key,
+      // recipient blocked. Surface it clearly instead of silently "succeeding".
+      console.error(`[EMAIL] Resend rejected OTP email to ${to}:`, result.error);
+    }
+  } catch (err) {
+    console.error(`[EMAIL] Failed to send OTP email to ${to} via Resend:`, err);
+  }
 }
 
 export async function sendNotificationEmail(to: string, subject: string, message: string) {
@@ -43,5 +53,12 @@ export async function sendNotificationEmail(to: string, subject: string, message
     return;
   }
 
-  await resend.emails.send({ from: FROM, to, subject, html });
+  try {
+    const result = await resend.emails.send({ from: FROM, to, subject, html });
+    if (result.error) {
+      console.error(`[EMAIL] Resend rejected notification email to ${to}:`, result.error);
+    }
+  } catch (err) {
+    console.error(`[EMAIL] Failed to send notification email to ${to} via Resend:`, err);
+  }
 }
