@@ -75,7 +75,7 @@ export default function ForgotPasswordPage() {
           <form onSubmit={handleRequestCode} className="mt-6 space-y-5">
             <p className="text-muted text-sm">Enter your account email and we'll send a reset code.</p>
             <FormField label="Email">
-              <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} placeholder="you@example.com" />
+              <input required type="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} placeholder="you@example.com" />
             </FormField>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button type="submit" disabled={loading} className="w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60">

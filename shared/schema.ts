@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, boolean, integer, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, boolean, integer, timestamp, pgEnum, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -32,7 +32,11 @@ export const donationMethodEnum = pgEnum("donation_method", ["bank_transfer", "j
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
-  email: text("email").notNull().unique(),
+  // Not marked .unique() here — Postgres unique constraints are
+  // case-sensitive, which would let "John@x.com" and "john@x.com" both
+  // exist as separate accounts. The real, case-insensitive uniqueness
+  // guarantee is the lower(email) index below instead.
+  email: text("email").notNull(),
   passwordHash: text("password_hash").notNull(),
 
   role: userRoleEnum("role").notNull().default("donor"),
@@ -58,7 +62,9 @@ export const users = pgTable("users", {
   banReason: text("ban_reason"),
 
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => [
+  uniqueIndex("users_email_lower_unique_idx").on(sql`lower(${table.email})`),
+]);
 
 // ─── Banned emails (persists even if the user account is later deleted) ───
 
