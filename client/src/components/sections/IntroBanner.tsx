@@ -62,15 +62,15 @@ export function IntroBanner() {
             <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 href="/post-case"
-                className="inline-flex items-center gap-2 rounded-xl bg-ink px-7 py-3.5 font-semibold text-white shadow-sm hover:bg-ink/85 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                className="glass-surface inline-flex items-center gap-2 rounded-xl bg-ink/65 px-7 py-3.5 font-semibold text-white shadow-sm hover:bg-ink/85 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
               >
                 <FilePlus2 size={17} /> Submit a Case
               </Link>
               <Link
                 href="/volunteers/register"
-                className="inline-flex items-center gap-2 rounded-xl border-2 border-ink/15 px-7 py-3.5 font-semibold text-ink hover:border-ink/30 hover:bg-white transition-colors"
+                className="group inline-flex items-center gap-2 rounded-xl border border-white/70 bg-white/50 backdrop-blur-md px-7 py-3.5 font-semibold text-ink shadow-[inset_0_1px_1px_rgba(255,255,255,0.7),0_4px_16px_-4px_rgba(11,31,23,0.15)] transition-all duration-200 hover:bg-white/75 hover:-translate-y-0.5 hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_8px_20px_-4px_rgba(11,31,23,0.2)]"
               >
-                <UserPlus size={17} /> Register as Volunteer
+                <UserPlus size={17} className="transition-transform group-hover:scale-110" /> Register as Volunteer
               </Link>
             </div>
           </div>

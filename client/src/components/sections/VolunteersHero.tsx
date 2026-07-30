@@ -87,13 +87,17 @@ export function VolunteersHero({ ctaLabel, ctaHref, ctaDisabled, ctaHidden }: { 
           transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
         >
           {!ctaHidden && !ctaDisabled && (
-            <Link
-              href={ctaHref}
-              className="group/cta inline-flex items-center gap-1.5 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-background transition-all duration-200 hover:bg-primary-dark hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98]"
-            >
-              <UserPlus size={15} /> {ctaLabel}
-              <ArrowRight size={14} className="transition-transform duration-200 group-hover/cta:translate-x-1" />
-            </Link>
+            <div className="glass-button-wrap group/cta">
+              <Link href={ctaHref} className="glass-button relative z-10 isolate rounded-full transition-all">
+                <span className="glass-button-text relative block px-6 py-3 text-sm">
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    <UserPlus size={15} /> {ctaLabel}
+                    <ArrowRight size={14} className="transition-transform duration-200 group-hover/cta:translate-x-1" />
+                  </span>
+                </span>
+              </Link>
+              <div className="glass-button-shadow rounded-full pointer-events-none" />
+            </div>
           )}
           {!ctaHidden && ctaDisabled && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-6 py-3 text-sm font-semibold">
@@ -101,13 +105,17 @@ export function VolunteersHero({ ctaLabel, ctaHref, ctaDisabled, ctaHidden }: { 
             </span>
           )}
           {ctaHidden ? (
-            <a
-              href="#verification"
-              className="group/cta inline-flex items-center gap-1.5 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-background transition-all duration-200 hover:bg-primary-dark hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98]"
-            >
-              <ShieldCheck size={15} /> How We Verify
-              <ArrowRight size={14} className="transition-transform duration-200 group-hover/cta:translate-x-1" />
-            </a>
+            <div className="glass-button-wrap group/cta">
+              <a href="#verification" className="glass-button relative z-10 isolate rounded-full transition-all">
+                <span className="glass-button-text relative block px-6 py-3 text-sm">
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    <ShieldCheck size={15} /> How We Verify
+                    <ArrowRight size={14} className="transition-transform duration-200 group-hover/cta:translate-x-1" />
+                  </span>
+                </span>
+              </a>
+              <div className="glass-button-shadow rounded-full pointer-events-none" />
+            </div>
           ) : (
             <a href="#verification" className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink hover:text-primary transition-colors">
               <ShieldCheck size={15} className="text-primary" /> How We Verify

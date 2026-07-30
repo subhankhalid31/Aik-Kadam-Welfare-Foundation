@@ -94,7 +94,7 @@ export function OngoingCaseCard({ id, title, image, location, description, colle
         <div className="mt-3 flex items-center gap-2">
           <a
             href={`/donate?case=${id}`}
-            className="group/donate flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-primary px-4 sm:px-5 py-2.5 sm:py-3 text-sm font-semibold text-background transition-all duration-150 hover:bg-primary-dark hover:shadow-lg active:scale-[0.98]"
+            className="glass-surface group/donate flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-primary/65 px-4 sm:px-5 py-2.5 sm:py-3 text-sm font-semibold text-background transition-all duration-150 hover:bg-primary-dark hover:shadow-lg active:scale-[0.98]"
           >
             <Heart size={15} fill="currentColor" /> Donate Now
             <ArrowRight size={14} className="transition-transform duration-150 group-hover/donate:translate-x-1" />

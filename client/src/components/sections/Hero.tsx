@@ -64,13 +64,17 @@ export function Hero() {
 
           <motion.div variants={item} className="mt-8 flex flex-wrap items-center gap-4">
             <DonateButton />
-            <Link
-              href="/about"
-              className="inline-flex items-center gap-2 rounded-full bg-white border border-border px-7 py-3.5 font-semibold text-ink hover:bg-background transition-colors"
-            >
-              <Users size={18} />
-              Our Story
-            </Link>
+            <div className="glass-pill-wrap">
+              <Link href="/about" className="glass-pill relative isolate rounded-full inline-block">
+                <span className="glass-pill-text px-7 py-3.5 font-semibold">
+                  <span className="relative z-10 flex items-center gap-2">
+                    <Users size={18} />
+                    Our Story
+                  </span>
+                </span>
+              </Link>
+              <div className="glass-pill-shadow rounded-full" />
+            </div>
           </motion.div>
 
           <motion.div variants={item} className="mt-12 flex items-center flex-wrap gap-x-8 gap-y-4">

@@ -1,5 +1,12 @@
 import { Search, ArrowUpDown, SlidersHorizontal, Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
+
+// All four controls below share the same liquid-glass system defined in
+// index.css for login/signup/forgot-password (.glass-input / .glass-button)
+// — same pill shape, backdrop blur, and rotating-shine border — so search
+// and filter toolbars read as the same material as the auth pages instead
+// of a flatter, separate "form controls" style.
 
 export function SearchBar({
   value,
@@ -11,18 +18,20 @@ export function SearchBar({
   placeholder: string;
 }) {
   return (
-    <div className="relative flex-1 min-w-[240px]">
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="peer w-full rounded-full border border-border bg-white pl-10 pr-4 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary focus:shadow-[0_0_0_4px_rgba(48,135,248,0.12)] transition-all duration-[250ms]"
-      />
-      <Search
-        size={16}
-        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted peer-focus:text-primary peer-focus:scale-110 peer-focus:translate-x-0.5 transition-all duration-[250ms]"
-      />
+    <div className="glass-input-wrap flex-1 min-w-[240px]">
+      <div className="glass-input">
+        <span className="glass-input-text-area" />
+        <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-9 pl-1.5">
+          <Search size={16} className="text-ink/60" />
+        </div>
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="relative z-10 h-full w-0 flex-grow bg-transparent text-sm text-ink placeholder:text-ink/45 focus:outline-none py-2.5 pr-4"
+        />
+      </div>
     </div>
   );
 }
@@ -40,21 +49,36 @@ export function FilterPills<T extends string>({
 }) {
   return (
     <div className={`flex shrink-0 ${compact ? "gap-1.5 sm:gap-2" : "gap-2"}`}>
-      {options.map((f) => (
-        <button
-          key={f.key}
-          onClick={() => onChange(f.key)}
-          className={`rounded-full font-semibold border transition-colors ${
-            compact ? "px-3 py-2 text-xs sm:px-4 sm:py-2.5 sm:text-sm" : "px-4 py-2.5 text-sm"
-          } ${
-            active === f.key
-              ? "bg-primary text-background border-primary"
-              : "bg-white text-ink border-border hover:bg-background"
-          }`}
-        >
-          {f.label}
-        </button>
-      ))}
+      {options.map((f) => {
+        const isActive = active === f.key;
+        const sizing = compact ? "px-3 py-2 text-xs sm:px-4 sm:py-2.5 sm:text-sm" : "px-4 py-2.5 text-sm";
+        if (isActive) {
+          // Selected state stays a solid pill so the active filter is
+          // unambiguous at a glance against its frosted siblings.
+          return (
+            <button
+              key={f.key}
+              onClick={() => onChange(f.key)}
+              className={`rounded-full font-semibold border border-primary bg-primary text-background shadow-[0_2px_10px_-2px_rgba(48,135,248,0.5)] transition-all duration-200 ${sizing}`}
+            >
+              {f.label}
+            </button>
+          );
+        }
+        return (
+          <div key={f.key} className="glass-button-wrap">
+            <button
+              onClick={() => onChange(f.key)}
+              className="glass-button relative z-10 rounded-full isolate transition-all"
+            >
+              <span className={cn("glass-button-text relative block select-none font-semibold text-center", sizing)}>
+                {f.label}
+              </span>
+            </button>
+            <div className="glass-button-shadow rounded-full pointer-events-none" />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -84,26 +108,33 @@ export function FilterDropdown<T extends string>({
 
   return (
     <div className="relative shrink-0" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-border bg-white pl-3 pr-2.5 py-2 text-xs sm:pl-4 sm:pr-3.5 sm:py-2.5 sm:text-sm font-medium text-ink transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-primary/30 active:scale-105"
-      >
-        <SlidersHorizontal size={14} className="text-muted" />
-        {active === options[0]?.key ? placeholder : activeLabel}
-        <svg className={`h-3 w-3 text-muted transition-transform duration-200 ${open ? "rotate-180" : ""}`} viewBox="0 0 12 12" fill="none">
-          <path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
+      <div className="glass-button-wrap">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="glass-button relative z-10 isolate rounded-full transition-all"
+        >
+          <span className="glass-button-text relative block px-3.5 py-2 text-xs sm:px-4 sm:py-2.5 sm:text-sm font-medium">
+            <span className="relative z-10 flex items-center gap-1.5 sm:gap-2">
+              <SlidersHorizontal size={14} />
+              {active === options[0]?.key ? placeholder : activeLabel}
+              <svg className={`h-3 w-3 transition-transform duration-200 ${open ? "rotate-180" : ""}`} viewBox="0 0 12 12" fill="none">
+                <path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+          </span>
+        </button>
+        <div className="glass-button-shadow rounded-full pointer-events-none" />
+      </div>
 
       {open && (
-        <div className="absolute left-0 mt-1.5 z-20 w-56 rounded-2xl border border-border bg-white p-1.5 shadow-lg">
+        <div className="absolute left-0 mt-1.5 z-20 w-56 rounded-2xl border border-white/70 bg-white/90 backdrop-blur-xl p-1.5 shadow-lg">
           {options.map((o) => (
             <button
               key={o.key}
               onClick={() => { onChange(o.key); setOpen(false); }}
               className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm text-left transition-colors ${
-                active === o.key ? "bg-primary/10 text-primary font-semibold" : "text-ink hover:bg-background"
+                active === o.key ? "bg-primary/10 text-primary font-semibold" : "text-ink hover:bg-white/70"
               }`}
             >
               {o.label}
@@ -139,26 +170,33 @@ export function SortDropdown<T extends string>({
 
   return (
     <div className="relative shrink-0" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-border bg-white pl-3 pr-2.5 py-2 text-xs sm:pl-4 sm:pr-3.5 sm:py-2.5 sm:text-sm font-medium text-ink transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-primary/30 active:scale-105"
-      >
-        <ArrowUpDown size={14} className="text-muted" />
-        Sort: {activeLabel}
-        <svg className={`h-3 w-3 text-muted transition-transform duration-200 ${open ? "rotate-180" : ""}`} viewBox="0 0 12 12" fill="none">
-          <path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
+      <div className="glass-button-wrap">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="glass-button relative z-10 isolate rounded-full transition-all"
+        >
+          <span className="glass-button-text relative block px-3.5 py-2 text-xs sm:px-4 sm:py-2.5 sm:text-sm font-medium">
+            <span className="relative z-10 flex items-center gap-1.5 sm:gap-2">
+              <ArrowUpDown size={14} />
+              Sort: {activeLabel}
+              <svg className={`h-3 w-3 transition-transform duration-200 ${open ? "rotate-180" : ""}`} viewBox="0 0 12 12" fill="none">
+                <path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+          </span>
+        </button>
+        <div className="glass-button-shadow rounded-full pointer-events-none" />
+      </div>
 
       {open && (
-        <div className="absolute right-0 mt-1.5 z-20 w-52 rounded-2xl border border-border bg-white p-1.5 shadow-lg">
+        <div className="absolute right-0 mt-1.5 z-20 w-52 rounded-2xl border border-white/70 bg-white/90 backdrop-blur-xl p-1.5 shadow-lg">
           {options.map((o) => (
             <button
               key={o.key}
               onClick={() => { onChange(o.key); setOpen(false); }}
               className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm text-left transition-colors ${
-                value === o.key ? "bg-primary/10 text-primary font-semibold" : "text-ink hover:bg-background"
+                value === o.key ? "bg-primary/10 text-primary font-semibold" : "text-ink hover:bg-white/70"
               }`}
             >
               {o.label}

@@ -127,13 +127,17 @@ export function SuccessStoriesHero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.35, ease: "easeOut" }}
           >
-            <Link
-              href="/about"
-              className="group/cta mt-6 inline-flex items-center gap-1.5 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-background transition-all duration-200 hover:bg-primary-dark hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98]"
-            >
-              <BookHeart size={15} /> Learn About Us
-              <ArrowRight size={14} className="transition-transform duration-200 group-hover/cta:translate-x-1" />
-            </Link>
+            <div className="glass-pill-wrap mt-6 group/cta">
+              <Link href="/about" className="glass-pill relative isolate rounded-full block">
+                <span className="glass-pill-text block px-6 py-3 text-sm font-semibold">
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    <BookHeart size={15} /> Learn About Us
+                    <ArrowRight size={14} className="transition-transform duration-200 group-hover/cta:translate-x-1" />
+                  </span>
+                </span>
+              </Link>
+              <div className="glass-pill-shadow rounded-full" />
+            </div>
           </motion.div>
         </div>
       </div>

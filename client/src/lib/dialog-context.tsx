@@ -79,14 +79,14 @@ export function DialogProvider({ children }: { children: ReactNode }) {
             {state.kind !== "alert" && (
               <button
                 onClick={() => close(state.kind === "confirm" ? false : null)}
-                className="rounded-full px-4 py-2 text-sm font-semibold text-ink border border-border hover:bg-background transition-colors"
+                className="glass-surface glass-surface-outline rounded-full px-4 py-2 text-sm font-semibold text-ink border hover:bg-white/70 transition-colors"
               >
                 Cancel
               </button>
             )}
             <button
               onClick={() => close(state.kind === "confirm" ? true : state.kind === "prompt" ? inputValue : null)}
-              className="rounded-full px-4 py-2 text-sm font-semibold text-background bg-primary hover:bg-primary-dark transition-colors"
+              className="glass-surface rounded-full px-4 py-2 text-sm font-semibold text-background bg-primary/65 hover:bg-primary-dark transition-colors"
             >
               {state.kind === "confirm" ? "Confirm" : state.kind === "prompt" ? "Submit" : "Got it"}
             </button>
