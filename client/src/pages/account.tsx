@@ -95,13 +95,14 @@ export default function AccountPage() {
               <p className="text-muted">{user.email}</p>
             </div>
           </div>
-          <a
-            href="/account/settings"
-            className="shrink-0 h-10 w-10 rounded-full border border-border flex items-center justify-center hover:bg-white transition-colors"
-            title="Edit Profile"
-          >
-            <Settings size={18} className="text-ink" />
-          </a>
+          <div className="glass-pill-wrap shrink-0">
+            <a href="/account/settings" className="glass-pill relative isolate rounded-full block h-10 w-10" title="Edit Profile">
+              <span className="glass-pill-text flex items-center justify-center h-10 w-10">
+                <Settings size={18} />
+              </span>
+            </a>
+            <div className="glass-pill-shadow rounded-full" />
+          </div>
         </div>
 
         {user.volunteerStatus === "approved" && (
@@ -125,13 +126,14 @@ export default function AccountPage() {
             </div>
 
             {certificateUnlocked ? (
-              <a
-                href="/api/account/certificate"
-                download
-                className="mt-5 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-background hover:bg-primary-dark transition-colors"
-              >
-                <Download size={15} /> Download Volunteer Service Certificate
-              </a>
+              <div className="glass-pill-wrap mt-5 inline-block">
+                <a href="/api/account/certificate" download className="glass-pill relative isolate rounded-full block">
+                  <span className="glass-pill-text flex items-center gap-2 px-5 py-2.5 text-sm font-semibold">
+                    <Download size={15} /> Download Volunteer Service Certificate
+                  </span>
+                </a>
+                <div className="glass-pill-shadow rounded-full" />
+              </div>
             ) : (
               <p className="mt-5 text-xs text-muted">
                 Volunteer Service Certificate unlocks at 30 hours, you're at {user.totalHoursContributed}/30.
@@ -169,28 +171,34 @@ export default function AccountPage() {
           </div>
         )}
 
-        <a
-          href="/my-donations"
-          className="mt-6 flex items-center justify-between rounded-2xl border border-border bg-white p-5 hover:shadow-sm transition-shadow"
-        >
-          <span className="flex items-center gap-2 font-display text-lg text-ink"><Heart size={17} className="text-accent-dark" /> My Donations</span>
-          <span className="text-sm text-primary font-medium">View &rarr;</span>
-        </a>
+        <div className="glass-pill-wrap mt-6 block">
+          <a href="/my-donations" className="glass-pill relative isolate rounded-2xl block">
+            <span className="glass-pill-text flex items-center justify-between p-5">
+              <span className="flex items-center gap-2 font-display text-lg text-ink"><Heart size={17} className="text-accent-dark" /> My Donations</span>
+              <span className="text-sm text-primary font-medium">View &rarr;</span>
+            </span>
+          </a>
+          <div className="glass-pill-shadow rounded-2xl" />
+        </div>
 
-        <a
-          href="/help"
-          className="mt-3 flex items-center justify-between rounded-2xl border border-border bg-white p-5 hover:shadow-sm transition-shadow"
-        >
-          <span className="flex items-center gap-2 font-display text-lg text-ink"><HelpCircle size={17} className="text-primary" /> Help &amp; Support</span>
-          <span className="text-sm text-primary font-medium">View &rarr;</span>
-        </a>
+        <div className="glass-pill-wrap mt-3 block">
+          <a href="/help" className="glass-pill relative isolate rounded-2xl block">
+            <span className="glass-pill-text flex items-center justify-between p-5">
+              <span className="flex items-center gap-2 font-display text-lg text-ink"><HelpCircle size={17} className="text-primary" /> Help &amp; Support</span>
+              <span className="text-sm text-primary font-medium">View &rarr;</span>
+            </span>
+          </a>
+          <div className="glass-pill-shadow rounded-2xl" />
+        </div>
 
-        <button
-          onClick={handleLogout}
-          className="mt-8 inline-flex items-center gap-2 rounded-full border border-border px-6 py-2.5 text-sm font-semibold text-ink hover:bg-white transition-colors"
-        >
-          <LogOut size={15} /> Log Out
-        </button>
+        <div className="glass-pill-wrap mt-8 inline-block">
+          <button onClick={handleLogout} className="glass-pill relative isolate rounded-full block">
+            <span className="glass-pill-text flex items-center gap-2 px-6 py-2.5 text-sm font-semibold">
+              <LogOut size={15} /> Log Out
+            </span>
+          </button>
+          <div className="glass-pill-shadow rounded-full" />
+        </div>
       </main>
 
       {selectedCaseId && <CaseDetailModal caseId={selectedCaseId} onClose={() => setSelectedCaseId(null)} />}

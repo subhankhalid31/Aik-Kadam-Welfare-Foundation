@@ -72,7 +72,7 @@ export default function MyDonationsPage() {
         <main className="max-w-md mx-auto px-6 pt-24 pb-24 text-center">
           <LogIn className="mx-auto text-primary" size={40} />
           <h1 className="mt-5 font-display text-3xl text-ink">Sign in required</h1>
-          <a href="/login" className="mt-8 inline-flex items-center justify-center w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors">
+          <a href="/login" className="glass-surface mt-8 inline-flex items-center justify-center w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors">
             Sign In
           </a>
         </main>

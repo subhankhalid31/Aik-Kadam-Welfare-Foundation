@@ -155,20 +155,22 @@ export function WheelCarousel<T>({
       </div>
 
       <div className="mt-5 flex items-center justify-center gap-4">
-        <button
-          onClick={() => go(-1)}
-          aria-label="Previous"
-          className="h-10 w-10 rounded-full border border-border bg-white flex items-center justify-center hover:bg-background transition-colors"
-        >
-          <ChevronLeft size={17} />
-        </button>
-        <button
-          onClick={() => go(1)}
-          aria-label="Next"
-          className="h-10 w-10 rounded-full border border-border bg-white flex items-center justify-center hover:bg-background transition-colors"
-        >
-          <ChevronRight size={17} />
-        </button>
+        <div className="glass-pill-wrap">
+          <button onClick={() => go(-1)} aria-label="Previous" className="glass-pill relative isolate rounded-full block h-10 w-10">
+            <span className="glass-pill-text flex items-center justify-center h-10 w-10">
+              <ChevronLeft size={17} />
+            </span>
+          </button>
+          <div className="glass-pill-shadow rounded-full" />
+        </div>
+        <div className="glass-pill-wrap">
+          <button onClick={() => go(1)} aria-label="Next" className="glass-pill relative isolate rounded-full block h-10 w-10">
+            <span className="glass-pill-text flex items-center justify-center h-10 w-10">
+              <ChevronRight size={17} />
+            </span>
+          </button>
+          <div className="glass-pill-shadow rounded-full" />
+        </div>
       </div>
     </div>
   );

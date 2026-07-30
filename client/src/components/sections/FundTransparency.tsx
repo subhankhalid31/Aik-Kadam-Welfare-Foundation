@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { fundDistribution } from "@/lib/dummy-data";
 
@@ -22,7 +23,7 @@ export function FundTransparency() {
     <section className="py-24 border-t border-border">
       <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-14 items-center">
         <div>
-          <span className="text-xs font-semibold tracking-wide text-primary uppercase">
+          <span className="text-xs font-semibold tracking-wide text-brand-green uppercase">
             100% Transparency
           </span>
           <h2 className="mt-3 font-display text-3xl sm:text-4xl text-ink leading-tight">
@@ -38,13 +39,33 @@ export function FundTransparency() {
               "85% of funds go directly to beneficiaries (industry leading)",
               "Verified proofs of delivery uploaded within 48 hours",
               "Zero hidden platform fees for donors",
-            ].map((point) => (
-              <li key={point} className="flex items-start gap-3">
-                <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Check size={12} className="text-primary-dark" />
-                </span>
+            ].map((point, i) => (
+              <motion.li
+                key={point}
+                className="flex items-start gap-3"
+                initial={{ opacity: 0, x: -12 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, amount: 0.8 }}
+                transition={{ duration: 0.5, ease: "easeOut", delay: i * 0.15 }}
+              >
+                <motion.span
+                  className="mt-0.5 h-5 w-5 shrink-0 rounded-full flex items-center justify-center"
+                  initial={{ backgroundColor: "rgba(10,12,16,0.06)" }}
+                  whileInView={{ backgroundColor: "rgba(112,152,40,0.12)" }}
+                  viewport={{ once: true, amount: 0.8 }}
+                  transition={{ duration: 0.4, ease: "easeOut", delay: i * 0.15 + 0.15 }}
+                >
+                  <motion.span
+                    initial={{ color: "rgba(10,12,16,0.35)" }}
+                    whileInView={{ color: "#465F19" }}
+                    viewport={{ once: true, amount: 0.8 }}
+                    transition={{ duration: 0.4, ease: "easeOut", delay: i * 0.15 + 0.15 }}
+                  >
+                    <Check size={12} />
+                  </motion.span>
+                </motion.span>
                 <span className="text-sm text-ink/80">{point}</span>
-              </li>
+              </motion.li>
             ))}
           </ul>
         </div>

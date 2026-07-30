@@ -138,9 +138,12 @@ export default function AccountSettingsPage() {
           </p>
           <div className="mt-3 flex gap-2">
             <input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} placeholder="+92 3XX XXXXXXX" />
-            <button type="submit" disabled={phoneLoading} className="shrink-0 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-60">
-              Save
-            </button>
+            <div className="glass-pill-wrap shrink-0">
+              <button type="submit" disabled={phoneLoading} className="glass-pill relative isolate rounded-full block">
+                <span className="glass-pill-text block px-5 py-2.5 text-sm font-semibold">Save</span>
+              </button>
+              <div className="glass-pill-shadow rounded-full" />
+            </div>
           </div>
           {phoneMsg && <p className="mt-2 text-sm text-muted">{phoneMsg}</p>}
         </form>
@@ -159,9 +162,12 @@ export default function AccountSettingsPage() {
           )}
           <div className="mt-3 flex gap-2">
             <input value={newName} onChange={(e) => setNewName(e.target.value)} className={inputClass} placeholder="Requested new name" />
-            <button type="submit" disabled={nameLoading || !newName} className="shrink-0 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-60">
-              Request
-            </button>
+            <div className="glass-pill-wrap shrink-0">
+              <button type="submit" disabled={nameLoading || !newName} className="glass-pill relative isolate rounded-full block">
+                <span className="glass-pill-text block px-5 py-2.5 text-sm font-semibold">Request</span>
+              </button>
+              <div className="glass-pill-shadow rounded-full" />
+            </div>
           </div>
           {nameMsg && <p className="mt-2 text-sm text-muted">{nameMsg}</p>}
         </form>
@@ -182,9 +188,12 @@ export default function AccountSettingsPage() {
           </div>
           {passwordError && <p className="mt-2 text-sm text-red-600">{passwordError}</p>}
           {passwordMsg && <p className="mt-2 text-sm text-primary">{passwordMsg}</p>}
-          <button type="submit" disabled={passwordLoading} className="mt-3 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-60">
-            Update Password
-          </button>
+          <div className="glass-pill-wrap mt-3 inline-block">
+            <button type="submit" disabled={passwordLoading} className="glass-pill relative isolate rounded-full block">
+              <span className="glass-pill-text block px-5 py-2.5 text-sm font-semibold">Update Password</span>
+            </button>
+            <div className="glass-pill-shadow rounded-full" />
+          </div>
         </form>
       </main>
     </PageLayout>

@@ -95,11 +95,338 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────────────
+   Design tokens (HSL custom properties)
+   These mirror the blue palette now applied directly to the Tailwind
+   color tokens above (primary, ink, background, border, muted, danger)
+   — kept here as plain CSS variables too so a future dark-mode toggle
+   (adding/removing the `.dark` class on <html>) or a shadcn/ui component
+   can read them directly. Nothing in the app switches the `.dark` class
+   yet, so today the site only ever renders the :root (light) values.
+   ───────────────────────────────────────────────────────────────────── */
+:root {
+  --card: 0 0% 100%;
+  --ring: 221 87% 53%;
+  --input: 220 13% 90%;
+  --muted: 214 20% 96%;
+  --accent: 221 87% 53%;
+  --border: 220 13% 90%;
+  --radius: 0.875rem;
+  --chart-1: 221 87% 53%;
+  --chart-2: 223 81% 43%;
+  --chart-3: 215 13% 40%;
+  --chart-4: 214 20% 86%;
+  --chart-5: 228 33% 3%;
+  --popover: 0 0% 100%;
+  --primary: 221 87% 53%;
+  --sidebar: 214 20% 96%;
+  --secondary: 214 20% 96%;
+  --background: 0 0% 100%;
+  --foreground: 220 23% 5%;
+  --destructive: 0 72% 51%;
+  --sidebar-ring: 221 87% 53%;
+  --sidebar-accent: 214 20% 96%;
+  --sidebar-border: 220 13% 90%;
+  --card-foreground: 220 23% 5%;
+  --sidebar-primary: 221 87% 53%;
+  --muted-foreground: 215 13% 40%;
+  --accent-foreground: 0 0% 100%;
+  --popover-foreground: 220 23% 5%;
+  --primary-foreground: 0 0% 100%;
+  --sidebar-foreground: 220 23% 5%;
+  --secondary-foreground: 220 23% 5%;
+  --destructive-foreground: 0 0% 100%;
+  --sidebar-accent-foreground: 220 23% 5%;
+  --sidebar-primary-foreground: 0 0% 100%;
+}
+.dark {
+  --card: 228 28% 6%;
+  --ring: 221 87% 58%;
+  --input: 228 14% 16%;
+  --muted: 228 20% 12%;
+  --accent: 221 70% 45%;
+  --border: 228 14% 16%;
+  --chart-1: 221 87% 58%;
+  --chart-2: 221 70% 45%;
+  --chart-3: 215 12% 62%;
+  --chart-4: 228 20% 18%;
+  --chart-5: 0 0% 100%;
+  --popover: 228 28% 6%;
+  --primary: 221 87% 53%;
+  --sidebar: 228 28% 6%;
+  --secondary: 228 20% 12%;
+  --background: 228 33% 3%;
+  --foreground: 210 20% 96%;
+  --destructive: 0 62% 45%;
+  --sidebar-ring: 221 87% 58%;
+  --sidebar-accent: 228 20% 12%;
+  --sidebar-border: 228 14% 16%;
+  --card-foreground: 210 20% 96%;
+  --sidebar-primary: 221 87% 53%;
+  --muted-foreground: 215 12% 62%;
+  --accent-foreground: 0 0% 100%;
+  --popover-foreground: 210 20% 96%;
+  --primary-foreground: 0 0% 100%;
+  --sidebar-foreground: 210 20% 96%;
+  --secondary-foreground: 210 20% 96%;
+  --destructive-foreground: 0 0% 100%;
+  --sidebar-accent-foreground: 210 20% 96%;
+  --sidebar-primary-foreground: 0 0% 100%;
+}
+
 html {
   scroll-behavior: smooth;
 }
 
 ::selection {
-  background: #3087F8;
+  background: #1F61EF;
   color: #FFFFFF;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   Glass / liquid design system
+   Shared by any component that wants the iOS-style liquid-glass look:
+   pill-shaped inputs/buttons with a rotating conic-gradient shine, a
+   bordered "glass-card" surface, and a static blue text glow.
+   Colors are hardcoded to this site's palette (ink #0A0C10, primary
+   #1F61EF) rather than CSS variables, since this project doesn't use a
+   shadcn-style theme-variable setup.
+   ───────────────────────────────────────────────────────────────────── */
+
+input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none !important; } input[type="password"]::-webkit-credentials-auto-fill-button, input[type="password"]::-webkit-strong-password-auto-fill-button { display: none !important; } input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active { -webkit-box-shadow: 0 0 0 30px transparent inset !important; -webkit-text-fill-color: #0A0C10 !important; background-color: transparent !important; background-clip: content-box !important; transition: background-color 5000s ease-in-out 0s !important; color: #0A0C10 !important; caret-color: #0A0C10 !important; } input:autofill { background-color: transparent !important; background-clip: content-box !important; -webkit-text-fill-color: #0A0C10 !important; color: #0A0C10 !important; } input:-internal-autofill-selected { background-color: transparent !important; background-image: none !important; color: #0A0C10 !important; -webkit-text-fill-color: #0A0C10 !important; } input:-webkit-autofill::first-line { color: #0A0C10 !important; -webkit-text-fill-color: #0A0C10 !important; }
+@property --angle-1 { syntax: "<angle>"; inherits: false; initial-value: -75deg; } @property --angle-2 { syntax: "<angle>"; inherits: false; initial-value: -45deg; }
+.glass-button-wrap { --anim-time: 400ms; --anim-ease: cubic-bezier(0.25, 1, 0.5, 1); --border-width: clamp(1px, 0.0625em, 4px); position: relative; z-index: 2; transform-style: preserve-3d; transition: transform var(--anim-time) var(--anim-ease); } .glass-button-wrap:has(.glass-button:active) { transform: rotateX(25deg); } .glass-button-shadow { --shadow-cutoff-fix: 2em; position: absolute; width: calc(100% + var(--shadow-cutoff-fix)); height: calc(100% + var(--shadow-cutoff-fix)); top: calc(0% - var(--shadow-cutoff-fix) / 2); left: calc(0% - var(--shadow-cutoff-fix) / 2); filter: blur(clamp(2px, 0.125em, 12px)); transition: filter var(--anim-time) var(--anim-ease); pointer-events: none; z-index: 0; } .glass-button-shadow::after { content: ""; position: absolute; inset: 0; border-radius: 9999px; background: linear-gradient(180deg, rgba(10, 12, 16, 0.2), rgba(10, 12, 16, 0.1)); width: calc(100% - var(--shadow-cutoff-fix) - 0.25em); height: calc(100% - var(--shadow-cutoff-fix) - 0.25em); top: calc(var(--shadow-cutoff-fix) - 0.5em); left: calc(var(--shadow-cutoff-fix) - 0.875em); padding: 0.125em; box-sizing: border-box; mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; transition: all var(--anim-time) var(--anim-ease); opacity: 1; }
+.glass-button { -webkit-tap-highlight-color: transparent; backdrop-filter: blur(clamp(1px, 0.125em, 4px)); transition: all var(--anim-time) var(--anim-ease); background: linear-gradient(-75deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05)); box-shadow: inset 0 0.125em 0.125em rgba(10, 12, 16, 0.05), inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.5), 0 0.25em 0.125em -0.125em rgba(10, 12, 16, 0.2), 0 0 0.1em 0.25em inset rgba(255, 255, 255, 0.2), 0 0 0 0 rgb(255, 255, 255); } .glass-button:hover { transform: scale(0.975); backdrop-filter: blur(0.01em); box-shadow: inset 0 0.125em 0.125em rgba(10, 12, 16, 0.05), inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.5), 0 0.15em 0.05em -0.1em rgba(10, 12, 16, 0.25), 0 0 0.05em 0.1em inset rgba(255, 255, 255, 0.5), 0 0 0 0 rgb(255, 255, 255); } .glass-button-text { color: rgba(10, 12, 16, 0.9); text-shadow: 0em 0.25em 0.05em rgba(10, 12, 16, 0.1); transition: all var(--anim-time) var(--anim-ease); } .glass-button:hover .glass-button-text { text-shadow: 0.025em 0.025em 0.025em rgba(10, 12, 16, 0.12); } .glass-button-text::after { content: ""; display: block; position: absolute; width: calc(100% - var(--border-width)); height: calc(100% - var(--border-width)); top: calc(0% + var(--border-width) / 2); left: calc(0% + var(--border-width) / 2); box-sizing: border-box; border-radius: 9999px; overflow: clip; background: linear-gradient(var(--angle-2), transparent 0%, rgba(255, 255, 255, 0.5) 40% 50%, transparent 55%); z-index: 3; mix-blend-mode: screen; pointer-events: none; background-size: 200% 200%; background-position: 0% 50%; transition: background-position calc(var(--anim-time) * 1.25) var(--anim-ease), --angle-2 calc(var(--anim-time) * 1.25) var(--anim-ease); } .glass-button:hover .glass-button-text::after { background-position: 25% 50%; } .glass-button:active .glass-button-text::after { background-position: 50% 15%; --angle-2: -15deg; } .glass-button::after { content: ""; position: absolute; z-index: 1; inset: 0; border-radius: 9999px; width: calc(100% + var(--border-width)); height: calc(100% + var(--border-width)); top: calc(0% - var(--border-width) / 2); left: calc(0% - var(--border-width) / 2); padding: var(--border-width); box-sizing: border-box; background: conic-gradient(from var(--angle-1) at 50% 50%, rgba(10, 12, 16, 0.5) 0%, transparent 5% 40%, rgba(10, 12, 16, 0.5) 50%, transparent 60% 95%, rgba(10, 12, 16, 0.5) 100%), linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; transition: all var(--anim-time) var(--anim-ease), --angle-1 500ms ease; box-shadow: inset 0 0 0 calc(var(--border-width) / 2) rgba(255, 255, 255, 0.5); pointer-events: none; } .glass-button:hover::after { --angle-1: -125deg; } .glass-button:active::after { --angle-1: -75deg; } .glass-button-wrap:has(.glass-button:hover) .glass-button-shadow { filter: blur(clamp(2px, 0.0625em, 6px)); } .glass-button-wrap:has(.glass-button:hover) .glass-button-shadow::after { top: calc(var(--shadow-cutoff-fix) - 0.875em); opacity: 1; } .glass-button-wrap:has(.glass-button:active) .glass-button-shadow { filter: blur(clamp(2px, 0.125em, 12px)); } .glass-button-wrap:has(.glass-button:active) .glass-button-shadow::after { top: calc(var(--shadow-cutoff-fix) - 0.5em); opacity: 0.75; } .glass-button-wrap:has(.glass-button:active) .glass-button-text { text-shadow: 0.025em 0.25em 0.05em rgba(10, 12, 16, 0.12); } .glass-button-wrap:has(.glass-button:active) .glass-button { box-shadow: inset 0 0.125em 0.125em rgba(10, 12, 16, 0.05), inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.5), 0 0.125em 0.125em -0.125em rgba(10, 12, 16, 0.2), 0 0 0.1em 0.25em inset rgba(255, 255, 255, 0.2), 0 0.225em 0.05em 0 rgba(10, 12, 16, 0.05), 0 0.25em 0 0 rgba(255, 255, 255, 0.75), inset 0 0.25em 0.05em 0 rgba(10, 12, 16, 0.15); } @media (hover: none) and (pointer: coarse) { .glass-button::after, .glass-button:hover::after, .glass-button:active::after { --angle-1: -75deg; } .glass-button .glass-button-text::after, .glass-button:active .glass-button-text::after { --angle-2: -45deg; } }
+.glass-input-wrap { position: relative; z-index: 2; transform-style: preserve-3d; border-radius: 9999px; } .glass-input { display: flex; position: relative; width: 100%; align-items: center; gap: 0.5rem; border-radius: 9999px; padding: 0.25rem; -webkit-tap-highlight-color: transparent; backdrop-filter: blur(clamp(1px, 0.125em, 4px)); transition: all 400ms cubic-bezier(0.25, 1, 0.5, 1); background: linear-gradient(-75deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05)); box-shadow: inset 0 0.125em 0.125em rgba(10, 12, 16, 0.05), inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.5), 0 0.25em 0.125em -0.125em rgba(10, 12, 16, 0.2), 0 0 0.1em 0.25em inset rgba(255, 255, 255, 0.2), 0 0 0 0 rgb(255, 255, 255); } .glass-input-wrap:focus-within .glass-input { backdrop-filter: blur(0.01em); box-shadow: inset 0 0.125em 0.125em rgba(10, 12, 16, 0.05), inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.5), 0 0.15em 0.05em -0.1em rgba(10, 12, 16, 0.25), 0 0 0.05em 0.1em inset rgba(255, 255, 255, 0.5), 0 0 0 0 rgb(255, 255, 255); } .glass-input::after { content: ""; position: absolute; z-index: 1; inset: 0; border-radius: 9999px; width: calc(100% + clamp(1px, 0.0625em, 4px)); height: calc(100% + clamp(1px, 0.0625em, 4px)); top: calc(0% - clamp(1px, 0.0625em, 4px) / 2); left: calc(0% - clamp(1px, 0.0625em, 4px) / 2); padding: clamp(1px, 0.0625em, 4px); box-sizing: border-box; background: conic-gradient(from var(--angle-1) at 50% 50%, rgba(10, 12, 16, 0.5) 0%, transparent 5% 40%, rgba(10, 12, 16, 0.5) 50%, transparent 60% 95%, rgba(10, 12, 16, 0.5) 100%), linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; transition: all 400ms cubic-bezier(0.25, 1, 0.5, 1), --angle-1 500ms ease; box-shadow: inset 0 0 0 calc(clamp(1px, 0.0625em, 4px) / 2) rgba(255, 255, 255, 0.5); pointer-events: none; } .glass-input-wrap:focus-within .glass-input::after { --angle-1: -125deg; } .glass-input-text-area { position: absolute; inset: 0; border-radius: 9999px; pointer-events: none; } .glass-input-text-area::after { content: ""; display: block; position: absolute; width: calc(100% - clamp(1px, 0.0625em, 4px)); height: calc(100% - clamp(1px, 0.0625em, 4px)); top: calc(0% + clamp(1px, 0.0625em, 4px) / 2); left: calc(0% + clamp(1px, 0.0625em, 4px) / 2); box-sizing: border-box; border-radius: 9999px; overflow: clip; background: linear-gradient(var(--angle-2), transparent 0%, rgba(255, 255, 255, 0.5) 40% 50%, transparent 55%); z-index: 3; mix-blend-mode: screen; pointer-events: none; background-size: 200% 200%; background-position: 0% 50%; transition: background-position calc(400ms * 1.25) cubic-bezier(0.25, 1, 0.5, 1), --angle-2 calc(400ms * 1.25) cubic-bezier(0.25, 1, 0.5, 1); } .glass-input-wrap:focus-within .glass-input-text-area::after { background-position: 25% 50%; }
+
+/* Bordered glass "card" — for surfaces that DO need a visible container
+   (login form, modals, etc.), as opposed to the auth-wizard pattern where
+   pill inputs float directly on the background with no box around them.
+   Two-tone border (bright inner hairline + faint dark outer hairline) so
+   the edge reads clearly whether it's sitting over light or dark/colorful
+   backdrops. */
+.glass-card {
+  position: relative;
+  border-radius: 4rem;
+  background: rgba(255, 255, 255, 0);
+  backdrop-filter: blur(0.5px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 0 0 1px rgba(10, 12, 16, 0.08),
+    0 8px 32px rgba(10, 12, 16, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+/* Universal glass surface — layers frosted-glass qualities (blur, inner
+   light, a soft specular sheen, gentle hover lift) on top of an element's
+   OWN background color, instead of replacing it with a fixed neutral tint
+   like .glass-button does. Add this class ALONGSIDE existing bg-*/text-*
+   utilities (ideally with a bg-*/NN opacity, e.g. bg-primary/90) so every
+   button keeps its own color — primary blue, ink, gold, white, whatever —
+   and just gains the site's liquid-glass material on top. Works for any
+   hue because the sheen is a blend mode over whatever color is beneath it,
+   not a hardcoded light gradient. */
+.glass-surface {
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  background-image: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.16) 30%,
+    rgba(255, 255, 255, 0.02) 55%,
+    rgba(255, 255, 255, 0.3) 100%
+  );
+  background-blend-mode: overlay;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65),
+    inset 0 -1.5px 2px rgba(10, 12, 16, 0.16),
+    0 2px 8px rgba(10, 12, 16, 0.08);
+  transition: box-shadow 250ms ease, filter 200ms ease, border-color 200ms ease;
+}
+.glass-surface:hover {
+  filter: brightness(1.08) saturate(1.12);
+  border-color: rgba(255, 255, 255, 0.75);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    inset 0 -1px 1.5px rgba(10, 12, 16, 0.12),
+    0 6px 18px -6px rgba(10, 12, 16, 0.3);
+}
+.glass-surface:active {
+  filter: brightness(0.97);
+}
+.glass-surface:disabled,
+.glass-surface[aria-disabled="true"] {
+  filter: none;
+  opacity: 0.65;
+}
+/* Opt-in lift/press — only add this alongside .glass-surface on elements
+   that DON'T already carry their own Tailwind hover:-translate-y-*/
+   active:scale-* utility (several cards/CTAs do, and a plain `transform`
+   here would silently clobber those instead of combining with them). */
+.glass-surface-lift {
+  transition: transform 250ms cubic-bezier(0.25, 1, 0.5, 1), box-shadow 250ms ease, filter 200ms ease;
+}
+.glass-surface-lift:hover { transform: translateY(-1px); }
+.glass-surface-lift:active { transform: translateY(0) scale(0.97); }
+/* Outline/ghost variant — for buttons that currently rely on a plain
+   border instead of a filled background (e.g. white/transparent buttons). */
+.glass-surface-outline {
+  background-color: rgba(255, 255, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.7) !important;
+}
+.glass-surface-outline:hover {
+  background-color: rgba(255, 255, 255, 0.75);
+}
+
+/* True animated liquid-glass wrapper — identical mechanics to .glass-button
+   above (translucent glass body, shine sweep, animated conic-gradient
+   border on hover) but using border-radius: inherit instead of a hardcoded
+   9999px pill, so the exact same effect can wrap a rounded-rectangle card
+   or row (My Donations, Help & Support, form buttons) and not just a pill
+   CTA. Shape comes from whatever Tailwind rounded-* class sits on the
+   elements themselves; markup mirrors .glass-button-wrap/.glass-button
+   exactly (wrap > pill > pill-text, plus a pill-shadow sibling). */
+.glass-pill-wrap {
+  --anim-time: 400ms;
+  --anim-ease: cubic-bezier(0.25, 1, 0.5, 1);
+  --border-width: clamp(1px, 0.0625em, 4px);
+  position: relative;
+  z-index: 2;
+  transform-style: preserve-3d;
+  transition: transform var(--anim-time) var(--anim-ease);
+}
+.glass-pill-wrap:has(.glass-pill:active) { transform: scale(0.98); }
+.glass-pill-shadow {
+  /* Intentionally inert — no fill, no blur. Kept as a no-op div only so
+     markup doesn't need to change if a drop shadow is wanted again later;
+     for now buttons render with zero shadow, per explicit request. */
+  display: none;
+}
+.glass-pill {
+  /* NOTE: border-radius is intentionally NOT set here — it's controlled
+     entirely by whatever Tailwind rounded-* class the consumer puts on
+     this same element (rounded-full for a pill, rounded-2xl for a card).
+     Only the pseudo-elements below use border-radius: inherit, which
+     correctly picks up THIS element's own radius since they're its direct
+     children — setting it here too would make this element inherit from
+     its own parent (.glass-pill-wrap) instead, forcing square corners. */
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  backdrop-filter: blur(clamp(1px, 0.125em, 4px));
+  transition: all var(--anim-time) var(--anim-ease);
+  background-image: linear-gradient(-75deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.06));
+  background-blend-mode: overlay;
+  box-shadow:
+    inset 0 0.125em 0.125em rgba(10, 12, 16, 0.05),
+    inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.5),
+    0 0.25em 0.125em -0.125em rgba(10, 12, 16, 0.2),
+    0 0 0.1em 0.25em inset rgba(255, 255, 255, 0.2);
+}
+.glass-pill:hover {
+  backdrop-filter: blur(0.01em);
+  box-shadow:
+    inset 0 0.125em 0.125em rgba(10, 12, 16, 0.05),
+    inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.5),
+    0 0.15em 0.05em -0.1em rgba(10, 12, 16, 0.25),
+    0 0 0.05em 0.1em inset rgba(255, 255, 255, 0.5);
+}
+.glass-pill::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  border-radius: inherit;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  transition: border-color var(--anim-time) var(--anim-ease);
+  pointer-events: none;
+}
+.glass-pill:hover::after { border-color: rgba(255, 255, 255, 0.85); }
+.glass-pill-wrap:has(.glass-pill:hover) .glass-pill-shadow { filter: blur(clamp(3px, 0.3em, 8px)); }
+.glass-pill-text {
+  /* display, color and text-shadow are intentionally NOT set here — put
+     flex/block/inline-flex and text-*/text-white directly via Tailwind
+     utility on this element per usage (icon+label rows need flex; a dark
+     button like Donate Now needs white text, a light glass pill needs
+     dark text). Setting any of these here would win the cascade over
+     that utility and silently break it, the same bug border-radius had
+     above. */
+  position: relative;
+  z-index: 2;
+  border-radius: inherit;
+  transition: all var(--anim-time) var(--anim-ease);
+}
+.glass-pill:hover .glass-pill-text { text-shadow: 0.025em 0.025em 0.025em rgba(10, 12, 16, 0.12); }
+.glass-pill-text::after {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: clip;
+  background: linear-gradient(var(--angle-2), transparent 0%, rgba(255, 255, 255, 0.5) 40% 50%, transparent 55%);
+  z-index: 3;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  background-size: 200% 200%;
+  background-position: 0% 50%;
+  transition: background-position calc(var(--anim-time) * 1.25) var(--anim-ease), --angle-2 calc(var(--anim-time) * 1.25) var(--anim-ease);
+}
+.glass-pill:hover .glass-pill-text::after { background-position: 25% 50%; }
+.glass-pill:active .glass-pill-text::after { background-position: 50% 15%; --angle-2: -15deg; }
+
+.glass-pill:disabled,
+.glass-pill[aria-disabled="true"] {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Ambient/continuous sheen — an opt-in modifier for a handful of primary
+   CTAs (Donate Now, Submit a Case, Register as Volunteer) that should
+   shimmer on a loop instead of waiting for hover. Add "glass-ambient" to
+   the outer -wrap element; it reaches both the .glass-button family
+   (login/signup/Become-a-Volunteer) and the .glass-pill family below it. */
+@keyframes glass-ambient-border {
+  0% { --angle-1: -75deg; }
+  100% { --angle-1: 285deg; }
+}
+@keyframes glass-ambient-shine {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.glass-ambient .glass-button::after {
+  animation: glass-ambient-border 6s linear infinite;
+}
+.glass-ambient .glass-button-text::after,
+.glass-ambient .glass-pill-text::after {
+  animation: glass-ambient-shine 3.5s ease-in-out infinite;
+}
+
+/* Frosted "panel" — for dropdowns, popovers, modal sheets, and any menu
+   surface that needs the glass language but keeps its own border-radius
+   per usage (the pill-shaped .glass-card above is too specific for these
+   rectangular/rounded-corner surfaces). */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow:
+    0 0 0 1px rgba(10, 12, 16, 0.05),
+    0 20px 40px -14px rgba(10, 12, 16, 0.2),
+    inset 0 1px 1px rgba(255, 255, 255, 0.55);
+}
+
+/* Static blue glow for a headline's emphasized word/phrase — NOT an
+   animated pulse, just layered text-shadow so it reads as "lit from
+   within" in the site's brand blue. */
+.text-glow-blue {
+  color: #1F61EF;
+  text-shadow:
+    0 0 10px rgba(31, 97, 239, 0.55),
+    0 0 26px rgba(31, 97, 239, 0.35),
+    0 0 46px rgba(31, 97, 239, 0.2);
 }

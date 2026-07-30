@@ -21,7 +21,7 @@ export function OngoingCaseCard({ id, title, image, location, description, colle
   const [imgLoaded, setImgLoaded] = useState(false);
 
   return (
-    <article className="group rounded-2xl border border-border overflow-hidden bg-white transition-all duration-[250ms] hover:-translate-y-2 hover:shadow-xl hover:border-primary/40">
+    <article className="group rounded-2xl border border-border overflow-hidden bg-white transition-all duration-[250ms] hover:-translate-y-2 hover:shadow-xl hover:border-brand-green/40">
       <button
         onClick={() => onViewDetails?.(id)}
         disabled={!onViewDetails}
@@ -43,7 +43,7 @@ export function OngoingCaseCard({ id, title, image, location, description, colle
           {location}
         </div>
         <button onClick={() => onViewDetails?.(id)} disabled={!onViewDetails} className="text-left w-full">
-          <h3 className="mt-1.5 font-display text-lg sm:text-xl text-primary hover:underline">{title}</h3>
+          <h3 className="mt-1.5 font-display text-lg sm:text-xl text-brand-green hover:underline">{title}</h3>
         </button>
         <p className="mt-2 text-sm text-muted leading-relaxed line-clamp-2 sm:line-clamp-none">{description}</p>
 
@@ -53,7 +53,7 @@ export function OngoingCaseCard({ id, title, image, location, description, colle
           <span>Goal</span>
         </div>
         <div className="hidden sm:flex items-baseline justify-between">
-          <span className="font-mono text-lg font-semibold text-primary">
+          <span className="font-mono text-lg font-semibold text-brand-green">
             PKR {collected.toLocaleString()}
           </span>
           <span className="font-mono text-sm text-ink/70">PKR {goal.toLocaleString()}</span>
@@ -61,7 +61,7 @@ export function OngoingCaseCard({ id, title, image, location, description, colle
 
         <div className="mt-4 sm:mt-2 h-2 rounded-full bg-border overflow-hidden">
           <motion.div
-            className="h-full rounded-full bg-primary transition-shadow duration-[250ms] group-hover:shadow-[0_0_10px_rgba(48,135,248,0.7)]"
+            className="h-full rounded-full bg-brand-green transition-shadow duration-[250ms] group-hover:shadow-[0_0_10px_rgba(112,152,40,0.7)]"
             initial={{ width: 0 }}
             whileInView={{ width: `${pct}%` }}
             viewport={{ once: true, amount: 0.6 }}
@@ -83,7 +83,7 @@ export function OngoingCaseCard({ id, title, image, location, description, colle
         {onViewDetails && (
           <button
             onClick={() => onViewDetails(id)}
-            className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-primary"
+            className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-green"
           >
             <Info size={13} />
             <span className="sm:hidden">View details</span>
@@ -94,7 +94,7 @@ export function OngoingCaseCard({ id, title, image, location, description, colle
         <div className="mt-3 flex items-center gap-2">
           <a
             href={`/donate?case=${id}`}
-            className="group/donate flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-primary px-4 sm:px-5 py-2.5 sm:py-3 text-sm font-semibold text-background transition-all duration-150 hover:bg-primary-dark hover:shadow-lg active:scale-[0.98]"
+            className="glass-surface group/donate flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-brand-green px-4 sm:px-5 py-2.5 sm:py-3 text-sm font-semibold text-background transition-all duration-150 hover:bg-brand-green-dark hover:shadow-lg active:scale-[0.98]"
           >
             <Heart size={15} fill="currentColor" /> Donate Now
             <ArrowRight size={14} className="transition-transform duration-150 group-hover/donate:translate-x-1" />

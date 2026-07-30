@@ -167,7 +167,7 @@ export default function DonatePage() {
                 confirm your donation and track it, sign in, this keeps every donation
                 traceable to a real person and lets you see where it went afterward.
               </p>
-              <a href="/login" className="mt-6 inline-flex items-center justify-center w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors gap-2">
+              <a href="/login" className="glass-surface mt-6 inline-flex items-center justify-center w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors gap-2">
                 <LogIn size={16} /> Sign In to Confirm
               </a>
             </>
@@ -252,7 +252,7 @@ export default function DonatePage() {
 
             {error && <p className="text-sm text-red-600">{error}</p>}
 
-            <button type="submit" disabled={loading || !caseId} className="w-full rounded-full bg-accent px-7 py-3.5 font-semibold text-ink hover:bg-accent-dark transition-colors disabled:opacity-60">
+            <button type="submit" disabled={loading || !caseId} className="glass-surface w-full rounded-full bg-accent px-7 py-3.5 font-semibold text-ink hover:bg-accent-dark transition-colors disabled:opacity-60">
               {loading ? "Submitting..." : frequency === "monthly" ? "I've Sent This Month's Payment" : "I've Sent the Payment"}
             </button>
           </form>

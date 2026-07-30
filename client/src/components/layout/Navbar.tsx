@@ -62,33 +62,32 @@ export function Navbar() {
 
   return (
     <header
-      className={`sticky top-0 z-50 backdrop-blur-md transition-all duration-300 ${
+      className={`sticky top-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-background/75 border-b border-border shadow-[0_4px_20px_-4px_rgba(2,32,71,0.10)]"
-          : "bg-background/40 border-b border-transparent shadow-[0_4px_20px_-6px_rgba(2,32,71,0.06)]"
+          ? "bg-background/80 backdrop-blur-md border-b border-border shadow-[0_4px_20px_-4px_rgba(10,12,16,0.08)]"
+          : "bg-transparent border-b border-transparent"
       }`}
     >
-      {/* GoFundMe-style layout: nav links split left/right, logo centered */}
-      <nav className="max-w-6xl mx-auto grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 py-3">
-        <div className="flex items-center gap-6 min-w-0 justify-self-start">
+      {/* Logo + nav links clustered left, actions clustered right */}
+      <nav className="max-w-6xl mx-auto flex items-center justify-between gap-4 px-6 py-3">
+        <div className="flex items-center gap-8 min-w-0">
           <button className="md:hidden text-ink shrink-0" onClick={() => setOpen(!open)} aria-label="Toggle menu">
             {open ? <X size={22} /> : <Menu size={22} />}
           </button>
+          <Link href="/" className="shrink-0">
+            <Logo imgClassName="h-8 sm:h-9 w-auto object-contain" />
+          </Link>
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/about" className="text-base font-light text-ink/80 hover:text-primary transition-colors">About</Link>
+            <Link href="/about" className="text-base font-light text-ink/80 hover:text-brand-green transition-colors">About</Link>
             <NavDropdown label="Projects" items={PROJECT_LINKS} header={PROJECTS_HEADER} />
-            <Link href="/success-stories" className="text-base font-light text-ink/80 hover:text-primary transition-colors">Success Stories</Link>
+            <Link href="/success-stories" className="text-base font-light text-ink/80 hover:text-brand-green transition-colors">Success Stories</Link>
           </div>
         </div>
-
-        <Link href="/" className="justify-self-center">
-          <Logo imgClassName="h-12 w-auto object-contain" />
-        </Link>
 
         <div className="flex items-center gap-4 justify-self-end min-w-0">
           <button
             onClick={() => setSearchOpen(true)}
-            className="hidden md:flex h-9 w-9 items-center justify-center rounded-full border border-border text-ink/70 hover:bg-white hover:text-primary transition-colors"
+            className="hidden md:flex h-9 w-9 items-center justify-center text-ink/70 hover:text-brand-green transition-colors"
             aria-label="Search"
           >
             <Search size={16} />
@@ -104,7 +103,7 @@ export function Navbar() {
           {user ? (
             <AvatarMenu isAdmin={isAdmin} onLogout={handleLogout} />
           ) : (
-            <Link href="/login" className="hidden sm:block text-base font-light text-ink/80 hover:text-primary transition-colors">
+            <Link href="/login" className="hidden sm:inline-block px-2.5 py-1.5 -my-1.5 rounded-lg text-base font-light text-ink/80 hover:text-brand-green hover:bg-brand-green/5 transition-colors">
               Sign In
             </Link>
           )}
@@ -120,7 +119,7 @@ export function Navbar() {
               {user.avatarUrl ? (
                 <img src={user.avatarUrl} alt={user.name} className="h-10 w-10 rounded-full object-cover" />
               ) : (
-                <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-background font-display">
+                <div className="h-10 w-10 rounded-full bg-brand-green flex items-center justify-center text-background font-display">
                   {user.name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase()}
                 </div>
               )}
@@ -135,14 +134,19 @@ export function Navbar() {
 
           {/* Always-visible search pill, sits above every nav link (including About) */}
           <div className="px-6 pt-4 pb-2">
-            <div className="relative">
-              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-              <input
-                value={mobileQuery}
-                onChange={(e) => setMobileQuery(e.target.value)}
-                placeholder="Search cases, volunteers, stories"
-                className="w-full rounded-full border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
+            <div className="glass-input-wrap w-full">
+              <div className="glass-input">
+                <span className="glass-input-text-area" />
+                <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pl-2">
+                  <Search size={16} className="text-ink/60" />
+                </div>
+                <input
+                  value={mobileQuery}
+                  onChange={(e) => setMobileQuery(e.target.value)}
+                  placeholder="Search cases, volunteers, stories"
+                  className="relative z-10 h-full w-0 flex-grow bg-transparent text-sm text-ink placeholder:text-ink/45 focus:outline-none py-2.5 pr-4"
+                />
+              </div>
             </div>
           </div>
 
@@ -167,7 +171,7 @@ export function Navbar() {
                 <Link
                   href={isAdmin ? "/admin" : "/account"}
                   onClick={closeMobileMenu}
-                  className="flex items-center gap-2.5 py-2.5 text-sm font-semibold text-primary"
+                  className="flex items-center gap-2.5 py-2.5 text-sm font-semibold text-brand-green"
                 >
                   <LayoutDashboard size={16} /> {isAdmin ? "Admin Dashboard" : "My Profile"}
                 </Link>
@@ -207,7 +211,7 @@ export function Navbar() {
                     <LogOut size={15} /> Log Out
                   </button>
                 ) : (
-                  <Link href="/login" onClick={closeMobileMenu} className="block py-2.5 text-sm font-semibold text-primary">Sign In</Link>
+                  <Link href="/login" onClick={closeMobileMenu} className="block py-2.5 text-sm font-semibold text-brand-green">Sign In</Link>
                 )}
               </div>
 
@@ -263,7 +267,7 @@ function NavDropdown({
     >
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 text-base font-light text-ink/80 hover:text-primary transition-colors"
+        className="flex items-center gap-1 text-base font-light text-ink/80 hover:text-brand-green transition-colors"
         aria-expanded={open}
       >
         {label} <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
@@ -274,9 +278,9 @@ function NavDropdown({
             align === "right" ? "right-0" : "left-1/2 -translate-x-1/2"
           }`}
         >
-          <div className="rounded-2xl border border-border bg-white/95 backdrop-blur-md shadow-lg overflow-hidden">
-            <div className="flex items-center gap-2.5 px-4 py-3.5 border-b border-border/70">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <div className="glass-panel rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2.5 px-4 py-3.5 border-b border-white/50">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-green/10 text-brand-green">
                 <HeaderIcon size={16} />
               </span>
               <span className="font-body text-sm font-semibold text-ink">{header.title}</span>
@@ -287,9 +291,9 @@ function NavDropdown({
                   key={item.href}
                   href={item.href}
                   onClick={() => setOpen(false)}
-                  className="flex items-start gap-3 rounded-xl px-2.5 py-2.5 hover:bg-background transition-colors group"
+                  className="flex items-start gap-3 rounded-xl px-2.5 py-2.5 hover:bg-white/60 transition-colors group"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background text-primary group-hover:bg-primary/10 transition-colors">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background text-brand-green group-hover:bg-brand-green/10 transition-colors">
                     <item.icon size={16} />
                   </span>
                   <span>
@@ -327,19 +331,19 @@ function AvatarMenu({ isAdmin, onLogout }: { isAdmin: boolean; onLogout: () => v
 
   return (
     <div ref={ref} className="relative hidden sm:block">
-      <button onClick={() => setOpen((v) => !v)} className="h-9 w-9 rounded-full overflow-hidden border-2 border-white shadow-sm transition-transform duration-200 hover:scale-105">
+      <button onClick={() => setOpen((v) => !v)} className="glass-surface h-9 w-9 rounded-full overflow-hidden transition-transform duration-200 hover:scale-105">
         {user.avatarUrl ? (
           <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
         ) : (
-          <div className="h-full w-full bg-primary flex items-center justify-center text-background text-xs font-display">
+          <div className="h-full w-full bg-brand-green flex items-center justify-center text-background text-xs font-display">
             {initials(user.name)}
           </div>
         )}
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-3 w-64 rounded-2xl border border-border bg-white/95 backdrop-blur-md shadow-lg overflow-hidden">
-          <div className="px-4 py-3 border-b border-border">
+        <div className="absolute top-full right-0 mt-3 w-64 glass-panel rounded-2xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-white/50">
             <p className="font-semibold text-ink text-sm">{user.name}</p>
             {user.volunteerStatus === "approved" && (
               <span className="inline-flex items-center gap-1 mt-1 text-xs rounded-full bg-emerald-50 text-emerald-700 px-2 py-0.5">
@@ -348,30 +352,30 @@ function AvatarMenu({ isAdmin, onLogout }: { isAdmin: boolean; onLogout: () => v
             )}
           </div>
           <div className="p-2">
-            <Link href={isAdmin ? "/admin" : "/account"} onClick={() => setOpen(false)} className="flex items-start gap-2.5 rounded-xl px-3 py-2.5 hover:bg-background transition-colors">
-              <LayoutDashboard size={16} className="text-primary mt-0.5" />
+            <Link href={isAdmin ? "/admin" : "/account"} onClick={() => setOpen(false)} className="flex items-start gap-2.5 rounded-xl px-3 py-2.5 hover:bg-white/60 transition-colors">
+              <LayoutDashboard size={16} className="text-brand-green mt-0.5" />
               <span>
                 <span className="block text-sm font-medium text-ink">Dashboard</span>
                 <span className="block text-xs text-muted">{isAdmin ? "Go to admin dashboard" : "Go to your dashboard"}</span>
               </span>
             </Link>
             {!isAdmin && (
-              <Link href="/my-donations" onClick={() => setOpen(false)} className="flex items-start gap-2.5 rounded-xl px-3 py-2.5 hover:bg-background transition-colors">
-                <Heart size={16} className="text-primary mt-0.5" />
+              <Link href="/my-donations" onClick={() => setOpen(false)} className="flex items-start gap-2.5 rounded-xl px-3 py-2.5 hover:bg-white/60 transition-colors">
+                <Heart size={16} className="text-brand-green mt-0.5" />
                 <span>
                   <span className="block text-sm font-medium text-ink">My Donations</span>
                   <span className="block text-xs text-muted">View your donation history</span>
                 </span>
               </Link>
             )}
-            <Link href="/help" onClick={() => setOpen(false)} className="flex items-start gap-2.5 rounded-xl px-3 py-2.5 hover:bg-background transition-colors">
-              <HelpCircle size={16} className="text-primary mt-0.5" />
+            <Link href="/help" onClick={() => setOpen(false)} className="flex items-start gap-2.5 rounded-xl px-3 py-2.5 hover:bg-white/60 transition-colors">
+              <HelpCircle size={16} className="text-brand-green mt-0.5" />
               <span>
                 <span className="block text-sm font-medium text-ink">Help &amp; Support</span>
                 <span className="block text-xs text-muted">Get help, FAQs, and contact us</span>
               </span>
             </Link>
-            <button onClick={onLogout} className="w-full flex items-start gap-2.5 rounded-xl px-3 py-2.5 hover:bg-background transition-colors text-left">
+            <button onClick={onLogout} className="w-full flex items-start gap-2.5 rounded-xl px-3 py-2.5 hover:bg-white/60 transition-colors text-left">
               <LogOut size={16} className="text-red-500 mt-0.5" />
               <span>
                 <span className="block text-sm font-medium text-ink">Log Out</span>
