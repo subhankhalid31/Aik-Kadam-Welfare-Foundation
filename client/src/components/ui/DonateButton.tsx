@@ -26,7 +26,7 @@ export function DonateButton({
         style={{ backgroundColor: DONATE_GOLD }}
       />
       <span
-        className={`relative inline-flex items-center gap-2 rounded-full ${sizing} font-display italic font-semibold text-ink shadow-md transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-lg`}
+        className={`glass-surface relative inline-flex items-center gap-2 rounded-full ${sizing} font-display italic font-semibold text-ink shadow-md transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-lg`}
         style={{ backgroundColor: DONATE_GOLD, boxShadow: "0 4px 14px -2px rgba(204,171,78,0.45)" }}
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = DONATE_GOLD_HOVER)}
         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = DONATE_GOLD)}

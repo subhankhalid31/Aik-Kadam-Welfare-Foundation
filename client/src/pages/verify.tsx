@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams } from "wouter";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { inputClass } from "@/components/ui/FormField";
 import { api, ApiError } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { ShieldCheck, Search, XCircle, MapPin, Clock, CheckCircle2 } from "lucide-react";
 
 type VerifyResult = {
@@ -57,15 +57,25 @@ export default function VerifyPage() {
         </p>
 
         <form onSubmit={handleSearch} className="mt-6 flex gap-2">
-          <input
-            value={badgeId}
-            onChange={(e) => setBadgeId(e.target.value)}
-            placeholder="e.g. HH-2026-0147"
-            className={`${inputClass} font-mono`}
-          />
-          <button type="submit" disabled={loading} className="shrink-0 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-60">
-            <Search size={16} />
-          </button>
+          <div className="glass-input-wrap flex-1">
+            <div className="glass-input">
+              <span className="glass-input-text-area" />
+              <input
+                value={badgeId}
+                onChange={(e) => setBadgeId(e.target.value)}
+                placeholder="e.g. HH-2026-0147"
+                className="relative z-10 h-full w-0 flex-grow bg-transparent font-mono text-sm text-ink placeholder:text-ink/45 focus:outline-none py-2.5 pl-4 pr-2"
+              />
+            </div>
+          </div>
+          <div className="glass-button-wrap shrink-0">
+            <button type="submit" disabled={loading} className={cn("glass-button relative z-10 isolate rounded-full transition-all", loading && "opacity-70")}>
+              <span className="glass-button-text relative block px-4 py-2.5">
+                <Search size={16} />
+              </span>
+            </button>
+            <div className="glass-button-shadow rounded-full pointer-events-none" />
+          </div>
         </form>
 
         {searched && !loading && (

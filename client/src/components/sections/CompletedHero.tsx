@@ -91,12 +91,14 @@ export function CompletedHero() {
           <p className="mt-1 text-xs text-muted leading-relaxed hidden sm:block">
             From receiving a case to completing it with transparency and care.
           </p>
-          <Link
-            href="/about"
-            className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-border px-4 py-2.5 text-xs font-semibold text-ink hover:bg-background transition-colors"
-          >
-            See How It Works →
-          </Link>
+          <div className="glass-pill-wrap w-full mt-3">
+            <Link href="/about" className="glass-pill relative isolate rounded-full block w-full">
+              <span className="glass-pill-text block w-full px-4 py-2.5 text-xs font-semibold text-center">
+                See How It Works →
+              </span>
+            </Link>
+            <div className="glass-pill-shadow rounded-full" />
+          </div>
         </motion.div>
       </div>
     </section>

@@ -3,6 +3,7 @@ import { useLocation, useSearch } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { inputClass } from "@/components/ui/FormField";
+import { GlassButton } from "@/components/ui/GlassButton";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { MailCheck, Check } from "lucide-react";
@@ -134,9 +135,9 @@ export default function VerifyOtpPage() {
                 {error && <p className="text-sm text-red-600 text-center">{error}</p>}
                 {info && <p className="text-sm text-primary text-center">{info}</p>}
 
-                <button type="submit" disabled={loading || code.length !== 6} className="w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60">
+                <GlassButton type="submit" disabled={loading || code.length !== 6}>
                   {loading ? "Verifying..." : "Verify"}
-                </button>
+                </GlassButton>
               </form>
 
               <button

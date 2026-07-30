@@ -65,7 +65,7 @@ export function CompletedProjectsTeaser() {
         <div className="mt-4 text-center">
           <a
             href="/completed-projects"
-            className="inline-flex items-center gap-1.5 rounded-full border border-border px-6 py-2.5 text-sm font-semibold text-ink hover:bg-white hover:gap-2.5 transition-all"
+            className="glass-surface glass-surface-outline inline-flex items-center gap-1.5 rounded-full border px-6 py-2.5 text-sm font-semibold text-ink hover:bg-white/80 hover:gap-2.5 transition-all"
           >
             View All Completed Projects <ArrowRight size={16} />
           </a>

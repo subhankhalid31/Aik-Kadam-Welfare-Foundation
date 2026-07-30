@@ -58,7 +58,7 @@ export default function PartnerPage() {
               <textarea required rows={5} value={message} onChange={(e) => setMessage(e.target.value)} className={inputClass} placeholder="What did you have in mind?" />
             </FormField>
             {error && <p className="text-sm text-red-600">{error}</p>}
-            <button type="submit" disabled={loading} className="w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60">
+            <button type="submit" disabled={loading} className="glass-surface w-full rounded-full bg-primary/65 px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60">
               {loading ? "Sending..." : "Send Inquiry"}
             </button>
           </form>

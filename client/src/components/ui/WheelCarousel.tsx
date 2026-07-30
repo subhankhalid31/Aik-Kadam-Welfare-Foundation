@@ -158,14 +158,14 @@ export function WheelCarousel<T>({
         <button
           onClick={() => go(-1)}
           aria-label="Previous"
-          className="h-10 w-10 rounded-full border border-border bg-white flex items-center justify-center hover:bg-background transition-colors"
+          className="glass-surface glass-surface-outline h-10 w-10 rounded-full border flex items-center justify-center hover:bg-white/80 transition-colors"
         >
           <ChevronLeft size={17} />
         </button>
         <button
           onClick={() => go(1)}
           aria-label="Next"
-          className="h-10 w-10 rounded-full border border-border bg-white flex items-center justify-center hover:bg-background transition-colors"
+          className="glass-surface glass-surface-outline h-10 w-10 rounded-full border flex items-center justify-center hover:bg-white/80 transition-colors"
         >
           <ChevronRight size={17} />
         </button>

@@ -56,7 +56,7 @@ export function VolunteerCard({ badgeId, name, role, city, avatarUrl, category, 
         "--spot-y": "0px",
         "--spot-opacity": "0",
       }}
-      className="group relative w-full min-w-0 text-left rounded-2xl border border-border bg-white p-6 flex flex-col transition-all duration-[250ms] hover:-translate-y-2 hover:shadow-xl hover:border-primary/40"
+      className="glass-surface group relative w-full min-w-0 text-left rounded-2xl border border-white/60 bg-white/80 p-6 flex flex-col transition-all duration-[250ms] hover:-translate-y-2 hover:shadow-xl hover:border-primary/40"
     >
       {/* Mouse spotlight */}
       <span

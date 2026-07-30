@@ -21,20 +21,25 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="absolute inset-x-0 top-full z-[110]">
       <div className="fixed inset-0 -z-10 bg-ink/20" onClick={onClose} />
-      <div className="relative mx-auto mt-3 w-[92vw] max-w-2xl bg-white rounded-2xl shadow-xl max-h-[70vh] overflow-hidden flex flex-col border border-border animate-in fade-in slide-in-from-top-2 duration-150">
-        <div className="p-5 border-b border-border">
+      <div className="relative mx-auto mt-3 w-[92vw] max-w-2xl glass-panel rounded-2xl max-h-[70vh] overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="p-5 border-b border-white/50">
           <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-              <input
-                autoFocus
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Find cases, volunteers, and success stories"
-                className="w-full rounded-full border border-border bg-background pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
+            <div className="glass-input-wrap flex-1">
+              <div className="glass-input">
+                <span className="glass-input-text-area" />
+                <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pl-2">
+                  <Search size={17} className="text-ink/60" />
+                </div>
+                <input
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Find cases, volunteers, and success stories"
+                  className="relative z-10 h-full w-0 flex-grow bg-transparent text-sm text-ink placeholder:text-ink/45 focus:outline-none py-2.5 pr-4"
+                />
+              </div>
             </div>
-            <button onClick={onClose} className="h-10 w-10 shrink-0 rounded-full hover:bg-background flex items-center justify-center">
+            <button onClick={onClose} className="glass-surface h-10 w-10 shrink-0 rounded-full bg-white/65 flex items-center justify-center text-ink/70 hover:bg-white/85 transition-colors">
               <X size={18} />
             </button>
           </div>

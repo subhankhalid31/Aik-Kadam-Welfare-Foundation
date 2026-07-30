@@ -86,14 +86,14 @@ export function GalleryCard({ id, title, date, location, description, images, fa
             <button
               onClick={prev}
               aria-label="Previous photo"
-              className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/85 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+              className="glass-surface hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/70 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <ChevronLeft size={16} className="text-ink" />
             </button>
             <button
               onClick={next}
               aria-label="Next photo"
-              className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/85 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+              className="glass-surface hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/70 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <ChevronRight size={16} className="text-ink" />
             </button>

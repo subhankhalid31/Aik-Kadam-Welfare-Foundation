@@ -24,7 +24,7 @@ function ExportButton({ baseUrl }: { baseUrl: string }) {
       <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} title="From date" className="rounded-lg border border-border bg-white px-3 py-2.5 text-xs" />
       <span className="text-xs text-muted">to</span>
       <input type="date" value={to} onChange={(e) => setTo(e.target.value)} title="To date" className="rounded-lg border border-border bg-white px-3 py-2.5 text-xs" />
-      <a href={href} download className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-semibold text-ink hover:bg-background transition-colors">
+      <a href={href} download className="glass-surface glass-surface-outline inline-flex items-center gap-1.5 rounded-lg border px-4 py-2.5 text-sm font-semibold text-ink hover:bg-background transition-colors">
         <Download size={15} /> Export CSV
       </a>
     </div>
@@ -123,14 +123,14 @@ function BulkActionBar({
         <button
           disabled={busy}
           onClick={onApproveAll}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-success px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-success-dark disabled:opacity-50"
+          className="glass-surface inline-flex items-center gap-1.5 rounded-lg bg-success/65 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-success-dark disabled:opacity-50"
         >
           <Check size={13} /> {approveLabel}
         </button>
         <button
           disabled={busy}
           onClick={onRejectAll}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-danger/10 px-3.5 py-1.5 text-xs font-semibold text-danger hover:bg-danger/20 disabled:opacity-50"
+          className="glass-surface inline-flex items-center gap-1.5 rounded-lg bg-danger/10 px-3.5 py-1.5 text-xs font-semibold text-danger hover:bg-danger/20 disabled:opacity-50"
         >
           <X size={13} /> {rejectLabel}
         </button>
@@ -475,7 +475,7 @@ export default function AdminPage() {
                             if (!(await dialog.confirm(`Approve ${v.name} as a volunteer?`))) return;
                             act(v.id, () => api.post(`/api/admin/volunteers/${v.id}/approve`));
                           }}
-                          className="h-8 w-8 rounded-lg bg-success text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
+                          className="glass-surface h-8 w-8 rounded-lg bg-success/65 text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
                         >
                           <Check size={16} />
                         </button>
@@ -486,7 +486,7 @@ export default function AdminPage() {
                             if (reason === null) return;
                             act(v.id, () => api.post(`/api/admin/volunteers/${v.id}/reject`, { reason: reason || undefined }));
                           }}
-                          className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+                          className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
                         >
                           <X size={16} />
                         </button>
@@ -592,7 +592,7 @@ export default function AdminPage() {
                             if (!(await dialog.confirm(`Approve "${c.title}" and make it live?`))) return;
                             act(c.id, () => api.post(`/api/admin/cases/${c.id}/approve`));
                           }}
-                          className="h-8 w-8 rounded-lg bg-success text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
+                          className="glass-surface h-8 w-8 rounded-lg bg-success/65 text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
                         >
                           <Check size={16} />
                         </button>
@@ -603,7 +603,7 @@ export default function AdminPage() {
                             if (reason === null) return;
                             act(c.id, () => api.post(`/api/admin/cases/${c.id}/reject`, { reason: reason || undefined }));
                           }}
-                          className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+                          className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
                         >
                           <X size={16} />
                         </button>
@@ -846,7 +846,7 @@ function OngoingRow({
           </div>
         </div>
         <div className="flex gap-2 shrink-0">
-          <button onClick={() => setEditing((e) => !e)} className="h-8 w-8 rounded-lg border border-border flex items-center justify-center hover:bg-background">
+          <button onClick={() => setEditing((e) => !e)} className="glass-surface glass-surface-outline h-8 w-8 rounded-lg border flex items-center justify-center hover:bg-background">
             <Pencil size={14} />
           </button>
           <button
@@ -855,7 +855,7 @@ function OngoingRow({
               if (!(await dialog.confirm(`Delete "${caseRow.title}"? This removes it entirely, including its volunteer assignments. This can't be undone.`))) return;
               onChange(() => api.delete(`/api/admin/cases/${caseRow.id}`));
             }}
-            className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+            className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
           >
             <X size={14} />
           </button>
@@ -876,7 +876,7 @@ function OngoingRow({
           </select>
           <input type="file" accept="image/*" multiple onChange={(e) => setImages(Array.from(e.target.files ?? []).slice(0, 5))} className="block text-sm" />
           {images.length > 0 && <p className="text-xs text-muted mt-1">{images.length} new photo(s) selected, will replace existing photos.</p>}
-          <button disabled={busy} onClick={() => onChange(saveEdit)} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">
+          <button disabled={busy} onClick={() => onChange(saveEdit)} className="glass-surface rounded-full bg-primary/65 px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">
             Save Changes
           </button>
         </div>
@@ -910,7 +910,7 @@ function OngoingRow({
             <button
               disabled={savingAssignment}
               onClick={saveAssignment}
-              className="mt-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50"
+              className="glass-surface mt-2 rounded-full bg-primary/65 px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50"
             >
               {savingAssignment ? "Saving..." : "Save Assignment"}
             </button>
@@ -926,7 +926,7 @@ function OngoingRow({
         <button
           disabled={busy}
           onClick={() => onChange(() => api.post(`/api/admin/cases/${caseRow.id}/update-collected`, { amount: Number(amount) }))}
-          className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50"
+          className="glass-surface rounded-full bg-primary/65 px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50"
         >
           Update
         </button>
@@ -1025,10 +1025,10 @@ function VolunteerEditRow({
           )}
         </div>
         <div className="flex gap-2 shrink-0">
-          <button onClick={() => setEditing((e) => !e)} className="h-8 w-8 rounded-lg border border-border flex items-center justify-center hover:bg-background">
+          <button onClick={() => setEditing((e) => !e)} className="glass-surface glass-surface-outline h-8 w-8 rounded-lg border flex items-center justify-center hover:bg-background">
             <Pencil size={14} />
           </button>
-          <button disabled={busy} onClick={handleDelete} className="h-8 w-8 rounded-lg border border-border text-danger flex items-center justify-center hover:bg-danger/10 disabled:opacity-50" title="Delete volunteer">
+          <button disabled={busy} onClick={handleDelete} className="glass-surface glass-surface-outline h-8 w-8 rounded-lg border text-danger flex items-center justify-center hover:bg-danger/10 disabled:opacity-50" title="Delete volunteer">
             <Trash2 size={14} />
           </button>
         </div>
@@ -1069,7 +1069,7 @@ function VolunteerEditRow({
             </div>
           )}
           {error && <p className="text-sm text-danger">{error}</p>}
-          <button disabled={busy} onClick={() => onChange(save)} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">
+          <button disabled={busy} onClick={() => onChange(save)} className="glass-surface rounded-full bg-primary/65 px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">
             Save Changes
           </button>
         </div>
@@ -1130,10 +1130,10 @@ function PendingCaseReviewModal({
         </div>
 
         <div className="mt-6 flex gap-3">
-          <button disabled={busy} onClick={onApprove} className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-success px-5 py-3 text-sm font-semibold text-white hover:bg-success-dark disabled:opacity-50">
+          <button disabled={busy} onClick={onApprove} className="glass-surface flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-success/65 px-5 py-3 text-sm font-semibold text-white hover:bg-success-dark disabled:opacity-50">
             <Check size={16} /> Approve
           </button>
-          <button disabled={busy} onClick={onReject} className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-danger/10 px-5 py-3 text-sm font-semibold text-danger hover:bg-danger/20 disabled:opacity-50">
+          <button disabled={busy} onClick={onReject} className="glass-surface flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-danger/10 px-5 py-3 text-sm font-semibold text-danger hover:bg-danger/20 disabled:opacity-50">
             <X size={16} /> Reject
           </button>
         </div>
@@ -1205,7 +1205,7 @@ function CompletedCasesPanel({ dialog }: { dialog: ReturnType<typeof useDialog> 
             <button
               disabled={busy === c.id}
               onClick={() => hide(c)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10 disabled:opacity-50 shrink-0"
+              className="glass-surface glass-surface-outline inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10 disabled:opacity-50 shrink-0"
             >
               <EyeOff size={14} /> Hide
             </button>
@@ -1295,7 +1295,7 @@ function TaglineSettingCard() {
         <button
           disabled={saving || saved}
           onClick={save}
-          className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50 shrink-0"
+          className="glass-surface rounded-full bg-primary/65 px-5 py-2.5 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50 shrink-0"
         >
           {saving ? "Saving..." : saved ? "Saved" : "Save"}
         </button>
@@ -1424,7 +1424,7 @@ function RejectedCasesPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }
               <button disabled={busy === c.id} onClick={() => restore(c)} className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-semibold text-ink hover:bg-background disabled:opacity-50">
                 <Undo2 size={14} /> Restore
               </button>
-              <button disabled={busy === c.id} onClick={() => remove(c)} className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50">
+              <button disabled={busy === c.id} onClick={() => remove(c)} className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50">
                 <Trash2 size={14} />
               </button>
             </div>
@@ -1480,7 +1480,7 @@ function NameChangeRequestsPanel({ dialog }: { dialog: ReturnType<typeof useDial
               <button
                 disabled={busy === r.id}
                 onClick={() => act(r.id, () => api.post(`/api/admin/name-change-requests/${r.id}/approve`))}
-                className="h-8 w-8 rounded-lg bg-success text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
+                className="glass-surface h-8 w-8 rounded-lg bg-success/65 text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
               >
                 <Check size={16} />
               </button>
@@ -1490,7 +1490,7 @@ function NameChangeRequestsPanel({ dialog }: { dialog: ReturnType<typeof useDial
                   if (!(await dialog.confirm(`Reject ${r.name}'s name change request?`))) return;
                   act(r.id, () => api.post(`/api/admin/name-change-requests/${r.id}/reject`));
                 }}
-                className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+                className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
               >
                 <X size={16} />
               </button>
@@ -1750,7 +1750,7 @@ function DonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
                               if (!(await dialog.confirm(`Confirm this PKR ${d.amount.toLocaleString()} donation? This adds it to the case's collected total.`))) return;
                               act(d.id, () => api.post(`/api/admin/donations/${d.id}/confirm`));
                             }}
-                            className="h-8 w-8 rounded-lg bg-success text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
+                            className="glass-surface h-8 w-8 rounded-lg bg-success/65 text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
                           >
                             <Check size={16} />
                           </button>
@@ -1761,7 +1761,7 @@ function DonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
                               if (reason === null) return;
                               act(d.id, () => api.post(`/api/admin/donations/${d.id}/reject`, { reason: reason || undefined }));
                             }}
-                            className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+                            className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
                           >
                             <X size={16} />
                           </button>
@@ -1785,7 +1785,7 @@ function DonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
                           if (!(await dialog.confirm(`Permanently delete this donation record (PKR ${d.amount.toLocaleString()})? This can't be undone.`))) return;
                           act(d.id, () => api.delete(`/api/admin/donations/${d.id}`));
                         }}
-                        className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+                        className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
                         title="Delete record"
                       >
                         <X size={14} />
@@ -1902,7 +1902,7 @@ function RecurringDonationsPanel({ dialog }: { dialog: ReturnType<typeof useDial
                       <button
                         disabled={busy === p.id}
                         onClick={() => cancelPledge(p)}
-                        className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+                        className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
                         title="Cancel pledge"
                       >
                         <X size={16} />
@@ -1982,7 +1982,7 @@ function GalleryManagementPanel({ dialog }: { dialog: ReturnType<typeof useDialo
     <div className="mt-5">
       <a
         href="/admin/gallery/new"
-        className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-background hover:bg-primary-dark transition-colors"
+        className="glass-surface inline-flex items-center gap-1.5 rounded-full bg-primary/65 px-5 py-2.5 text-sm font-semibold text-background hover:bg-primary-dark transition-colors"
       >
         <Plus size={15} /> Add New Event
       </a>
@@ -2057,7 +2057,7 @@ function GalleryEditRow({ event, onSaved, dialog }: { event: GalleryEventRow; on
             await api.delete(`/api/admin/gallery/${event.id}`);
             onSaved();
           }}
-          className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 shrink-0 ml-2"
+          className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 shrink-0 ml-2"
         >
           <X size={14} />
         </button>
@@ -2074,7 +2074,7 @@ function GalleryEditRow({ event, onSaved, dialog }: { event: GalleryEventRow; on
             <input value={items} onChange={(e) => setItems(e.target.value)} className="rounded-lg border border-border px-3 py-2 text-sm" placeholder="Items" />
             <input value={funds} onChange={(e) => setFunds(e.target.value)} className="rounded-lg border border-border px-3 py-2 text-sm" placeholder="Funds used" />
           </div>
-          <button disabled={saving} onClick={save} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">
+          <button disabled={saving} onClick={save} className="glass-surface rounded-full bg-primary/65 px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">
             {saving ? "Saving..." : "Save Changes"}
           </button>
         </div>
@@ -2111,7 +2111,7 @@ function SuccessStoriesManagementPanel({ dialog }: { dialog: ReturnType<typeof u
     <div className="mt-5">
       <a
         href="/admin/success-stories/new"
-        className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-background hover:bg-primary-dark transition-colors"
+        className="glass-surface inline-flex items-center gap-1.5 rounded-full bg-primary/65 px-5 py-2.5 text-sm font-semibold text-background hover:bg-primary-dark transition-colors"
       >
         <Plus size={15} /> Add New Story
       </a>
@@ -2181,10 +2181,10 @@ function SuccessStoryEditCard({ story, dialog, onChanged }: { story: SuccessStor
           <p className="mt-1 text-xs text-ink/70 line-clamp-2">{story.quote}</p>
         </div>
         <div className="flex flex-col gap-1.5 shrink-0">
-          <button onClick={() => setEditing((v) => !v)} className="h-8 w-8 rounded-lg border border-border flex items-center justify-center hover:bg-background">
+          <button onClick={() => setEditing((v) => !v)} className="glass-surface glass-surface-outline h-8 w-8 rounded-lg border flex items-center justify-center hover:bg-background">
             <Pencil size={13} />
           </button>
-          <button onClick={remove} disabled={busy} className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50">
+          <button onClick={remove} disabled={busy} className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50">
             <X size={13} />
           </button>
         </div>
@@ -2206,7 +2206,7 @@ function SuccessStoryEditCard({ story, dialog, onChanged }: { story: SuccessStor
               <input type="file" accept="image/*" onChange={(e) => setAfter(e.target.files?.[0] ?? null)} className="block text-xs mt-1" />
             </div>
           </div>
-          <button disabled={busy} onClick={save} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">
+          <button disabled={busy} onClick={save} className="glass-surface rounded-full bg-primary/65 px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">
             {busy ? "Saving..." : "Save Changes"}
           </button>
         </div>
@@ -2288,7 +2288,7 @@ function UsersPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
                     if (!(await dialog.confirm(`Unban ${u.name}? They'll be able to sign in again.`))) return;
                     act(u.id, () => api.post(`/api/admin/users/${u.id}/unban`));
                   }}
-                  className="shrink-0 rounded-full border border-border px-4 py-2 text-xs font-semibold text-ink hover:bg-background disabled:opacity-50"
+                  className="glass-surface glass-surface-outline shrink-0 rounded-full border px-4 py-2 text-xs font-semibold text-ink hover:bg-background disabled:opacity-50"
                 >
                   Unban
                 </button>
@@ -2304,7 +2304,7 @@ function UsersPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
                       await dialog.alert(err instanceof ApiError ? err.message : "Couldn't ban this user, please try again.", "Ban failed");
                     }
                   }}
-                  className="shrink-0 rounded-lg bg-danger/10 text-danger px-4 py-2 text-xs font-semibold hover:bg-danger/20 disabled:opacity-50"
+                  className="glass-surface shrink-0 rounded-lg bg-danger/10 text-danger px-4 py-2 text-xs font-semibold hover:bg-danger/20 disabled:opacity-50"
                 >
                   Ban
                 </button>
@@ -2320,7 +2320,7 @@ function UsersPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
                       await dialog.alert(err instanceof ApiError ? err.message : "Couldn't delete this user, please try again.", "Delete failed");
                     }
                   }}
-                  className="shrink-0 h-8 w-8 rounded-lg border border-border text-danger flex items-center justify-center hover:bg-danger/10 disabled:opacity-50"
+                  className="glass-surface glass-surface-outline shrink-0 h-8 w-8 rounded-lg border text-danger flex items-center justify-center hover:bg-danger/10 disabled:opacity-50"
                   title="Delete user"
                 >
                   <Trash2 size={14} />
@@ -2366,7 +2366,7 @@ function DailySummaryPanel() {
         <a
           href={`/api/admin/daily-summary/export?date=${date}`}
           download
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-semibold text-ink hover:bg-background transition-colors"
+          className="glass-surface glass-surface-outline inline-flex items-center gap-1.5 rounded-lg border px-4 py-2.5 text-sm font-semibold text-ink hover:bg-background transition-colors"
         >
           <Download size={15} /> Export CSV
         </a>
@@ -2466,14 +2466,14 @@ function CaseVolunteerRequestsPanel({ dialog, onResolved }: { dialog: ReturnType
                   if (!(await dialog.confirm(`${label === "assign" ? "Assign" : "Remove"} ${r.volunteerName} ${label === "assign" ? "to" : "from"} "${r.caseTitle}"?`))) return;
                   act(r.id, () => api.post(`/api/admin/case-volunteer-requests/${r.id}/approve`));
                 }}
-                className="h-8 w-8 rounded-lg bg-success text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
+                className="glass-surface h-8 w-8 rounded-lg bg-success/65 text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
               >
                 <Check size={16} />
               </button>
               <button
                 disabled={busy === r.id}
                 onClick={() => act(r.id, () => api.post(`/api/admin/case-volunteer-requests/${r.id}/reject`))}
-                className="h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+                className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
               >
                 <X size={16} />
               </button>

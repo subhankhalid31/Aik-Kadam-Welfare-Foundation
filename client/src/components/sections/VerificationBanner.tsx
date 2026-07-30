@@ -5,7 +5,7 @@ export function VerificationBanner() {
   return (
     <motion.section
       id="verification"
-      className="mt-14 rounded-2xl border border-primary/15 bg-primary/5 px-6 sm:px-8 py-6 flex flex-wrap items-center justify-between gap-4"
+      className="mt-14 glass-panel rounded-2xl px-6 sm:px-8 py-6 flex flex-wrap items-center justify-between gap-4"
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.5 }}

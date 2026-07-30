@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { FormField, inputClass } from "@/components/ui/FormField";
+import { CanvasRevealEffect } from "@/components/ui/CanvasRevealEffect";
+import { cn } from "@/lib/utils";
 import { api, ApiError } from "@/lib/api";
-import { MailCheck } from "lucide-react";
+import { Mail, KeyRound, Lock } from "lucide-react";
 
 export default function ForgotPasswordPage() {
   const [, navigate] = useLocation();
@@ -67,53 +68,159 @@ export default function ForgotPasswordPage() {
 
   return (
     <PageLayout>
-      <main className="max-w-md mx-auto px-6 pt-16 pb-24">
-        <MailCheck className="text-primary" size={36} />
-        <h1 className="mt-4 font-display text-3xl text-ink">Reset your password</h1>
+      <main className="relative overflow-hidden bg-background min-h-[calc(100vh-4rem)] flex items-center justify-center px-6 py-16">
+        {/* Same particle field as login/signup, for a consistent feel across
+            all three auth pages. */}
+        <div className="absolute inset-0">
+          <CanvasRevealEffect
+            animationSpeed={2.4}
+            containerClassName="bg-background"
+            colors={[
+              [31, 97, 239],
+              [15, 78, 215],
+              [13, 66, 181],
+            ]}
+            dotSize={5}
+            totalSize={11}
+            opacities={[0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.85, 0.9, 0.95, 1]}
+          />
+        </div>
 
-        {step === "email" ? (
-          <form onSubmit={handleRequestCode} className="mt-6 space-y-5">
-            <p className="text-muted text-sm">Enter your account email and we'll send a reset code.</p>
-            <FormField label="Email">
-              <input required type="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} placeholder="you@example.com" />
-            </FormField>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <button type="submit" disabled={loading} className="w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60">
-              {loading ? "Sending..." : "Send Reset Code"}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleReset} className="mt-6 space-y-5">
-            {info && <p className="text-sm text-primary">{info}</p>}
-            <FormField label="Reset code">
-              <input
-                required
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                className={`${inputClass} text-center tracking-[0.5em] font-mono`}
-                placeholder="------"
-              />
-            </FormField>
-            <FormField label="New password">
-              <input required type="password" minLength={8} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={inputClass} placeholder="At least 8 characters" />
-            </FormField>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <button type="submit" disabled={loading || code.length !== 6} className="w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60">
-              {loading ? "Resetting..." : "Reset Password"}
-            </button>
-            <button
-              type="button"
-              onClick={handleResend}
-              disabled={cooldown > 0}
-              className="w-full text-center text-sm text-primary font-medium disabled:text-muted disabled:cursor-not-allowed"
-            >
-              {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
-            </button>
-          </form>
-        )}
+        <div className="relative w-full max-w-md">
+          <div className="absolute -inset-6 rounded-[3rem] bg-primary/25 blur-3xl -z-10" />
+
+          <div className="glass-card p-8 sm:p-10">
+            <div className="relative">
+              <span className="text-xs font-semibold tracking-wide text-primary uppercase">
+                {step === "email" ? "Forgot Password" : "Reset Password"}
+              </span>
+              <h1 className="mt-3 font-serif font-light text-4xl text-ink">
+                {step === "email" ? (
+                  <><span className="text-glow-blue">Reset</span> your password.</>
+                ) : (
+                  <>Check <span className="text-glow-blue">your</span> inbox.</>
+                )}
+              </h1>
+              <p className="mt-2 text-sm text-ink/60">
+                {step === "email"
+                  ? "Enter your account email and we'll send a reset code."
+                  : "Enter the code we sent you and choose a new password."}
+              </p>
+
+              {step === "email" ? (
+                <form onSubmit={handleRequestCode} className="mt-8 space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-1.5">Email</label>
+                    <div className="glass-input-wrap w-full">
+                      <div className="glass-input">
+                        <span className="glass-input-text-area" />
+                        <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pl-2">
+                          <Mail className="h-5 w-5 text-ink/70 flex-shrink-0" />
+                        </div>
+                        <input
+                          required
+                          type="email"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          spellCheck={false}
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="relative z-10 h-full w-0 flex-grow bg-transparent text-ink placeholder:text-ink/50 focus:outline-none py-2.5 pr-4"
+                          placeholder="you@example.com"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {error && <p className="text-sm text-red-600">{error}</p>}
+
+                  <div className="glass-button-wrap w-full">
+                    <button type="submit" disabled={loading} className={cn("glass-button relative z-10 w-full rounded-full isolate transition-all", loading && "opacity-70")}>
+                      <span className="glass-button-text relative block select-none tracking-tighter w-full py-3.5 text-center font-semibold">
+                        {loading ? "Sending..." : "Send Reset Code"}
+                      </span>
+                    </button>
+                    <div className="glass-button-shadow rounded-full pointer-events-none" />
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleReset} className="mt-8 space-y-5">
+                  {info && <p className="text-sm text-primary">{info}</p>}
+
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-1.5">Reset code</label>
+                    <div className="glass-input-wrap w-full">
+                      <div className="glass-input">
+                        <span className="glass-input-text-area" />
+                        <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pl-2">
+                          <KeyRound className="h-5 w-5 text-ink/70 flex-shrink-0" />
+                        </div>
+                        <input
+                          required
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          value={code}
+                          onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                          className="relative z-10 h-full w-0 flex-grow bg-transparent text-ink placeholder:text-ink/50 focus:outline-none py-2.5 pr-4 text-center tracking-[0.5em] font-mono"
+                          placeholder="------"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-1.5">New password</label>
+                    <div className="glass-input-wrap w-full">
+                      <div className="glass-input">
+                        <span className="glass-input-text-area" />
+                        <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pl-2">
+                          <Lock className="h-5 w-5 text-ink/70 flex-shrink-0" />
+                        </div>
+                        <input
+                          required
+                          type="password"
+                          minLength={8}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="relative z-10 h-full w-0 flex-grow bg-transparent text-ink placeholder:text-ink/50 focus:outline-none py-2.5 pr-4"
+                          placeholder="At least 8 characters"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {error && <p className="text-sm text-red-600">{error}</p>}
+
+                  <div className="glass-button-wrap w-full">
+                    <button type="submit" disabled={loading || code.length !== 6} className={cn("glass-button relative z-10 w-full rounded-full isolate transition-all", (loading || code.length !== 6) && "opacity-70")}>
+                      <span className="glass-button-text relative block select-none tracking-tighter w-full py-3.5 text-center font-semibold">
+                        {loading ? "Resetting..." : "Reset Password"}
+                      </span>
+                    </button>
+                    <div className="glass-button-shadow rounded-full pointer-events-none" />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={cooldown > 0}
+                    className="w-full text-center text-sm text-primary font-medium disabled:text-muted disabled:cursor-not-allowed transition-colors"
+                  >
+                    {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
+                  </button>
+                </form>
+              )}
+
+              <p className="mt-6 text-center text-sm text-ink/60">
+                Remembered it?{" "}
+                <a href="/login" className="text-primary font-medium hover:text-primary-dark transition-colors">
+                  Back to sign in
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
       </main>
     </PageLayout>
   );

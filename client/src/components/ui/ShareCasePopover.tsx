@@ -62,7 +62,7 @@ export function ShareCasePopover({ caseId, title }: { caseId: string; title: str
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
         aria-label="Share this case"
-        className="h-[46px] w-[46px] inline-flex items-center justify-center rounded-full border border-border bg-white text-ink hover:bg-background transition-colors"
+        className="glass-surface glass-surface-outline h-[46px] w-[46px] inline-flex items-center justify-center rounded-full border text-ink transition-colors"
       >
         <Share2 size={16} />
       </button>
@@ -70,7 +70,7 @@ export function ShareCasePopover({ caseId, title }: { caseId: string; title: str
       {open && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="absolute right-0 bottom-full mb-2 z-20 w-72 rounded-2xl border border-border bg-white p-4 shadow-lg"
+          className="absolute right-0 bottom-full mb-2 z-20 w-72 glass-panel rounded-2xl p-4"
         >
           <p className="text-xs font-semibold text-muted uppercase tracking-wide">Share this case</p>
 
@@ -79,13 +79,13 @@ export function ShareCasePopover({ caseId, title }: { caseId: string; title: str
               readOnly
               value={shareUrl}
               onFocus={(e) => e.currentTarget.select()}
-              className="flex-1 min-w-0 rounded-full border border-border bg-background px-3.5 py-2 text-xs text-ink/80 truncate focus:outline-none"
+              className="flex-1 min-w-0 rounded-full border border-white/70 bg-white/50 backdrop-blur-sm px-3.5 py-2 text-xs text-ink/80 truncate focus:outline-none"
             />
             <button
               type="button"
               onClick={copyLink}
-              className={`shrink-0 inline-flex items-center gap-1 rounded-full px-3 py-2 text-xs font-semibold transition-colors ${
-                copied ? "bg-primary/10 text-primary" : "bg-primary text-background hover:bg-primary-dark"
+              className={`glass-surface shrink-0 inline-flex items-center gap-1 rounded-full px-3 py-2 text-xs font-semibold transition-colors ${
+                copied ? "bg-primary/10 text-primary" : "bg-primary/65 text-background hover:bg-primary-dark"
               }`}
             >
               {copied ? <Check size={13} /> : <Copy size={13} />}
@@ -101,7 +101,7 @@ export function ShareCasePopover({ caseId, title }: { caseId: string; title: str
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`Share on ${p.name}`}
-                className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-border text-ink hover:bg-background hover:text-primary transition-colors"
+                className="glass-surface glass-surface-outline h-9 w-9 inline-flex items-center justify-center rounded-full border text-ink hover:text-primary transition-colors"
               >
                 <p.icon size={15} />
               </a>

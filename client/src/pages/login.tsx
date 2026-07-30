@@ -3,6 +3,8 @@ import { useLocation } from "wouter";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { GoogleSignInButton } from "@/components/ui/GoogleSignInButton";
 import { CanvasRevealEffect } from "@/components/ui/CanvasRevealEffect";
+import { cn } from "@/lib/utils";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
@@ -11,6 +13,7 @@ export default function LoginPage() {
   const { refresh } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -33,93 +36,108 @@ export default function LoginPage() {
     }
   }
 
-  // iOS-style glass input: barely-there fill, blurred, a hairline border
-  // that brightens on focus rather than the usual solid-white/ring pattern.
-  const glassInput =
-    "mt-1.5 w-full rounded-2xl border border-white/40 bg-white/25 backdrop-blur-md px-4 py-2.5 text-sm text-ink placeholder:text-muted/80 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.5)] focus:outline-none focus:border-white/80 focus:bg-white/35 transition-all";
-
   return (
     <PageLayout>
       <main className="relative overflow-hidden bg-background min-h-[calc(100vh-4rem)] flex items-center justify-center px-6 py-16">
-        {/* Animated dot-matrix background: brand blue mixed with a touch of accent yellow.
-            Kept vivid and un-faded here on purpose — a glass panel needs something
-            colorful behind it to actually read as "glass" rather than just frosted white. */}
+        {/* Same particle field + blur veil as signup, for a consistent feel
+            across both auth pages. */}
         <div className="absolute inset-0">
           <CanvasRevealEffect
             animationSpeed={2.4}
             containerClassName="bg-background"
             colors={[
-              [48, 135, 248],
-              [25, 110, 230],
-              [2, 96, 216],
+              [31, 97, 239],
+              [15, 78, 215],
+              [13, 66, 181],
             ]}
             dotSize={5}
             totalSize={11}
             opacities={[0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.85, 0.9, 0.95, 1]}
           />
         </div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(246,247,245,0.02)_0%,_rgba(246,247,245,0.3)_85%)]" />
+        {/*<div className="absolute inset-0 backdrop-blur-1" />*/}
+        {/*<div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(246,247,245,0.02)_0%,_rgba(246,247,245,0.05)_85%)]" />*/}
 
-        {/* The glass card itself. Layering, from back to front:
-              1. A soft blue glow behind the card so it looks lit from within
-              2. The card: heavy backdrop-blur + very low-opacity white fill,
-                 so the animated dots behind it are genuinely visible through it
-              3. A hairline border, bright along the top/left edge and dimmer
-                 bottom/right — mimics how real glass catches light unevenly
-              4. A large soft specular highlight in the top-left corner
-              5. Content sits in its own stacking layer on top of all of it   */}
+        {/* Unlike signup — whose pill inputs float directly on the
+            background with no container — login sits inside a bordered
+            .glass-card (defined in index.css) so the panel itself is
+            clearly recognizable as a distinct surface, not just loose
+            floating controls. */}
         <div className="relative w-full max-w-md">
-          <div className="absolute -inset-6 rounded-[3rem] bg-primary/20 blur-3xl -z-10" />
+          <div className="absolute -inset-6 rounded-[3rem] bg-primary/25 blur-3xl -z-10" />
 
-          <div className="relative rounded-[2rem] p-8 sm:p-10 overflow-hidden backdrop-blur-2xl backdrop-saturate-150 bg-white/20 border border-white/50 shadow-[0_8px_32px_rgba(31,63,124,0.25),inset_0_1px_1px_rgba(255,255,255,0.6),inset_0_-1px_1px_rgba(255,255,255,0.1)]">
-            {/* Specular highlight — a soft bloom of light in the corner, like a curved glass edge catching a light source */}
-            <div className="pointer-events-none absolute -top-16 -left-16 h-48 w-48 rounded-full bg-white/60 blur-3xl opacity-70" />
-            <div className="pointer-events-none absolute inset-0 rounded-[2rem] bg-gradient-to-br from-white/30 via-transparent to-transparent" />
-
+          <div className="glass-card p-8 sm:p-10">
             <div className="relative">
               <span className="text-xs font-semibold tracking-wide text-primary uppercase">Sign In</span>
-              <h1 className="mt-3 font-display text-3xl sm:text-4xl text-ink">Welcome back.</h1>
+              <h1 className="mt-3 font-serif font-light text-4xl text-ink">
+                <span className="text-glow-blue">Welcome</span> back.
+              </h1>
               <p className="mt-2 text-sm text-ink/60">One step closer to where it's needed.</p>
 
               <form onSubmit={handleSubmit} className="mt-8 space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-ink">Email</label>
-                  <input
-                    required
-                    type="email"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={glassInput}
-                    placeholder="you@example.com"
-                  />
+                  <label className="block text-sm font-medium text-ink mb-1.5">Email</label>
+                  <div className="glass-input-wrap w-full">
+                    <div className="glass-input">
+                      <span className="glass-input-text-area" />
+                      <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pl-2">
+                        <Mail className="h-5 w-5 text-ink/70 flex-shrink-0" />
+                      </div>
+                      <input
+                        required
+                        type="email"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="relative z-10 h-full w-0 flex-grow bg-transparent text-ink placeholder:text-ink/50 focus:outline-none py-2.5 pr-4"
+                        placeholder="you@example.com"
+                      />
+                    </div>
+                  </div>
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-ink">Password</label>
-                  <input
-                    required
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={glassInput}
-                    placeholder="Your password"
-                  />
+                  <label className="block text-sm font-medium text-ink mb-1.5">Password</label>
+                  <div className="glass-input-wrap w-full">
+                    <div className="glass-input">
+                      <span className="glass-input-text-area" />
+                      <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pl-2">
+                        <Lock className="h-5 w-5 text-ink/70 flex-shrink-0" />
+                      </div>
+                      <input
+                        required
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="relative z-10 h-full w-0 flex-grow bg-transparent text-ink placeholder:text-ink/50 focus:outline-none py-2.5"
+                        placeholder="Your password"
+                      />
+                      <button
+                        type="button"
+                        aria-label="Toggle password visibility"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pr-2 text-ink/70 hover:text-ink transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
                 </div>
+
                 <a href="/forgot-password" className="block text-sm text-primary font-medium -mt-2 hover:text-primary-dark transition-colors">
                   Forgot password?
                 </a>
 
                 {error && <p className="text-sm text-red-600">{error}</p>}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full rounded-2xl bg-primary px-7 py-3.5 font-semibold text-white shadow-[0_4px_16px_rgba(48,135,248,0.4),inset_0_1px_0_rgba(255,255,255,0.3)] hover:bg-primary-dark transition-colors disabled:opacity-60"
-                >
-                  {loading ? "Signing in..." : "Sign In"}
-                </button>
+                <div className="glass-button-wrap w-full">
+                  <button type="submit" disabled={loading} className={cn("glass-button relative z-10 w-full rounded-full isolate transition-all", loading && "opacity-70")}>
+                    <span className="glass-button-text relative block select-none tracking-tighter w-full py-3.5 text-center font-semibold">{loading ? "Signing in..." : "Sign In"}</span>
+                  </button>
+                  <div className="glass-button-shadow rounded-full pointer-events-none" />
+                </div>
               </form>
 
               <GoogleSignInButton

@@ -101,7 +101,7 @@ export function CaseDetailModal({ caseId, onClose }: { caseId: string; onClose: 
                 <button
                   disabled={actionLoading}
                   onClick={requestWithdraw}
-                  className="w-full rounded-full border border-red-200 text-red-600 px-5 py-2.5 text-sm font-semibold hover:bg-red-50 transition-colors disabled:opacity-60"
+                  className="glass-surface glass-surface-outline w-full rounded-full border border-red-200 text-red-600 px-5 py-2.5 text-sm font-semibold hover:bg-red-50 transition-colors disabled:opacity-60"
                 >
                   Request Withdrawal
                 </button>
@@ -109,7 +109,7 @@ export function CaseDetailModal({ caseId, onClose }: { caseId: string; onClose: 
                 <button
                   disabled={actionLoading}
                   onClick={requestJoin}
-                  className="w-full rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                  className="glass-surface w-full rounded-full bg-primary/65 px-5 py-2.5 text-sm font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
                 >
                   <CheckCircle2 size={15} /> Request to Volunteer for This Case
                 </button>
