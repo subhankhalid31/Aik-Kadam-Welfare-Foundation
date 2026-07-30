@@ -142,18 +142,22 @@ export default function OngoingProjectsPage() {
                   You can submit a new case or explore our success stories.
                 </p>
                 <div className="mt-5 flex flex-wrap items-center justify-center sm:justify-start gap-3">
-                  <Link
-                    href="/post-case"
-                    className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-background transition-all duration-200 hover:bg-primary-dark hover:-translate-y-0.5 hover:shadow-md"
-                  >
-                    <FilePlus2 size={14} /> Submit a Case
-                  </Link>
-                  <Link
-                    href="/success-stories"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-ink transition-all duration-200 hover:bg-background hover:-translate-y-0.5 hover:shadow-md"
-                  >
-                    View Success Stories <ArrowRight size={14} />
-                  </Link>
+                  <div className="glass-pill-wrap">
+                    <Link href="/post-case" className="glass-pill relative isolate rounded-full block bg-primary">
+                      <span className="glass-pill-text flex items-center gap-1.5 px-5 py-2.5 text-sm font-semibold text-background">
+                        <FilePlus2 size={14} /> Submit a Case
+                      </span>
+                    </Link>
+                    <div className="glass-pill-shadow rounded-full" />
+                  </div>
+                  <div className="glass-pill-wrap">
+                    <Link href="/success-stories" className="glass-pill relative isolate rounded-full block">
+                      <span className="glass-pill-text flex items-center gap-1.5 px-5 py-2.5 text-sm font-semibold">
+                        View Success Stories <ArrowRight size={14} />
+                      </span>
+                    </Link>
+                    <div className="glass-pill-shadow rounded-full" />
+                  </div>
                 </div>
               </div>
             </div>

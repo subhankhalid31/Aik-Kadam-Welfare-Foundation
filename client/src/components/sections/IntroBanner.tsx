@@ -60,18 +60,22 @@ export function IntroBanner() {
             </p>
 
             <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/post-case"
-                className="inline-flex items-center gap-2 rounded-xl bg-ink px-7 py-3.5 font-semibold text-white shadow-sm hover:bg-ink/85 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
-              >
-                <FilePlus2 size={17} /> Submit a Case
-              </Link>
-              <Link
-                href="/volunteers/register"
-                className="inline-flex items-center gap-2 rounded-xl border-2 border-ink/15 px-7 py-3.5 font-semibold text-ink hover:border-ink/30 hover:bg-white transition-colors"
-              >
-                <UserPlus size={17} /> Register as Volunteer
-              </Link>
+              <div className="glass-pill-wrap">
+                <Link href="/post-case" className="glass-pill relative isolate rounded-full block bg-ink">
+                  <span className="glass-pill-text flex items-center gap-2 px-7 py-3.5 font-semibold text-white">
+                    <FilePlus2 size={17} /> Submit a Case
+                  </span>
+                </Link>
+                <div className="glass-pill-shadow rounded-full" />
+              </div>
+              <div className="glass-pill-wrap group">
+                <Link href="/volunteers/register" className="glass-pill relative isolate rounded-full block">
+                  <span className="glass-pill-text flex items-center gap-2 px-7 py-3.5 font-semibold">
+                    <UserPlus size={17} className="transition-transform group-hover:scale-110" /> Register as Volunteer
+                  </span>
+                </Link>
+                <div className="glass-pill-shadow rounded-full" />
+              </div>
             </div>
           </div>
         </div>

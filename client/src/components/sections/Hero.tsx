@@ -1,8 +1,7 @@
-import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { HandHeart, Heart, Users, ShieldCheck, Quote } from "lucide-react";
-import { DonateButton } from "@/components/ui/DonateButton";
-import founderPhoto from "@assets/founder.jpeg";
+import { HandHeart, Users, ShieldCheck, FilePlus2, UserPlus } from "lucide-react";
+import { ArrowCta } from "@/components/ui/ArrowCta";
+import handsPhoto from "@assets/hero-hands-bg.webp";
 
 // Each child fades up into place slightly after the one before it — the
 // overall effect is a calm, confident reveal rather than everything
@@ -23,22 +22,22 @@ const item = {
 export function Hero() {
   return (
     <section className="relative overflow-hidden">
-      <div className="relative max-w-6xl mx-auto px-6 pt-16 pb-16 sm:pb-36 grid lg:grid-cols-[1.15fr_0.85fr] gap-16 lg:gap-10 items-center">
+      <div className="relative max-w-6xl mx-auto px-6 pt-16 pb-16 sm:pb-24 grid lg:grid-cols-[1.05fr_0.95fr] gap-16 lg:gap-10 items-center">
         {/* Left: mission + CTA */}
         <motion.div variants={container} initial="hidden" animate="show">
           <motion.span
             variants={item}
-            className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-xs font-bold tracking-wide text-primary uppercase"
+            className="inline-flex items-center gap-2 rounded-full bg-brand-green/10 px-4 py-2 text-xs font-bold tracking-wide text-brand-green-dark uppercase"
           >
             <HandHeart size={15} />
-            Aik Kadam, One Step
+            Aik Kadam &mdash; One Step
           </motion.span>
 
           <motion.h1 variants={item} className="mt-6 font-display font-extrabold text-4xl sm:text-5xl lg:text-[3.4rem] leading-[1.08] text-ink">
-            Every donation,
+            Where one step
             <br />
-            <span className="relative inline-block italic text-primary">
-              a step you can trace.
+            <span className="relative inline-block italic">
+              changes everything.
               <svg
                 className="absolute left-0 -bottom-1.5 w-full pointer-events-none"
                 height="10"
@@ -48,7 +47,7 @@ export function Hero() {
               >
                 <path
                   d="M2 7 Q 40 2, 80 6 T 160 6 T 240 6 T 298 5"
-                  stroke="#FFD662"
+                  stroke="#E09010"
                   strokeWidth="5"
                   strokeLinecap="round"
                 />
@@ -57,20 +56,14 @@ export function Hero() {
           </motion.h1>
 
           <motion.p variants={item} className="mt-6 text-lg text-muted max-w-lg leading-relaxed">
-            A giving platform built on transparency, where every rupee is
-            tracked from your hand to the person it reaches, and every
-            volunteer's work is verifiable.
+            Every rupee is tracked from your hands to theirs, every case is
+            verified before it's shared, and every volunteer's work is
+            visible online &mdash; charity you don't have to take on faith.
           </motion.p>
 
           <motion.div variants={item} className="mt-8 flex flex-wrap items-center gap-4">
-            <DonateButton />
-            <Link
-              href="/about"
-              className="inline-flex items-center gap-2 rounded-full bg-white border border-border px-7 py-3.5 font-semibold text-ink hover:bg-background transition-colors"
-            >
-              <Users size={18} />
-              Our Story
-            </Link>
+            <ArrowCta href="/post-case" icon={FilePlus2} variant="solid">Submit a Case</ArrowCta>
+            <ArrowCta href="/volunteers/register" icon={UserPlus} variant="outline">Register as Volunteer</ArrowCta>
           </motion.div>
 
           <motion.div variants={item} className="mt-12 flex items-center flex-wrap gap-x-8 gap-y-4">
@@ -83,7 +76,7 @@ export function Hero() {
             ).map(([Icon, value, label], i) => (
               <div key={label} className="flex items-center gap-4">
                 <div className="flex items-center gap-2.5">
-                  <Icon size={18} className="text-primary shrink-0" />
+                  <Icon size={18} className="text-brand-green shrink-0" />
                   <div className="leading-tight">
                     <div className="font-bold text-ink text-sm">{value}</div>
                     <div className="text-xs text-muted">{label}</div>
@@ -95,88 +88,57 @@ export function Hero() {
           </motion.div>
         </motion.div>
 
-        {/* Right: Founder section */}
+        {/* Right: photo cut into the shape of our own logo mark (Pakistan +
+            reaching hands) with loose paint-stroke colour accents behind it */}
         <motion.div
-          className="relative"
+          className="relative flex justify-center lg:justify-end"
           initial={{ opacity: 0, x: 28 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.7, delay: 0.25, ease: [0.16, 1, 0.3, 1] as const }}
         >
-          {/* Layered organic blobs behind the photo — each a different size,
-              rotation, and shade, so the rotation actually reads as distinct
-              layers rather than blending into one shape */}
+          {/* Loose brush-stroke accents, echoing the reference layout */}
           <div
-            className="absolute -inset-12 -z-30 bg-primary/[0.08]"
-            style={{ borderRadius: "42% 58% 63% 37% / 55% 43% 57% 45%", transform: "rotate(-14deg)" }}
+            className="absolute -left-6 top-10 -z-10 h-16 w-40 bg-brand-green/70 blur-md"
+            style={{ borderRadius: "60% 40% 50% 50% / 40% 60% 40% 60%", transform: "rotate(-18deg)" }}
           />
           <div
-            className="absolute -inset-8 -z-20 bg-primary/[0.12]"
-            style={{ borderRadius: "58% 42% 37% 63% / 45% 60% 40% 55%", transform: "rotate(9deg)" }}
+            className="absolute -right-2 top-1/3 -z-10 h-14 w-36 bg-brand-orange/70 blur-md"
+            style={{ borderRadius: "50% 50% 60% 40% / 60% 40% 60% 40%", transform: "rotate(12deg)" }}
           />
           <div
-            className="absolute -inset-4 -z-10 bg-primary/[0.16]"
-            style={{ borderRadius: "63% 37% 54% 46% / 43% 37% 63% 57%", transform: "rotate(-5deg)" }}
+            className="absolute left-10 bottom-16 -z-10 h-12 w-32 bg-brand-green/50 blur-md"
+            style={{ borderRadius: "40% 60% 50% 50% / 50% 50% 60% 40%", transform: "rotate(6deg)" }}
           />
 
-          {/* Decorative outline heart, top-left of the image */}
-          <Heart className="absolute -left-2 top-0 text-primary/40" size={28} strokeWidth={1.5} />
-
-          {/* Decorative dot grid, left edge of the image */}
-          <div className="absolute -left-5 bottom-36 grid grid-cols-3 gap-1.5">
-            {Array.from({ length: 9 }).map((_, i) => (
-              <span key={i} className="h-1.5 w-1.5 rounded-full bg-primary/30" />
-            ))}
-          </div>
-
-          {/* Blob-masked founder photo */}
+          {/* Photo masked into the logo's own Pakistan + reaching-hands
+              silhouette, instead of a generic blob or rectangle */}
           <div
-            className="relative overflow-hidden aspect-[4/5] shadow-xl"
-            style={{ borderRadius: "63% 37% 54% 46% / 43% 37% 63% 57%" }}
+            className="relative w-full max-w-md aspect-[4/5]"
+            style={{
+              WebkitMaskImage: "url(/pakistan-mask.png)",
+              maskImage: "url(/pakistan-mask.png)",
+              WebkitMaskSize: "contain",
+              maskSize: "contain",
+              WebkitMaskRepeat: "no-repeat",
+              maskRepeat: "no-repeat",
+              WebkitMaskPosition: "center",
+              maskPosition: "center",
+            }}
           >
             <img
-              src={founderPhoto}
-              alt="Subhan Khalid, Founder of Aik Kadam"
+              src={handsPhoto}
+              alt="Volunteers and donors joining hands across Pakistan"
               className="w-full h-full object-cover"
               loading="eager"
-              width={480}
-              height={600}
             />
           </div>
 
-          {/* Floating "100% Transparent Giving" badge */}
-          <div className="absolute -top-4 -right-2 sm:-right-6 bg-white rounded-2xl shadow-lg px-4 py-3 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center shrink-0">
-              <ShieldCheck size={18} className="text-white" />
-            </div>
-            <div className="leading-tight">
-              <div className="font-bold text-ink text-sm">100%</div>
-              <div className="text-xs text-muted whitespace-nowrap">Transparent Giving</div>
-            </div>
-          </div>
-
-          {/* Quote + signature card. On mobile it sits in normal flow right
-              below the photo — the founder image renders quite short on a
-              narrow phone column, so absolutely overlapping it here (as
-              this card does on desktop) would cover more than half of it.
-              From sm up, the image is large enough that the same card
-              overlapping the bottom edge reads as an intentional floating
-              card rather than something hiding the photo. */}
-          <div className="relative mt-6 sm:mt-0 sm:absolute sm:-bottom-20 sm:-left-5 sm:-right-5 bg-white rounded-2xl shadow-xl p-5 sm:p-6">
-            <Quote size={22} className="text-primary/30 fill-primary/10" />
-            <p className="mt-1 font-display italic text-sm leading-snug text-ink">
-              "I've seen how much trust it takes to hand someone your hard-earned
-              money and hope it reaches the right hands. Aik Kadam exists so that
-              trust is never misplaced, so every rupee you give travels the whole
-              distance, from your hand to theirs."
-            </p>
-            <div className="mt-3 flex items-center justify-between">
-              <div>
-                <div className="font-semibold text-ink text-sm">Subhan Khalid</div>
-                <div className="text-xs text-muted">Founder, Aik Kadam</div>
-              </div>
-              <div className="text-3xl text-primary leading-none" style={{ fontFamily: "'Bastliga One', cursive" }}>
-                Subhan
-              </div>
+          {/* Stat badge, bottom-right, echoing the reference layout's
+              circular number callout */}
+          <div className="absolute -bottom-4 right-2 sm:right-8 h-28 w-28 sm:h-32 sm:w-32 rounded-full bg-white shadow-xl border border-border flex flex-col items-center justify-center text-center px-2">
+            <div className="font-display font-extrabold text-2xl sm:text-3xl text-brand-orange leading-none">100+</div>
+            <div className="mt-1 text-[11px] sm:text-xs text-muted leading-tight">
+              families helped<br />across Pakistan
             </div>
           </div>
         </motion.div>

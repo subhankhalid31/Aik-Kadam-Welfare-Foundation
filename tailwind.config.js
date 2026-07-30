@@ -4,12 +4,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: "#F6F7F5",
-        ink: "#0B1F17",
+        background: "#FFFFFF",
+        ink: "#0A0C10",
         primary: {
-          DEFAULT: "#3087F8",
-          light: "#72ADFA",
-          dark: "#0260D8",
+          DEFAULT: "#1F61EF",
+          light: "#4F83F3",
+          dark: "#0E4BCD",
         },
         accent: {
           DEFAULT: "#FFD662",
@@ -22,17 +22,33 @@ export default {
           dark: "#166B49",
         },
         danger: {
-          DEFAULT: "#D6473C",
-          light: "#FBEAE8",
-          dark: "#B23A30",
+          DEFAULT: "#DC2828",
+          light: "#FBE9E9",
+          dark: "#B41D1D",
         },
         warning: {
           DEFAULT: "#B7791F",
           light: "#FBF1DC",
           dark: "#8A5A14",
         },
-        muted: "#6B7280",
-        border: "#E7E7E4",
+        muted: "#596473",
+        border: "#E2E4E9",
+        // New brand palette sampled directly from the new logo, for the
+        // landing-page redesign currently in progress. Kept separate from
+        // `primary` (still blue) on purpose — auth pages and everything
+        // else not yet redesigned still reference `primary` and stay as
+        // they are; pages get moved over to `brand-*` one at a time.
+        "brand-green": {
+          DEFAULT: "#709828",
+          light: "#9EC656",
+          dark: "#465F19",
+        },
+        "brand-orange": {
+          DEFAULT: "#E09010",
+          light: "#EDBA69",
+          dark: "#9D650B",
+        },
+        beige: "#F1E9DA",
       },
       fontFamily: {
         display: ["Niveau Grotesk", "system-ui", "sans-serif"],

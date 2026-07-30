@@ -121,7 +121,7 @@ export function AdminLayout({
         <button
           onClick={() => setMobileNavOpen(true)}
           aria-label="Open admin menu"
-          className="h-9 w-9 rounded-lg border border-border flex items-center justify-center text-ink shrink-0"
+          className="glass-surface glass-surface-outline h-9 w-9 rounded-lg border flex items-center justify-center text-ink shrink-0"
         >
           <Menu size={18} />
         </button>
@@ -150,7 +150,7 @@ export function AdminLayout({
           <button
             onClick={() => setMobileNavOpen(false)}
             aria-label="Close admin menu"
-            className="lg:hidden h-8 w-8 rounded-lg border border-border flex items-center justify-center text-ink"
+            className="glass-surface glass-surface-outline lg:hidden h-8 w-8 rounded-lg border flex items-center justify-center text-ink"
           >
             <X size={16} />
           </button>
@@ -164,7 +164,7 @@ export function AdminLayout({
                 <button
                   key={item.href}
                   onClick={() => { navigate(item.href); setMobileNavOpen(false); }}
-                  className="w-full flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold bg-primary/10 text-primary hover:bg-primary/15 transition-colors mb-2"
+                  className="glass-surface w-full flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold bg-primary/10 text-primary hover:bg-primary/15 transition-colors mb-2"
                 >
                   <Icon size={17} />
                   {item.label}
@@ -215,7 +215,7 @@ export function AdminLayout({
             {uploading && <p className="mt-1.5 text-xs text-muted">Uploading...</p>}
             <button
               onClick={handleLogout}
-              className="mt-3 w-full inline-flex items-center justify-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-semibold text-ink hover:bg-background transition-colors"
+              className="glass-surface glass-surface-outline mt-3 w-full inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-2 text-xs font-semibold text-ink hover:bg-background transition-colors"
             >
               <LogOut size={13} /> Log Out
             </button>
@@ -248,7 +248,7 @@ export function AdminLayout({
 
 function StatCard({ icon: Icon, label, value }: { icon: typeof Wallet; label: string; value: string | number }) {
   return (
-    <div className="rounded-xl bg-background/10 p-4">
+    <div className="rounded-xl border border-white/20 bg-white/10 backdrop-blur-md p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25)] transition-all duration-200 hover:bg-white/15">
       <Icon size={16} className="text-background/80" />
       <div className="mt-2 font-display text-xl text-background">{value}</div>
       <div className="text-xs text-background/70">{label}</div>

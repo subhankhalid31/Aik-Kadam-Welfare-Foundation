@@ -31,7 +31,7 @@ export function CompletedProjectsTeaser() {
     <section className="py-20 bg-background border-t border-border overflow-hidden">
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center">
-          <span className="text-xs font-semibold tracking-wide text-primary uppercase">
+          <span className="text-xs font-semibold tracking-wide text-brand-green uppercase">
             Completed Projects
           </span>
           <h2 className="mt-2 font-display text-2xl sm:text-3xl text-ink">
@@ -63,12 +63,14 @@ export function CompletedProjectsTeaser() {
         </div>
 
         <div className="mt-4 text-center">
-          <a
-            href="/completed-projects"
-            className="inline-flex items-center gap-1.5 rounded-full border border-border px-6 py-2.5 text-sm font-semibold text-ink hover:bg-white hover:gap-2.5 transition-all"
-          >
-            View All Completed Projects <ArrowRight size={16} />
-          </a>
+          <div className="glass-pill-wrap inline-block">
+            <a href="/completed-projects" className="glass-pill relative isolate rounded-full block">
+              <span className="glass-pill-text flex items-center gap-1.5 px-6 py-2.5 text-sm font-semibold">
+                View All Completed Projects <ArrowRight size={16} />
+              </span>
+            </a>
+            <div className="glass-pill-shadow rounded-full" />
+          </div>
         </div>
       </div>
 

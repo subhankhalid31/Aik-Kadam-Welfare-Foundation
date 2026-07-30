@@ -30,7 +30,7 @@ export default function HelpPage() {
             <MessageCircle size={18} className="text-primary" />
             <span className="text-sm text-ink/80">Still need help? Reach out directly.</span>
           </div>
-          <a href="/contact" className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-background hover:bg-primary-dark transition-colors">
+          <a href="/contact" className="glass-surface inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-background hover:bg-primary-dark transition-colors">
             <Mail size={15} /> Contact Us
           </a>
         </div>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { FormField, inputClass } from "@/components/ui/FormField";
 import { api, ApiError } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { Mail, Phone, MapPin, CheckCircle2, Globe, Instagram, Facebook } from "lucide-react";
 
 export default function ContactPage() {
@@ -48,7 +49,7 @@ export default function ContactPage() {
         </div>
 
         {sent ? (
-          <div className="rounded-2xl border border-border bg-white p-8 text-center h-fit">
+          <div className="glass-card p-8 text-center h-fit">
             <CheckCircle2 className="mx-auto text-primary" size={40} />
             <h2 className="mt-4 font-display text-xl text-ink">Message sent.</h2>
             <p className="mt-2 text-sm text-muted">We'll get back to you as soon as we can.</p>
@@ -65,9 +66,14 @@ export default function ContactPage() {
               <textarea required rows={5} value={message} onChange={(e) => setMessage(e.target.value)} className={inputClass} placeholder="How can we help?" />
             </FormField>
             {error && <p className="text-sm text-red-600">{error}</p>}
-            <button type="submit" disabled={loading} className="w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60">
-              {loading ? "Sending..." : "Send Message"}
-            </button>
+            <div className="glass-button-wrap w-full">
+              <button type="submit" disabled={loading} className={cn("glass-button relative z-10 w-full rounded-full isolate transition-all", loading && "opacity-70")}>
+                <span className="glass-button-text relative block select-none tracking-tighter w-full py-3.5 text-center font-semibold">
+                  {loading ? "Sending..." : "Send Message"}
+                </span>
+              </button>
+              <div className="glass-button-shadow rounded-full pointer-events-none" />
+            </div>
           </form>
         )}
       </main>

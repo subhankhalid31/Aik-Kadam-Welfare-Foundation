@@ -104,12 +104,14 @@ export function OngoingHero({ showSubmitCta }: { showSubmitCta: boolean }) {
               <p className="mt-1 text-xs text-muted leading-relaxed hidden sm:block">
                 Submit a verified case and our team will review it.
               </p>
-              <Link
-                href="/post-case"
-                className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2.5 text-xs font-semibold text-background hover:bg-primary-dark transition-colors"
-              >
-                Submit a Case →
-              </Link>
+              <div className="glass-pill-wrap w-full mt-3">
+                <Link href="/post-case" className="glass-pill relative isolate rounded-full block w-full">
+                  <span className="glass-pill-text block w-full px-4 py-2.5 text-xs font-semibold text-center">
+                    Submit a Case →
+                  </span>
+                </Link>
+                <div className="glass-pill-shadow rounded-full" />
+              </div>
             </motion.div>
           </motion.div>
         )}

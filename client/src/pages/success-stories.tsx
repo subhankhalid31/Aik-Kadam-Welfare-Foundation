@@ -86,7 +86,7 @@ export default function SuccessStoriesPage() {
           {user?.role === "admin" && (
             <a
               href="/admin/success-stories/new"
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-background transition-all duration-200 hover:bg-primary-dark hover:-translate-y-0.5 hover:shadow-md whitespace-nowrap"
+              className="glass-surface inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-background transition-all duration-200 hover:bg-primary-dark hover:-translate-y-0.5 hover:shadow-md whitespace-nowrap"
             >
               <Plus size={15} /> Add Story
             </a>

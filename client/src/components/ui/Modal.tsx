@@ -13,7 +13,7 @@ export function Modal({ children, onBackdropClick, onClose }: { children: ReactN
         transition={{ duration: 0.25, ease: "easeOut" }}
       />
       <motion.div
-        className="relative bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[85vh] flex flex-col"
+        className="relative glass-panel rounded-2xl max-w-md w-full max-h-[85vh] flex flex-col"
         initial={{ opacity: 0, y: 40, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.35, ease: "easeOut" }}
@@ -22,7 +22,7 @@ export function Modal({ children, onBackdropClick, onClose }: { children: ReactN
           <button
             onClick={onClose ?? onBackdropClick}
             aria-label="Close"
-            className="absolute top-4 right-4 z-10 h-8 w-8 rounded-full bg-white border border-border shadow-sm flex items-center justify-center text-ink transition-all duration-200 hover:bg-background hover:shadow-md hover:-translate-y-0.5"
+            className="glass-surface absolute top-4 right-4 z-10 h-8 w-8 rounded-full bg-white/65 flex items-center justify-center text-ink transition-all duration-200 hover:bg-white/85 hover:-translate-y-0.5"
           >
             <X size={16} />
           </button>

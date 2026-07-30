@@ -128,7 +128,7 @@ export default function AdminGalleryNewPage() {
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <button type="submit" disabled={loading} className="w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60">
+          <button type="submit" disabled={loading} className="glass-surface w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60">
             {loading ? "Publishing..." : "Publish to Gallery"}
           </button>
         </form>

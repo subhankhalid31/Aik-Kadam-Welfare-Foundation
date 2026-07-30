@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { FormField, inputClass } from "@/components/ui/FormField";
+import { GlassButton } from "@/components/ui/GlassButton";
 import { CheckCircle2, LogIn } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -155,9 +156,9 @@ export default function VolunteerRegisterPage() {
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <button type="submit" disabled={loading} className="w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60">
+          <GlassButton type="submit" disabled={loading}>
             {loading ? "Submitting..." : "Submit Application"}
-          </button>
+          </GlassButton>
         </form>
       </main>
     </PageLayout>
