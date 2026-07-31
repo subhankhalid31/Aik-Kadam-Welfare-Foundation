@@ -221,8 +221,8 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 /* Universal glass surface — layers frosted-glass qualities (blur, inner
    light, a soft specular sheen, gentle hover lift) on top of an element's
    OWN background color, instead of replacing it with a fixed neutral tint
-   like .glass-button does. Add this class ALONGSIDE existing bg-*/text-*
-   utilities (ideally with a bg-*/NN opacity, e.g. bg-primary/90) so every
+   like .glass-button does. Add this class ALONGSIDE existing bg-* / text-*
+   utilities (ideally with a bg-* /NN opacity, e.g. bg-primary/90) so every
    button keeps its own color — primary blue, ink, gold, white, whatever —
    and just gains the site's liquid-glass material on top. Works for any
    hue because the sheen is a blend mode over whatever color is beneath it,
@@ -264,7 +264,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   opacity: 0.65;
 }
 /* Opt-in lift/press — only add this alongside .glass-surface on elements
-   that DON'T already carry their own Tailwind hover:-translate-y-*/
+   that DON'T already carry their own Tailwind hover:-translate-y-* /
    active:scale-* utility (several cards/CTAs do, and a plain `transform`
    here would silently clobber those instead of combining with them). */
 .glass-surface-lift {
@@ -301,23 +301,25 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 }
 .glass-pill-wrap:has(.glass-pill:active) { transform: scale(0.98); }
 .glass-pill-shadow {
-  --shadow-cutoff-fix: 2em;
-  position: absolute;
-  inset: calc(0% - var(--shadow-cutoff-fix) / 2);
-  width: calc(100% + var(--shadow-cutoff-fix));
-  height: calc(100% + var(--shadow-cutoff-fix));
-  filter: blur(clamp(2px, 0.125em, 12px));
-  transition: filter var(--anim-time) var(--anim-ease);
-  pointer-events: none;
-  z-index: 0;
+  /* Intentionally inert — no fill, no blur. Kept as a no-op div only so
+     markup doesn't need to change if a drop shadow is wanted again later;
+     for now buttons render with zero shadow, per explicit request. */
+  display: none;
 }
 .glass-pill {
+  /* NOTE: border-radius is intentionally NOT set here — it's controlled
+     entirely by whatever Tailwind rounded-* class the consumer puts on
+     this same element (rounded-full for a pill, rounded-2xl for a card).
+     Only the pseudo-elements below use border-radius: inherit, which
+     correctly picks up THIS element's own radius since they're its direct
+     children — setting it here too would make this element inherit from
+     its own parent (.glass-pill-wrap) instead, forcing square corners. */
   position: relative;
-  border-radius: inherit;
   -webkit-tap-highlight-color: transparent;
   backdrop-filter: blur(clamp(1px, 0.125em, 4px));
   transition: all var(--anim-time) var(--anim-ease);
-  background: linear-gradient(-75deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.06));
+  background-image: linear-gradient(-75deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.06));
+  background-blend-mode: overlay;
   box-shadow:
     inset 0 0.125em 0.125em rgba(10, 12, 16, 0.05),
     inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.5),
@@ -338,31 +340,23 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   z-index: 1;
   inset: 0;
   border-radius: inherit;
-  padding: var(--border-width);
-  box-sizing: border-box;
-  background:
-    conic-gradient(
-      from var(--angle-1) at 50% 50%,
-      rgba(10, 12, 16, 0.5) 0%, transparent 5% 40%, rgba(10, 12, 16, 0.5) 50%,
-      transparent 60% 95%, rgba(10, 12, 16, 0.5) 100%
-    ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5));
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  transition: all var(--anim-time) var(--anim-ease), --angle-1 500ms ease;
-  box-shadow: inset 0 0 0 calc(var(--border-width) / 2) rgba(255, 255, 255, 0.5);
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  transition: border-color var(--anim-time) var(--anim-ease);
   pointer-events: none;
 }
-.glass-pill:hover::after { --angle-1: -125deg; }
-.glass-pill:active::after { --angle-1: -75deg; }
-.glass-pill-wrap:has(.glass-pill:hover) .glass-pill-shadow { filter: blur(clamp(2px, 0.0625em, 6px)); }
+.glass-pill:hover::after { border-color: rgba(255, 255, 255, 0.85); }
+.glass-pill-wrap:has(.glass-pill:hover) .glass-pill-shadow { filter: blur(clamp(3px, 0.3em, 8px)); }
 .glass-pill-text {
+  /* display, color and text-shadow are intentionally NOT set here — put
+     flex/block/inline-flex and text-* / text-white directly via Tailwind
+     utility on this element per usage (icon+label rows need flex; a dark
+     button like Donate Now needs white text, a light glass pill needs
+     dark text). Setting any of these here would win the cascade over
+     that utility and silently break it, the same bug border-radius had
+     above. */
   position: relative;
   z-index: 2;
-  display: block;
   border-radius: inherit;
-  color: rgba(10, 12, 16, 0.9);
-  text-shadow: 0em 0.25em 0.05em rgba(10, 12, 16, 0.1);
   transition: all var(--anim-time) var(--anim-ease);
 }
 .glass-pill:hover .glass-pill-text { text-shadow: 0.025em 0.025em 0.025em rgba(10, 12, 16, 0.12); }
@@ -388,6 +382,27 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .glass-pill[aria-disabled="true"] {
   opacity: 0.6;
   pointer-events: none;
+}
+
+/* Ambient/continuous sheen — an opt-in modifier for a handful of primary
+   CTAs (Donate Now, Submit a Case, Register as Volunteer) that should
+   shimmer on a loop instead of waiting for hover. Add "glass-ambient" to
+   the outer -wrap element; it reaches both the .glass-button family
+   (login/signup/Become-a-Volunteer) and the .glass-pill family below it. */
+@keyframes glass-ambient-border {
+  0% { --angle-1: -75deg; }
+  100% { --angle-1: 285deg; }
+}
+@keyframes glass-ambient-shine {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.glass-ambient .glass-button::after {
+  animation: glass-ambient-border 6s linear infinite;
+}
+.glass-ambient .glass-button-text::after,
+.glass-ambient .glass-pill-text::after {
+  animation: glass-ambient-shine 3.5s ease-in-out infinite;
 }
 
 /* Frosted "panel" — for dropdowns, popovers, modal sheets, and any menu
