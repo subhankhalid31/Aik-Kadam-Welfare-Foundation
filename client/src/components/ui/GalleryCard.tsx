@@ -28,7 +28,7 @@ export function GalleryCard({ id, title, date, location, description, images, fa
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    el.style.background = `radial-gradient(circle 220px at ${x}px ${y}px, rgba(48,135,248,0.06), transparent 80%)`;
+    el.style.background = `radial-gradient(circle 220px at ${x}px ${y}px, rgba(112,152,40,0.07), transparent 80%)`;
   }
   function onMouseLeave() {
     if (spotlightRef.current) spotlightRef.current.style.background = "transparent";
@@ -56,7 +56,7 @@ export function GalleryCard({ id, title, date, location, description, images, fa
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
       onClick={() => onViewDetails?.(id)}
-      className="group relative h-full flex flex-col rounded-2xl border border-border overflow-hidden bg-white transition-all duration-[250ms] hover:-translate-y-2 hover:shadow-xl hover:border-primary/40 cursor-pointer"
+      className="group relative h-full flex flex-col rounded-2xl border border-border overflow-hidden bg-white transition-all duration-[250ms] hover:-translate-y-2 hover:shadow-xl hover:border-brand-green/40 cursor-pointer"
     >
       {/* Mouse-spotlight: a soft radial highlight that follows the cursor across the card */}
       <div ref={spotlightRef} className="pointer-events-none absolute inset-0 z-10 transition-opacity duration-300" />
@@ -72,12 +72,12 @@ export function GalleryCard({ id, title, date, location, description, images, fa
           onLoad={() => setImgLoaded(true)}
         />
 
-        <span className="absolute z-20 top-2 sm:top-3 left-2 sm:left-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 text-primary text-[10px] sm:text-[11px] font-semibold px-2.5 sm:px-3 py-1 sm:py-1.5 shadow-sm transition-transform duration-200 group-hover:[&_svg]:rotate-[5deg]">
+        <span className="absolute z-20 top-2 sm:top-3 left-2 sm:left-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 text-brand-green text-[10px] sm:text-[11px] font-semibold px-2.5 sm:px-3 py-1 sm:py-1.5 shadow-sm transition-transform duration-200 group-hover:[&_svg]:rotate-[5deg]">
           <ShieldCheck size={12} className="transition-transform duration-200 shrink-0" />
           <span className="hidden sm:inline">Verified Completed</span>
           <span className="sm:hidden">Verified</span>
         </span>
-        <span className="absolute z-20 top-2 sm:top-3 right-2 sm:right-3 rounded-full bg-primary text-white text-[10px] sm:text-[11px] font-semibold px-2.5 sm:px-3 py-1 sm:py-1.5 shadow-sm">
+        <span className="absolute z-20 top-2 sm:top-3 right-2 sm:right-3 rounded-full bg-brand-green text-white text-[10px] sm:text-[11px] font-semibold px-2.5 sm:px-3 py-1 sm:py-1.5 shadow-sm">
           {date}
         </span>
 
@@ -124,7 +124,7 @@ export function GalleryCard({ id, title, date, location, description, images, fa
                 viewport={{ once: true, amount: 0.6 }}
                 transition={{ duration: 0.35, delay: i * 0.06, ease: "easeOut" }}
               >
-                <s.icon size={14} className="text-primary shrink-0" />
+                <s.icon size={14} className="text-brand-green shrink-0" />
                 <span className="text-xs font-semibold text-ink">{s.value}</span>
               </motion.div>
             ))}
@@ -133,9 +133,9 @@ export function GalleryCard({ id, title, date, location, description, images, fa
 
         <button
           onClick={(e) => { e.stopPropagation(); onViewDetails?.(id); }}
-          className="group/link mt-auto pt-3 sm:pt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary-dark transition-colors duration-200"
+          className="group/link mt-auto pt-3 sm:pt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-green hover:text-brand-green-dark transition-colors duration-200"
         >
-          <span className="border-b border-transparent group-hover/link:border-primary-dark transition-colors duration-200">
+          <span className="border-b border-transparent group-hover/link:border-brand-green-dark transition-colors duration-200">
             View Project Details
           </span>
           <ArrowRight size={14} className="transition-transform duration-200 group-hover/link:translate-x-1.5" />

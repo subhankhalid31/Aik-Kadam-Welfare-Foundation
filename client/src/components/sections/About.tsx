@@ -36,11 +36,11 @@ export function About() {
           viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
-          <span className="text-xs font-semibold tracking-wide text-primary uppercase">
+          <span className="text-xs font-semibold tracking-wide text-brand-green uppercase">
             Our Story
           </span>
           <h2 className="mt-3 font-display text-3xl sm:text-4xl leading-tight text-ink">
-            Charity built the way trust actually works, <span className="italic text-primary"> step by visible step.</span>
+            Charity built the way trust actually works, <span className="italic text-brand-green"> step by visible step.</span>
           </h2>
           <p className="mt-5 text-muted leading-relaxed">
             Aik Kadam was born from a simple observation by our founder, Subhan
@@ -54,23 +54,23 @@ export function About() {
             {milestones.map((m, i) => (
               <motion.li
                 key={m.year}
-                className="group flex gap-4 rounded-xl -mx-2 px-2 py-1 transition-all duration-250 hover:bg-primary/5 hover:translate-x-1"
+                className="group flex gap-4 rounded-xl -mx-2 px-2 py-1 transition-all duration-250 hover:bg-brand-green/5 hover:translate-x-1"
                 initial={{ opacity: 0, x: -12 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, amount: 0.8 }}
                 transition={{ duration: 0.5, ease: "easeOut", delay: i * 0.1 }}
               >
                 <div className="flex flex-col items-center">
-                  <span className="font-mono text-xs text-primary transition-colors duration-250 group-hover:text-primary-dark">{m.year}</span>
+                  <span className="font-mono text-xs text-brand-green transition-colors duration-250 group-hover:text-brand-green-dark">{m.year}</span>
                   <div className="relative mt-1.5 h-2 w-2 shrink-0">
                     <motion.span
-                      className="absolute -inset-1.5 rounded-full bg-primary/60 blur-[3px]"
+                      className="absolute -inset-1.5 rounded-full bg-brand-green/60 blur-[3px]"
                       initial={{ opacity: 0.25 }}
                       whileInView={{ opacity: [0.25, 0.85, 0.25] }}
                       viewport={{ once: false, amount: 0.8 }}
                       transition={{ duration: 2.2, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
                     />
-                    <span className="relative block h-2 w-2 rounded-full bg-primary shadow-[0_0_6px_2px_rgba(48,135,248,0.55)] transition-transform duration-250 group-hover:scale-125" />
+                    <span className="relative block h-2 w-2 rounded-full bg-brand-green shadow-[0_0_6px_2px_rgba(112,152,40,0.55)] transition-transform duration-250 group-hover:scale-125" />
                   </div>
                   {i < milestones.length - 1 && (
                     <span className="mt-1.5 w-px flex-1 bg-border" />

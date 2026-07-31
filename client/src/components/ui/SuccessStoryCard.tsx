@@ -15,7 +15,7 @@ export function SuccessStoryCard({ title, date, quote, before, after, onReadMore
   const [afterLoaded, setAfterLoaded] = useState(false);
 
   return (
-    <article className="group rounded-2xl border border-border overflow-hidden bg-white transition-all duration-[250ms] hover:-translate-y-2 hover:shadow-xl hover:border-primary/40">
+    <article className="group rounded-2xl border border-border overflow-hidden bg-white transition-all duration-[250ms] hover:-translate-y-2 hover:shadow-xl hover:border-brand-green/40">
       <div className="relative grid grid-cols-2 gap-0.5 aspect-[16/9] overflow-hidden bg-border/30">
         <div className="relative overflow-hidden">
           <img
@@ -41,13 +41,13 @@ export function SuccessStoryCard({ title, date, quote, before, after, onReadMore
             loading="lazy"
             onLoad={() => setAfterLoaded(true)}
           />
-          <span className="absolute top-2.5 right-2.5 rounded-full bg-primary text-white text-[10px] font-semibold px-2.5 py-1 uppercase tracking-wide">
+          <span className="absolute top-2.5 right-2.5 rounded-full bg-brand-green text-white text-[10px] font-semibold px-2.5 py-1 uppercase tracking-wide">
             After
           </span>
         </div>
 
         <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white shadow-sm flex items-center justify-center pointer-events-none">
-          <ArrowLeftRight size={13} className="text-primary" />
+          <ArrowLeftRight size={13} className="text-brand-green" />
         </span>
       </div>
 
@@ -66,7 +66,7 @@ export function SuccessStoryCard({ title, date, quote, before, after, onReadMore
           {onReadMore && (
             <button
               onClick={onReadMore}
-              className="group/link inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-dark transition-colors duration-200"
+              className="group/link inline-flex items-center gap-1 text-xs font-semibold text-brand-green hover:text-brand-green-dark transition-colors duration-200"
             >
               Read Full Story
               <ArrowRight size={12} className="transition-transform duration-200 group-hover/link:translate-x-1" />

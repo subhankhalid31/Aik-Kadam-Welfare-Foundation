@@ -6,7 +6,7 @@ const icons = { users: Users, heart: Heart, hand: HandHeart, cap: GraduationCap 
 
 export function ImpactStats() {
   return (
-    <section className="bg-primary">
+    <section className="bg-brand-green">
       <div className="max-w-6xl mx-auto px-6 py-14 grid grid-cols-2 md:grid-cols-4 gap-8">
         {impactStats.map((stat) => {
           const Icon = icons[stat.icon as keyof typeof icons];

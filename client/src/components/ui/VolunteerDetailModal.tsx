@@ -16,7 +16,7 @@ export type VolunteerDetail = {
   servedUntil?: string | null;
 };
 
-const avatarColors = ["#3087F8", "#72ADFA", "#FFD662", "#0260D8"];
+const avatarColors = ["#709828", "#9EC656", "#E09010", "#465F19"];
 function initials(name: string) {
   return name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
 }

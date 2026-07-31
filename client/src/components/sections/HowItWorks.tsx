@@ -107,10 +107,10 @@ export function HowItWorks() {
                       className="relative z-10 flex h-[30px] w-[30px] items-center justify-center rounded-full border-2 text-xs font-mono font-semibold"
                       animate={{
                         scale: isActive ? [0.85, 1.15, 1] : 1,
-                        backgroundColor: isActive || isDone ? "#3087F8" : "#FFFFFF",
-                        borderColor: "#3087F8",
-                        color: isActive || isDone ? "#FFFFFF" : "#3087F8",
-                        boxShadow: isActive ? "0 0 0 8px rgba(48,135,248,0.15)" : "0 0 0 0px rgba(48,135,248,0)",
+                        backgroundColor: isActive || isDone ? "#709828" : "#FFFFFF",
+                        borderColor: "#709828",
+                        color: isActive || isDone ? "#FFFFFF" : "#709828",
+                        boxShadow: isActive ? "0 0 0 8px rgba(112,152,40,0.15)" : "0 0 0 0px rgba(112,152,40,0)",
                       }}
                       transition={{ duration: 0.35, ease: "easeOut" }}
                     >

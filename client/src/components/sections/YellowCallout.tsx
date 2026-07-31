@@ -1,5 +1,5 @@
-import { Link } from "wouter";
-import { ArrowRight } from "lucide-react";
+import { ArrowCta } from "@/components/ui/ArrowCta";
+import { FilePlus2 } from "lucide-react";
 
 // A floating, lens-shaped yellow panel — curved on both the top and bottom
 // edges — set apart from the stat band above with breathing room, so its
@@ -26,12 +26,9 @@ export function YellowCallout() {
             relief, every case on Aik Kadam is reviewed, tracked, and reported
             back to the people who funded it.
           </p>
-          <Link
-            href="/post-case"
-            className="mt-7 inline-flex items-center gap-2 rounded-full bg-ink px-7 py-3.5 font-semibold text-white hover:bg-ink/85 hover:-translate-y-0.5 transition-all duration-200"
-          >
-            Submit Your Case <ArrowRight size={16} />
-          </Link>
+          <div className="mt-7 flex justify-center">
+            <ArrowCta href="/post-case" icon={FilePlus2} variant="ink">Submit Your Case</ArrowCta>
+          </div>
         </div>
 
         {/* bottom curve: yellow bulges downward in the middle, recedes near the edges */}

@@ -24,7 +24,7 @@ export function OngoingTeaser() {
   return (
     <section className="py-20 bg-white border-t border-border">
       <div className="max-w-6xl mx-auto px-6">
-        <span className="text-xs font-semibold tracking-wide text-primary uppercase">Ongoing Cases</span>
+        <span className="text-xs font-semibold tracking-wide text-brand-green uppercase">Ongoing Cases</span>
         <h2 className="mt-2 font-display text-2xl sm:text-3xl text-ink">Steps in progress right now.</h2>
 
         <div className="mt-8 grid md:grid-cols-2 gap-6">
@@ -41,9 +41,9 @@ export function OngoingTeaser() {
                     <MapPin size={12} /> {c.location}
                   </div>
                   <div className="mt-3 h-1.5 rounded-full bg-border overflow-hidden">
-                    <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                    <div className="h-full rounded-full bg-brand-green" style={{ width: `${pct}%` }} />
                   </div>
-                  <div className="mt-1.5 text-xs font-mono text-primary">
+                  <div className="mt-1.5 text-xs font-mono text-brand-green">
                     PKR {c.amountCollected.toLocaleString()} of {c.amountNeeded.toLocaleString()}
                   </div>
                 </div>
