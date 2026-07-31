@@ -43,7 +43,7 @@ export function VolunteersTeaser() {
   return (
     <section className="py-20 border-t border-border">
       <div className="max-w-6xl mx-auto px-6">
-        <span className="text-xs font-semibold tracking-wide text-primary uppercase">Our People</span>
+        <span className="text-xs font-semibold tracking-wide text-brand-green uppercase">Our People</span>
         <h2 className="mt-2 font-display text-2xl sm:text-3xl text-ink">Top volunteers this month.</h2>
 
         <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">

@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { MapPin, Clock, Briefcase, ShieldCheck, BadgeCheck } from "lucide-react";
 
-const avatarColors = ["#3087F8", "#72ADFA", "#FFD662", "#0260D8"];
+const avatarColors = ["#709828", "#9EC656", "#E09010", "#465F19"];
 
 function initials(name: string) {
   return name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
@@ -56,7 +56,7 @@ export function VolunteerCard({ badgeId, name, role, city, avatarUrl, category, 
         "--spot-y": "0px",
         "--spot-opacity": "0",
       }}
-      className="glass-surface group relative w-full min-w-0 text-left rounded-2xl border border-white/60 bg-white/80 p-6 flex flex-col transition-all duration-[250ms] hover:-translate-y-2 hover:shadow-xl hover:border-primary/40"
+      className="glass-surface group relative w-full min-w-0 text-left rounded-2xl border border-white/60 bg-white/80 p-6 flex flex-col transition-all duration-[250ms] hover:-translate-y-2 hover:shadow-xl hover:border-brand-green/40"
     >
       {/* Mouse spotlight */}
       <span
@@ -64,11 +64,11 @@ export function VolunteerCard({ badgeId, name, role, city, avatarUrl, category, 
         className="pointer-events-none absolute inset-0 rounded-2xl transition-opacity duration-300"
         style={{
           opacity: "var(--spot-opacity)",
-          background: "radial-gradient(circle 200px at var(--spot-x) var(--spot-y), rgba(48,135,248,0.05), transparent 80%)",
+          background: "radial-gradient(circle 200px at var(--spot-x) var(--spot-y), rgba(112,152,40,0.06), transparent 80%)",
         }}
       />
       {/* Signature interaction: soft blue gradient along the top edge on hover */}
-      <span className="pointer-events-none absolute inset-x-0 top-0 h-16 rounded-t-2xl bg-gradient-to-b from-primary/[0.06] to-transparent opacity-0 transition-opacity duration-250 group-hover:opacity-100" />
+      <span className="pointer-events-none absolute inset-x-0 top-0 h-16 rounded-t-2xl bg-gradient-to-b from-brand-green/[0.06] to-transparent opacity-0 transition-opacity duration-250 group-hover:opacity-100" />
 
       <div className="relative flex items-start justify-between">
         <div className="relative shrink-0">
@@ -93,7 +93,7 @@ export function VolunteerCard({ badgeId, name, role, city, avatarUrl, category, 
             </div>
           )}
           <span className={`absolute -bottom-0.5 -left-0.5 h-3.5 w-3.5 rounded-full border-2 border-white ${servedUntil ? "bg-muted" : "bg-emerald-400"}`} />
-          <span className="absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center border-2 border-white">
+          <span className="absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full bg-brand-green flex items-center justify-center border-2 border-white">
             <ShieldCheck size={11} className="text-background" />
           </span>
         </div>
@@ -118,10 +118,10 @@ export function VolunteerCard({ badgeId, name, role, city, avatarUrl, category, 
       </div>
 
       <div className="relative mt-4 flex items-center gap-1.5 min-w-0">
-        <h3 className="font-display text-lg text-ink transition-colors duration-250 group-hover:text-primary truncate">{name}</h3>
-        <BadgeCheck size={16} className="text-primary shrink-0" />
+        <h3 className="font-display text-lg text-ink transition-colors duration-250 group-hover:text-brand-green truncate">{name}</h3>
+        <BadgeCheck size={16} className="text-brand-green shrink-0" />
       </div>
-      {(role || category) && <p className="relative text-sm font-medium text-primary truncate">{role || category}</p>}
+      {(role || category) && <p className="relative text-sm font-medium text-brand-green truncate">{role || category}</p>}
       {city && (
         <p className="relative mt-1.5 flex items-center gap-1.5 text-xs text-muted min-w-0">
           <MapPin size={12} className="shrink-0" /> <span className="truncate">{city}</span>
