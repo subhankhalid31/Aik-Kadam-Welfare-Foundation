@@ -1,6 +1,6 @@
 import { PageLayout } from "@/components/layout/PageLayout";
-import { IntroBanner } from "@/components/sections/IntroBanner";
 import { Hero } from "@/components/sections/Hero";
+import { Founder } from "@/components/sections/Founder";
 import { ImpactStats } from "@/components/sections/ImpactStats";
 import { YellowCallout } from "@/components/sections/YellowCallout";
 import { FundTransparency } from "@/components/sections/FundTransparency";
@@ -13,8 +13,8 @@ export default function Home() {
   return (
     <PageLayout>
       <main>
-        <IntroBanner />
         <Hero />
+        <Founder />
         <ImpactStats />
         <YellowCallout />
         <FundTransparency />

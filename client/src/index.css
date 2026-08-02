@@ -1,7 +1,7 @@
 @font-face {
   font-family: "Bastliga One";
   src: url("/fonts/Bastliga-One.ttf") format("truetype"),
-       url("/fonts/Bastliga-One.otf") format("opentype");
+  url("/fonts/Bastliga-One.otf") format("opentype");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -97,74 +97,75 @@
 
 /* ─────────────────────────────────────────────────────────────────────
    Design tokens (HSL custom properties)
-   These mirror the blue palette now applied directly to the Tailwind
-   color tokens above (primary, ink, background, border, muted, danger)
-   — kept here as plain CSS variables too so a future dark-mode toggle
-   (adding/removing the `.dark` class on <html>) or a shadcn/ui component
-   can read them directly. Nothing in the app switches the `.dark` class
-   yet, so today the site only ever renders the :root (light) values.
+   These mirror the warm green/yellow palette applied directly to the
+   Tailwind color tokens above (primary, ink, background, border, muted,
+   danger) — kept here as plain CSS variables too so a future dark-mode
+   toggle (adding/removing the `.dark` class on <html>) or a shadcn/ui
+   component can read them directly. Nothing in the app switches the
+   `.dark` class yet, so today the site only ever renders the :root
+   (light) values.
    ───────────────────────────────────────────────────────────────────── */
 :root {
   --card: 0 0% 100%;
-  --ring: 221 87% 53%;
-  --input: 220 13% 90%;
-  --muted: 214 20% 96%;
-  --accent: 221 87% 53%;
-  --border: 220 13% 90%;
+  --ring: 89 46% 48%;
+  --input: 35 28% 86%;
+  --muted: 40 30% 92%;
+  --accent: 44 100% 48%;
+  --border: 35 28% 86%;
   --radius: 0.875rem;
-  --chart-1: 221 87% 53%;
-  --chart-2: 223 81% 43%;
-  --chart-3: 215 13% 40%;
-  --chart-4: 214 20% 86%;
-  --chart-5: 228 33% 3%;
+  --chart-1: 89 46% 48%;
+  --chart-2: 90 51% 37%;
+  --chart-3: 0 0% 32%;
+  --chart-4: 35 28% 80%;
+  --chart-5: 0 0% 8%;
   --popover: 0 0% 100%;
-  --primary: 221 87% 53%;
-  --sidebar: 214 20% 96%;
-  --secondary: 214 20% 96%;
-  --background: 0 0% 100%;
-  --foreground: 220 23% 5%;
+  --primary: 89 46% 48%;
+  --sidebar: 40 30% 92%;
+  --secondary: 40 30% 92%;
+  --background: 40 50% 98%;
+  --foreground: 0 0% 8%;
   --destructive: 0 72% 51%;
-  --sidebar-ring: 221 87% 53%;
-  --sidebar-accent: 214 20% 96%;
-  --sidebar-border: 220 13% 90%;
-  --card-foreground: 220 23% 5%;
-  --sidebar-primary: 221 87% 53%;
-  --muted-foreground: 215 13% 40%;
-  --accent-foreground: 0 0% 100%;
-  --popover-foreground: 220 23% 5%;
+  --sidebar-ring: 89 46% 48%;
+  --sidebar-accent: 40 30% 92%;
+  --sidebar-border: 35 28% 86%;
+  --card-foreground: 0 0% 8%;
+  --sidebar-primary: 89 46% 48%;
+  --muted-foreground: 0 0% 32%;
+  --accent-foreground: 0 0% 8%;
+  --popover-foreground: 0 0% 8%;
   --primary-foreground: 0 0% 100%;
-  --sidebar-foreground: 220 23% 5%;
-  --secondary-foreground: 220 23% 5%;
+  --sidebar-foreground: 0 0% 8%;
+  --secondary-foreground: 0 0% 8%;
   --destructive-foreground: 0 0% 100%;
-  --sidebar-accent-foreground: 220 23% 5%;
+  --sidebar-accent-foreground: 0 0% 8%;
   --sidebar-primary-foreground: 0 0% 100%;
 }
 .dark {
-  --card: 228 28% 6%;
-  --ring: 221 87% 58%;
-  --input: 228 14% 16%;
-  --muted: 228 20% 12%;
-  --accent: 221 70% 45%;
-  --border: 228 14% 16%;
-  --chart-1: 221 87% 58%;
-  --chart-2: 221 70% 45%;
-  --chart-3: 215 12% 62%;
-  --chart-4: 228 20% 18%;
+  --card: 0 0% 9%;
+  --ring: 89 46% 55%;
+  --input: 0 0% 18%;
+  --muted: 0 0% 16%;
+  --accent: 44 100% 52%;
+  --border: 0 0% 18%;
+  --chart-1: 89 46% 55%;
+  --chart-2: 90 51% 45%;
+  --chart-3: 0 0% 62%;
+  --chart-4: 0 0% 22%;
   --chart-5: 0 0% 100%;
-  --popover: 228 28% 6%;
-  --primary: 221 87% 53%;
-  --sidebar: 228 28% 6%;
-  --secondary: 228 20% 12%;
-  --background: 228 33% 3%;
-  --foreground: 210 20% 96%;
+  --popover: 0 0% 9%;
+  --primary: 89 46% 48%;
+  --sidebar: 0 0% 9%;
+  --secondary: 0 0% 16%;
+  --background: 0 0% 6%;
+  --foreground: 40 30% 96%;
   --destructive: 0 62% 45%;
-  --sidebar-ring: 221 87% 58%;
-  --sidebar-accent: 228 20% 12%;
-  --sidebar-border: 228 14% 16%;
-  --card-foreground: 210 20% 96%;
-  --sidebar-primary: 221 87% 53%;
-  --muted-foreground: 215 12% 62%;
-  --accent-foreground: 0 0% 100%;
+  --sidebar-ring: 89 46% 55%;
+  --sidebar-accent: 0 0% 16%;
+  --sidebar-border: 0 0% 18%;
+  --card-foreground: 40 30% 96%;
+  --sidebar-primary: 89 46% 48%;
+  --muted-foreground: 0 0% 62%;
+  --accent-foreground: 0 0% 8%;
   --popover-foreground: 210 20% 96%;
   --primary-foreground: 0 0% 100%;
   --sidebar-foreground: 210 20% 96%;
@@ -179,7 +180,7 @@ html {
 }
 
 ::selection {
-  background: #1F61EF;
+  background: #7CB342;
   color: #FFFFFF;
 }
 
@@ -188,8 +189,8 @@ html {
    Shared by any component that wants the iOS-style liquid-glass look:
    pill-shaped inputs/buttons with a rotating conic-gradient shine, a
    bordered "glass-card" surface, and a static blue text glow.
-   Colors are hardcoded to this site's palette (ink #0A0C10, primary
-   #1F61EF) rather than CSS variables, since this project doesn't use a
+   Colors are hardcoded to this site's palette (ink #151515, primary
+   #7CB342) rather than CSS variables, since this project doesn't use a
    shadcn-style theme-variable setup.
    ───────────────────────────────────────────────────────────────────── */
 
@@ -213,16 +214,16 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   -webkit-backdrop-filter: blur(18px) saturate(150%);
   border: 1.5px solid rgba(255, 255, 255, 0.8);
   box-shadow:
-    0 0 0 1px rgba(10, 12, 16, 0.08),
-    0 8px 32px rgba(10, 12, 16, 0.15),
-    inset 0 1px 1px rgba(255, 255, 255, 0.5);
+          0 0 0 1px rgba(10, 12, 16, 0.08),
+          0 8px 32px rgba(10, 12, 16, 0.15),
+          inset 0 1px 1px rgba(255, 255, 255, 0.5);
 }
 
 /* Universal glass surface — layers frosted-glass qualities (blur, inner
    light, a soft specular sheen, gentle hover lift) on top of an element's
    OWN background color, instead of replacing it with a fixed neutral tint
-   like .glass-button does. Add this class ALONGSIDE existing bg-*/text-*
-   utilities (ideally with a bg-*/NN opacity, e.g. bg-primary/90) so every
+   like .glass-button does. Add this class ALONGSIDE existing bg-* / text-*
+   utilities (ideally with a bg-* /NN opacity, e.g. bg-primary/90) so every
    button keeps its own color — primary blue, ink, gold, white, whatever —
    and just gains the site's liquid-glass material on top. Works for any
    hue because the sheen is a blend mode over whatever color is beneath it,
@@ -233,27 +234,27 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   backdrop-filter: blur(14px) saturate(180%);
   -webkit-backdrop-filter: blur(14px) saturate(180%);
   background-image: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.55) 0%,
-    rgba(255, 255, 255, 0.16) 30%,
-    rgba(255, 255, 255, 0.02) 55%,
-    rgba(255, 255, 255, 0.3) 100%
+          135deg,
+          rgba(255, 255, 255, 0.55) 0%,
+          rgba(255, 255, 255, 0.16) 30%,
+          rgba(255, 255, 255, 0.02) 55%,
+          rgba(255, 255, 255, 0.3) 100%
   );
   background-blend-mode: overlay;
   border: 1px solid rgba(255, 255, 255, 0.55);
   box-shadow:
-    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65),
-    inset 0 -1.5px 2px rgba(10, 12, 16, 0.16),
-    0 2px 8px rgba(10, 12, 16, 0.08);
+          inset 0 1.5px 1.5px rgba(255, 255, 255, 0.65),
+          inset 0 -1.5px 2px rgba(10, 12, 16, 0.16),
+          0 2px 8px rgba(10, 12, 16, 0.08);
   transition: box-shadow 250ms ease, filter 200ms ease, border-color 200ms ease;
 }
 .glass-surface:hover {
   filter: brightness(1.08) saturate(1.12);
   border-color: rgba(255, 255, 255, 0.75);
   box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.5),
-    inset 0 -1px 1.5px rgba(10, 12, 16, 0.12),
-    0 6px 18px -6px rgba(10, 12, 16, 0.3);
+          inset 0 1px 1px rgba(255, 255, 255, 0.5),
+          inset 0 -1px 1.5px rgba(10, 12, 16, 0.12),
+          0 6px 18px -6px rgba(10, 12, 16, 0.3);
 }
 .glass-surface:active {
   filter: brightness(0.97);
@@ -264,7 +265,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   opacity: 0.65;
 }
 /* Opt-in lift/press — only add this alongside .glass-surface on elements
-   that DON'T already carry their own Tailwind hover:-translate-y-*/
+   that DON'T already carry their own Tailwind hover:-translate-y-* /
    active:scale-* utility (several cards/CTAs do, and a plain `transform`
    here would silently clobber those instead of combining with them). */
 .glass-surface-lift {
@@ -321,18 +322,18 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   background-image: linear-gradient(-75deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.06));
   background-blend-mode: overlay;
   box-shadow:
-    inset 0 0.125em 0.125em rgba(10, 12, 16, 0.05),
-    inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.5),
-    0 0.25em 0.125em -0.125em rgba(10, 12, 16, 0.2),
-    0 0 0.1em 0.25em inset rgba(255, 255, 255, 0.2);
+          inset 0 0.125em 0.125em rgba(10, 12, 16, 0.05),
+          inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.5),
+          0 0.25em 0.125em -0.125em rgba(10, 12, 16, 0.2),
+          0 0 0.1em 0.25em inset rgba(255, 255, 255, 0.2);
 }
 .glass-pill:hover {
   backdrop-filter: blur(0.01em);
   box-shadow:
-    inset 0 0.125em 0.125em rgba(10, 12, 16, 0.05),
-    inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.5),
-    0 0.15em 0.05em -0.1em rgba(10, 12, 16, 0.25),
-    0 0 0.05em 0.1em inset rgba(255, 255, 255, 0.5);
+          inset 0 0.125em 0.125em rgba(10, 12, 16, 0.05),
+          inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.5),
+          0 0.15em 0.05em -0.1em rgba(10, 12, 16, 0.25),
+          0 0 0.05em 0.1em inset rgba(255, 255, 255, 0.5);
 }
 .glass-pill::after {
   content: "";
@@ -348,7 +349,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .glass-pill-wrap:has(.glass-pill:hover) .glass-pill-shadow { filter: blur(clamp(3px, 0.3em, 8px)); }
 .glass-pill-text {
   /* display, color and text-shadow are intentionally NOT set here — put
-     flex/block/inline-flex and text-*/text-white directly via Tailwind
+     flex/block/inline-flex and text-* / text-white directly via Tailwind
      utility on this element per usage (icon+label rows need flex; a dark
      button like Donate Now needs white text, a light glass pill needs
      dark text). Setting any of these here would win the cascade over
@@ -415,18 +416,51 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   -webkit-backdrop-filter: blur(22px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.65);
   box-shadow:
-    0 0 0 1px rgba(10, 12, 16, 0.05),
-    0 20px 40px -14px rgba(10, 12, 16, 0.2),
-    inset 0 1px 1px rgba(255, 255, 255, 0.55);
+          0 0 0 1px rgba(10, 12, 16, 0.05),
+          0 20px 40px -14px rgba(10, 12, 16, 0.2),
+          inset 0 1px 1px rgba(255, 255, 255, 0.55);
 }
 
-/* Static blue glow for a headline's emphasized word/phrase — NOT an
+/* Static glow for a headline's emphasized word/phrase — NOT an
    animated pulse, just layered text-shadow so it reads as "lit from
-   within" in the site's brand blue. */
+   within" in the site's brand green. Class name kept as-is so every
+   page already using `text-glow-blue` picks up the new color for free. */
 .text-glow-blue {
-  color: #1F61EF;
+  color: #5F8F2E;
   text-shadow:
-    0 0 10px rgba(31, 97, 239, 0.55),
-    0 0 26px rgba(31, 97, 239, 0.35),
-    0 0 46px rgba(31, 97, 239, 0.2);
+          0 0 10px rgba(124, 179, 66, 0.55),
+          0 0 26px rgba(124, 179, 66, 0.35),
+          0 0 46px rgba(124, 179, 66, 0.2);
+}
+
+/* Continuous, colour-shifting sheen for a small set of high-priority CTAs
+   (the navbar Donate button) — always animating, not just on hover, and
+   the sweep itself cycles green → gold → white rather than being a flat
+   white shine, so it reads as a premium "living" highlight instead of a
+   one-note glare. Sits on `.btn-sheen` as a pseudo-element so it layers
+   over any button content/icon without affecting layout. */
+@keyframes btn-sheen-move {
+  0% { background-position: -60% 0; }
+  100% { background-position: 160% 0; }
+}
+.btn-sheen {
+  position: relative;
+  overflow: hidden;
+}
+.btn-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 15%,
+    rgba(124, 179, 66, 0.45) 32%,
+    rgba(244, 180, 0, 0.55) 48%,
+    rgba(255, 255, 255, 0.6) 58%,
+    transparent 78%
+  );
+  background-size: 260% 100%;
+  mix-blend-mode: overlay;
+  animation: btn-sheen-move 3.2s linear infinite;
 }

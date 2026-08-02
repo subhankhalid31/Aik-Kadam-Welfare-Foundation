@@ -1,12 +1,14 @@
 import { motion } from "framer-motion";
-import { HandHeart, Users, ShieldCheck, FilePlus2, UserPlus } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { ArrowCta } from "@/components/ui/ArrowCta";
-import handsPhoto from "@assets/hero-hands-bg.webp";
+import { BrushStroke } from "@/components/ui/BrushStroke";
+import { Link } from "wouter";
+// Placeholder photo — swap for a final hero portrait whenever it's ready.
+// (The previous `hero-hands-bg.webp` asset was a near-white abstract
+// texture, not an actual photo, which is why the masked shape was
+// rendering as a faint white blob instead of a photo.)
+import heroPhoto from "@assets/gallery/happy_young_girl_holding_books_in_classroom.webp";
 
-// Each child fades up into place slightly after the one before it — the
-// overall effect is a calm, confident reveal rather than everything
-// appearing at once. Deliberately understated: this is a charity site
-// people are trusting with donations, not a SaaS product to wow them.
 const container = {
   hidden: {},
   show: {
@@ -21,100 +23,88 @@ const item = {
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden">
-      <div className="relative max-w-6xl mx-auto px-6 pt-16 pb-16 sm:pb-24 grid lg:grid-cols-[1.05fr_0.95fr] gap-16 lg:gap-10 items-center">
-        {/* Left: mission + CTA */}
-        <motion.div variants={container} initial="hidden" animate="show">
-          <motion.span
+    // overflow-visible so the world map + beige silhouette behind the
+    // photo can bleed upward past this section's own boundary, up under
+    // the transparent navbar, instead of being clipped at the top edge.
+    <section className="relative overflow-visible">
+      <div className="relative max-w-[1240px] mx-auto px-6 lg:px-10 pt-20 sm:pt-28 pb-20 sm:pb-28 grid lg:grid-cols-[45%_55%] gap-16 lg:gap-8 items-center">
+        {/* Left: editorial serif headline + compact CTAs. 45% column,
+            capped paragraph width, generous whitespace throughout. */}
+        <motion.div variants={container} initial="hidden" animate="show" className="max-w-[520px]">
+          <motion.h1
             variants={item}
-            className="inline-flex items-center gap-2 rounded-full bg-brand-green/10 px-4 py-2 text-xs font-bold tracking-wide text-brand-green-dark uppercase"
+            className="font-serif font-extrabold text-5xl sm:text-6xl lg:text-[4.2rem] leading-[0.98] tracking-tight text-ink"
           >
-            <HandHeart size={15} />
-            Aik Kadam &mdash; One Step
-          </motion.span>
-
-          <motion.h1 variants={item} className="mt-6 font-display font-extrabold text-4xl sm:text-5xl lg:text-[3.4rem] leading-[1.08] text-ink">
-            Where one step
+            One step
             <br />
-            <span className="relative inline-block italic">
-              changes everything.
+            <span className="relative inline-block">
+              can change
               <svg
-                className="absolute left-0 -bottom-1.5 w-full pointer-events-none"
-                height="10"
-                viewBox="0 0 300 10"
+                className="absolute left-0 -bottom-1 w-full pointer-events-none"
+                height="16"
+                viewBox="0 0 320 16"
                 fill="none"
                 preserveAspectRatio="none"
               >
                 <path
-                  d="M2 7 Q 40 2, 80 6 T 160 6 T 240 6 T 298 5"
-                  stroke="#E09010"
-                  strokeWidth="5"
+                  d="M2 10 Q 80 2, 160 9 T 318 8"
+                  stroke="#F4B400"
+                  strokeWidth="11"
                   strokeLinecap="round"
                 />
               </svg>
             </span>
+            <br />
+            a life forever.
           </motion.h1>
 
-          <motion.p variants={item} className="mt-6 text-lg text-muted max-w-lg leading-relaxed">
-            Every rupee is tracked from your hands to theirs, every case is
-            verified before it's shared, and every volunteer's work is
-            visible online &mdash; charity you don't have to take on faith.
+          <motion.p variants={item} className="mt-7 text-[18px] leading-[1.7] text-muted max-w-[500px]">
+            We are building a borderless Pakistan where every child receives
+            food, education, and hope to shape a brighter tomorrow.
           </motion.p>
 
-          <motion.div variants={item} className="mt-8 flex flex-wrap items-center gap-4">
-            <ArrowCta href="/post-case" icon={FilePlus2} variant="solid">Submit a Case</ArrowCta>
-            <ArrowCta href="/volunteers/register" icon={UserPlus} variant="outline">Register as Volunteer</ArrowCta>
-          </motion.div>
-
-          <motion.div variants={item} className="mt-12 flex items-center flex-wrap gap-x-8 gap-y-4">
-            {(
-              [
-                [Users, "100+", "Families Helped"],
-                [HandHeart, "2M+", "Funds Raised"],
-                [ShieldCheck, "Verified", "Impact & Reports"],
-              ] as const
-            ).map(([Icon, value, label], i) => (
-              <div key={label} className="flex items-center gap-4">
-                <div className="flex items-center gap-2.5">
-                  <Icon size={18} className="text-brand-green shrink-0" />
-                  <div className="leading-tight">
-                    <div className="font-bold text-ink text-sm">{value}</div>
-                    <div className="text-xs text-muted">{label}</div>
-                  </div>
-                </div>
-                {i < 2 && <div className="hidden sm:block h-8 w-px bg-border" />}
-              </div>
-            ))}
+          <motion.div variants={item} className="mt-8 flex flex-wrap items-center gap-6">
+            <ArrowCta href="/donate" variant="ink" shape="rect" size="sm" sheen>Donate now</ArrowCta>
+            <Link
+              href="/ongoing-projects"
+              className="group inline-flex items-center gap-2 text-sm font-semibold text-ink hover:text-brand-green-dark transition-colors"
+            >
+              Our Work
+              <ArrowRight size={15} className="transition-transform duration-200 group-hover:translate-x-1" />
+            </Link>
           </motion.div>
         </motion.div>
 
-        {/* Right: photo cut into the shape of our own logo mark (Pakistan +
-            reaching hands) with loose paint-stroke colour accents behind it */}
+        {/* Right: faint world map + solid beige silhouette "shadow" behind
+            a large Pakistan-masked photo, with real overlapping brush
+            strokes and a small stat badge. 55% column, visual focus. */}
         <motion.div
-          className="relative flex justify-center lg:justify-end"
+          className="relative flex justify-center lg:justify-end lg:pr-4"
           initial={{ opacity: 0, x: 28 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.7, delay: 0.25, ease: [0.16, 1, 0.3, 1] as const }}
         >
-          {/* Loose brush-stroke accents, echoing the reference layout */}
-          <div
-            className="absolute -left-6 top-10 -z-10 h-16 w-40 bg-brand-green/70 blur-md"
-            style={{ borderRadius: "60% 40% 50% 50% / 40% 60% 40% 60%", transform: "rotate(-18deg)" }}
-          />
-          <div
-            className="absolute -right-2 top-1/3 -z-10 h-14 w-36 bg-brand-orange/70 blur-md"
-            style={{ borderRadius: "50% 50% 60% 40% / 60% 40% 60% 40%", transform: "rotate(12deg)" }}
-          />
-          <div
-            className="absolute left-10 bottom-16 -z-10 h-12 w-32 bg-brand-green/50 blur-md"
-            style={{ borderRadius: "40% 60% 50% 50% / 50% 50% 60% 40%", transform: "rotate(6deg)" }}
+          {/* Layer 1 (furthest back): large faint world map texture,
+              pulled up far enough to extend behind the fixed navbar at the
+              top of the page — this is deliberately a big negative offset,
+              not a subtle one, so the map is genuinely visible peeking out
+              from under the transparent nav rather than just implied. */}
+          <img
+            src="/world-map.svg"
+            alt=""
+            aria-hidden="true"
+            className="absolute -top-[220px] sm:-top-[260px] lg:-top-[300px] left-1/2 -translate-x-1/2 w-[760px] sm:w-[900px] lg:w-[1040px] max-w-none opacity-[0.08] -z-20 select-none"
           />
 
-          {/* Photo masked into the logo's own Pakistan + reaching-hands
-              silhouette, instead of a generic blob or rectangle */}
+          {/* Layer 2: solid beige duplicate of the Pakistan silhouette,
+              offset up and to the right behind the actual photo — the
+              "shadow map" that peeks out around the photo's edges. Sized
+              larger than the photo and pulled up enough to also reach
+              behind the navbar, same idea as the world map above it. */}
           <div
-            className="relative w-full max-w-md aspect-[4/5]"
+            className="absolute -top-24 sm:-top-32 lg:-top-40 -right-6 sm:right-0 w-[110%] sm:w-[105%] aspect-[4/5] -z-10"
             style={{
+              backgroundColor: "#E8D8C3",
               WebkitMaskImage: "url(/pakistan-mask.png)",
               maskImage: "url(/pakistan-mask.png)",
               WebkitMaskSize: "contain",
@@ -124,21 +114,59 @@ export function Hero() {
               WebkitMaskPosition: "center",
               maskPosition: "center",
             }}
-          >
-            <img
-              src={handsPhoto}
-              alt="Volunteers and donors joining hands across Pakistan"
-              className="w-full h-full object-cover"
-              loading="eager"
-            />
-          </div>
+            aria-hidden="true"
+          />
 
-          {/* Stat badge, bottom-right, echoing the reference layout's
-              circular number callout */}
-          <div className="absolute -bottom-4 right-2 sm:right-8 h-28 w-28 sm:h-32 sm:w-32 rounded-full bg-white shadow-xl border border-border flex flex-col items-center justify-center text-center px-2">
-            <div className="font-display font-extrabold text-2xl sm:text-3xl text-brand-orange leading-none">100+</div>
-            <div className="mt-1 text-[11px] sm:text-xs text-muted leading-tight">
-              families helped<br />across Pakistan
+          {/* Layer 3: brush-stroke accents, sized generously and
+              deliberately overlapping the photo's edges (not floating off
+              to the side) — real jagged dry-brush marks, green + mustard
+              only. */}
+          <BrushStroke
+            color="#7CB342"
+            className="absolute left-[6%] top-[6%] w-44 sm:w-56 h-11 sm:h-14 -rotate-[12deg] z-20 drop-shadow-sm"
+          />
+          <BrushStroke
+            color="#D89A00"
+            className="absolute right-[2%] sm:-right-2 bottom-[24%] w-40 sm:w-52 h-10 sm:h-12 rotate-[8deg] z-20 drop-shadow-sm"
+          />
+
+          {/* Photo, clipped to the Pakistan silhouette — large, clean
+              edges, no blur, no colour overlay */}
+          <div className="relative w-full max-w-[420px] sm:max-w-[480px] lg:max-w-[520px] aspect-[4/5] z-10">
+            <div
+              className="absolute inset-0"
+              style={{
+                WebkitMaskImage: "url(/pakistan-mask.png)",
+                maskImage: "url(/pakistan-mask.png)",
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskPosition: "center",
+                maskPosition: "center",
+              }}
+            >
+              <img
+                src={heroPhoto}
+                alt="A child supported by Aik Kadam's programs in Pakistan"
+                className="w-full h-full object-cover"
+                loading="eager"
+              />
+            </div>
+
+            {/* Stat badge — small, bottom-right, yellow circle with a
+                green brush stroke tucked behind it */}
+            <div className="absolute -bottom-3 right-0 sm:-right-4 z-30">
+              <BrushStroke
+                color="#7CB342"
+                className="absolute -left-7 -top-3 w-28 h-9 rotate-[-8deg] -z-10 opacity-90"
+              />
+              <div className="relative h-24 w-24 sm:h-28 sm:w-28 rounded-full bg-accent shadow-lg flex flex-col items-center justify-center text-center">
+                <div className="font-serif font-bold text-2xl sm:text-[1.7rem] text-ink leading-none">100+</div>
+                <div className="mt-1 text-[10px] sm:text-[11px] text-ink/75 leading-tight px-1">
+                  families helped<br />across Pakistan
+                </div>
+              </div>
             </div>
           </div>
         </motion.div>
