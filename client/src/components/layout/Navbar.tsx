@@ -2,12 +2,11 @@ import { Link, useLocation } from "wouter";
 import { useState, useEffect, useRef } from "react";
 import {
   Menu, X, User, LayoutDashboard, ChevronDown, Heart, HelpCircle, LogOut,
-  Briefcase, Image as ImageIcon, Map, Users, Mail, Handshake, ShieldCheck, Search,
+  Briefcase, Image as ImageIcon, Map, Users, Handshake, ShieldCheck, Search,
   Compass, HeartHandshake,
 } from "lucide-react";
 import { Logo } from "./Logo";
-import { DonateButton } from "@/components/ui/DonateButton";
-import { SearchModal } from "@/components/ui/SearchModal";
+import { ArrowCta } from "@/components/ui/ArrowCta";
 import { useGlobalSearch, type SearchTab } from "@/hooks/useGlobalSearch";
 import { SearchTabs, SearchResultsList } from "@/components/ui/SearchResults";
 import { useAuth } from "@/lib/auth-context";
@@ -22,7 +21,6 @@ const PROJECTS_HEADER = { icon: Compass, title: "Explore our projects" };
 
 const GET_INVOLVED_LINKS = [
   { label: "Volunteers", desc: "Meet our volunteer community", href: "/volunteers", icon: Users },
-  { label: "Contact Us", desc: "Reach out with any questions", href: "/contact", icon: Mail },
   { label: "Partner With Us", desc: "Explore partnership opportunities", href: "/partner", icon: Handshake },
 ];
 
@@ -30,7 +28,6 @@ const GET_INVOLVED_HEADER = { icon: HeartHandshake, title: "Ways to get involved
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [mobileQuery, setMobileQuery] = useState("");
   const [mobileTab, setMobileTab] = useState<SearchTab>("Cases");
   const { filteredCases, filteredVolunteers, filteredStories } = useGlobalSearch(mobileQuery);
@@ -62,55 +59,45 @@ export function Navbar() {
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-all duration-300 ${
+      className={`transition-all duration-300 ${
         scrolled
-          ? "bg-background/80 backdrop-blur-md border-b border-border shadow-[0_4px_20px_-4px_rgba(10,12,16,0.08)]"
+          ? "bg-background/90 backdrop-blur-md border-b border-border shadow-[0_4px_20px_-4px_rgba(10,12,16,0.06)]"
           : "bg-transparent border-b border-transparent"
       }`}
     >
       {/* Logo + nav links clustered left, actions clustered right */}
-      <nav className="max-w-6xl mx-auto flex items-center justify-between gap-4 px-6 py-3">
-        <div className="flex items-center gap-8 min-w-0">
+      <nav className="max-w-6xl mx-auto h-[76px] flex items-center justify-between gap-4 px-6 sm:px-8">
+        <div className="flex items-center gap-6 min-w-0">
           <button className="md:hidden text-ink shrink-0" onClick={() => setOpen(!open)} aria-label="Toggle menu">
             {open ? <X size={22} /> : <Menu size={22} />}
           </button>
           <Link href="/" className="shrink-0">
-            <Logo imgClassName="h-8 sm:h-9 w-auto object-contain" />
+            <Logo imgClassName="h-6 sm:h-7 w-auto object-contain" />
           </Link>
-          <div className="hidden md:flex items-center gap-6">
-            <Link href="/about" className="text-base font-light text-ink/80 hover:text-brand-green transition-colors">About</Link>
+          <div className="hidden md:flex items-center gap-9">
+            <Link href="/about" className="text-sm font-medium text-ink/80 hover:text-brand-green transition-colors">About</Link>
             <NavDropdown label="Projects" items={PROJECT_LINKS} header={PROJECTS_HEADER} />
-            <Link href="/success-stories" className="text-base font-light text-ink/80 hover:text-brand-green transition-colors">Success Stories</Link>
+            <Link href="/success-stories" className="text-sm font-medium text-ink/80 hover:text-brand-green transition-colors">Success Stories</Link>
+            <NavDropdown label="Get Involved" items={GET_INVOLVED_LINKS} header={GET_INVOLVED_HEADER} />
+            <Link href="/contact" className="text-sm font-medium text-ink/80 hover:text-brand-green transition-colors">Contact</Link>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 justify-self-end min-w-0">
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="hidden md:flex h-9 w-9 items-center justify-center text-ink/70 hover:text-brand-green transition-colors"
-            aria-label="Search"
-          >
-            <Search size={16} />
-          </button>
-          <div className="hidden md:block">
-            <NavDropdown label="Get Involved" items={GET_INVOLVED_LINKS} header={GET_INVOLVED_HEADER} align="right" />
-          </div>
+        <div className="flex items-center gap-5 justify-self-end min-w-0">
           {!isAdmin && (
             <div className="hidden sm:block">
-              <DonateButton size="sm" />
+              <ArrowCta href="/donate" variant="ink" shape="square" size="sm" sheen sheenMode="continuous">Donate Now</ArrowCta>
             </div>
           )}
           {user ? (
             <AvatarMenu isAdmin={isAdmin} onLogout={handleLogout} />
           ) : (
-            <Link href="/login" className="hidden sm:inline-block px-2.5 py-1.5 -my-1.5 rounded-lg text-base font-light text-ink/80 hover:text-brand-green hover:bg-brand-green/5 transition-colors">
+            <Link href="/login" className="hidden sm:inline-block text-sm font-medium text-ink/80 hover:text-brand-green transition-colors">
               Sign In
             </Link>
           )}
         </div>
       </nav>
-
-      {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}
 
       {open && (
         <div className="md:hidden border-t border-border bg-background/95 backdrop-blur-md max-h-[calc(100vh-64px)] overflow-y-auto">
@@ -202,6 +189,8 @@ export function Navbar() {
                 </div>
               )}
 
+              <Link href="/contact" onClick={closeMobileMenu} className="block py-2.5 text-sm text-ink/80">Contact</Link>
+
               <div className="mt-2 pt-2 border-t border-border">
                 <Link href="/help" onClick={closeMobileMenu} className="flex items-center gap-2.5 py-2.5 text-sm text-ink/80">
                   <HelpCircle size={15} /> Help &amp; Support
@@ -215,7 +204,7 @@ export function Navbar() {
                 )}
               </div>
 
-              {!isAdmin && <div className="py-3"><DonateButton size="sm" /></div>}
+              {!isAdmin && <div className="py-3"><ArrowCta href="/donate" variant="ink" shape="square" size="sm" sheen sheenMode="continuous">Donate Now</ArrowCta></div>}
             </div>
           )}
         </div>
@@ -267,7 +256,7 @@ function NavDropdown({
     >
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 text-base font-light text-ink/80 hover:text-brand-green transition-colors"
+        className="flex items-center gap-1 text-sm font-medium text-ink/80 hover:text-brand-green transition-colors"
         aria-expanded={open}
       >
         {label} <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />

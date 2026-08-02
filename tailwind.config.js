@@ -4,18 +4,51 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: "#FFFFFF",
-        ink: "#0A0C10",
+        // ─────────────────────────────────────────────────────────────
+        // Aik Kadam brand palette — warm, minimal, humanitarian.
+        // Every color the app uses resolves back to one of these tokens,
+        // so this block is the single source of truth for the whole
+        // site's look. No blue anywhere on purpose: the old `primary`
+        // token used to be blue (#1F61EF) and was referenced across
+        // dozens of pages — it's now mapped straight to brand green
+        // instead, so every one of those pages picks up the new palette
+        // automatically with zero per-file edits.
+        // ─────────────────────────────────────────────────────────────
+        background: "#FCFAF6", // ivory — main page background
+        ink: "#151515", // rich black — headings, buttons, primary text
+        card: "#FFFFFF", // pure white — card surfaces
+
+        // Primary brand green. `primary` is kept as an alias (rather than
+        // renamed) so every existing `text-primary`/`bg-primary`/etc.
+        // class across the app — auth pages, admin, buttons — resolves
+        // to green instead of the old blue with no other changes needed.
         primary: {
-          DEFAULT: "#1F61EF",
-          light: "#4F83F3",
-          dark: "#0E4BCD",
+          DEFAULT: "#7CB342",
+          light: "#9CC96C",
+          dark: "#5F8F2E",
         },
+        "brand-green": {
+          DEFAULT: "#7CB342",
+          light: "#9CC96C",
+          dark: "#5F8F2E",
+        },
+
+        // Primary accent yellow. `brand-orange` is kept as an alias to
+        // this same yellow (rather than deleted) so the handful of
+        // components still referencing `brand-orange` from the previous
+        // redesign pass stay on-palette instead of rendering an
+        // unrelated orange.
         accent: {
-          DEFAULT: "#FFD662",
-          light: "#FFE499",
-          dark: "#CCAB4E",
+          DEFAULT: "#F4B400",
+          light: "#F8CB4D",
+          dark: "#D89A00",
         },
+        "brand-orange": {
+          DEFAULT: "#F4B400",
+          light: "#F8CB4D",
+          dark: "#D89A00",
+        },
+
         success: {
           DEFAULT: "#1F8A5F",
           light: "#E7F5EE",
@@ -31,29 +64,25 @@ export default {
           light: "#FBF1DC",
           dark: "#8A5A14",
         },
-        muted: "#596473",
-        border: "#E2E4E9",
-        // New brand palette sampled directly from the new logo, for the
-        // landing-page redesign currently in progress. Kept separate from
-        // `primary` (still blue) on purpose — auth pages and everything
-        // else not yet redesigned still reference `primary` and stay as
-        // they are; pages get moved over to `brand-*` one at a time.
-        "brand-green": {
-          DEFAULT: "#709828",
-          light: "#9EC656",
-          dark: "#465F19",
-        },
-        "brand-orange": {
-          DEFAULT: "#E09010",
-          light: "#EDBA69",
-          dark: "#9D650B",
-        },
-        beige: "#F1E9DA",
+
+        // Body copy and secondary text. `muted` is the workhorse token
+        // used for paragraph/body text across the app, so it takes the
+        // charcoal value; `subtle` is the lighter, more secondary shade
+        // (captions, timestamps, placeholder-ish text) for components
+        // that want to opt into it specifically.
+        muted: "#525252",
+        subtle: "#7A7A7A",
+
+        border: "#E6DED3",
+        beige: "#E8D8C3", // warm beige — decorative elements, hover fills
+        cream: "#F7F2EA", // soft cream — alternate section backgrounds
+        sand: "#EFE7DA", // subtle decorative blobs / background accents
       },
       fontFamily: {
         display: ["Niveau Grotesk", "system-ui", "sans-serif"],
         body: ["Niveau Grotesk", "system-ui", "sans-serif"],
         shout: ["Poppins", "system-ui", "sans-serif"],
+        serif: ["Playfair Display", "Georgia", "serif"],
         mono: ["JetBrains Mono", "monospace"],
       },
     },

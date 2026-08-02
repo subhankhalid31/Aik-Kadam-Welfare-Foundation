@@ -24,13 +24,13 @@ export function TaglineBanner() {
   if (!tagline || !tagline.trim() || dismissed) return null;
 
   return (
-    <div className="bg-blue-600 text-white">
+    <div className="bg-primary-dark text-white">
       <div className="max-w-6xl mx-auto flex items-center justify-center gap-3 px-6 py-2 text-sm font-medium text-center relative">
         <span>{tagline}</span>
         {taglineCase && (
           <Link
             href={`/ongoing-projects?case=${taglineCase.id}`}
-            className="shrink-0 inline-flex items-center rounded-full bg-white px-3.5 py-1 text-xs font-bold text-blue-700 hover:bg-white/90 transition-colors"
+            className="shrink-0 inline-flex items-center rounded-full bg-white px-3.5 py-1 text-xs font-bold text-primary-dark hover:bg-white/90 transition-colors"
           >
             Support Now
           </Link>
