@@ -1,5 +1,5 @@
 import { Logo } from "./Logo";
-import { DonateButton } from "@/components/ui/DonateButton";
+import { ArrowCta } from "@/components/ui/ArrowCta";
 import { Mail, Phone, MapPin, Instagram, Facebook } from "lucide-react";
 
 const SOCIAL_LINKS = [
@@ -13,15 +13,15 @@ export function Footer() {
       <div className="max-w-6xl mx-auto px-6 py-16">
         <div className="grid md:grid-cols-[1.2fr_1fr_1fr] gap-12">
           <div>
-            <div className="bg-white/95 inline-flex rounded-xl px-3 py-2">
-              <Logo />
+            <div className="bg-transparent inline-flex rounded-xl px-3 py-2">
+              <Logo imgClassName="h-7 w-auto object-contain" />
             </div>
             <p className="mt-4 text-sm text-background/70 max-w-xs leading-relaxed">
               A transparent giving platform connecting donors, volunteers, and
               the people who need them, one step at a time.
             </p>
             <div className="mt-6">
-              <DonateButton size="sm" />
+              <ArrowCta href="/donate" variant="ink" shape="square" size="sm" sheen sheenMode="continuous" animateArrow>Donate Now</ArrowCta>
             </div>
             <div className="mt-6 flex items-center gap-3">
               {SOCIAL_LINKS.map(({ icon: Icon, label, href }) => (

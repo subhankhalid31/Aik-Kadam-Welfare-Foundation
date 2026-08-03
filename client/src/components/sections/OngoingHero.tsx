@@ -27,9 +27,15 @@ export function OngoingHero({ showSubmitCta }: { showSubmitCta: boolean }) {
           transition={{ duration: 2, ease: "easeOut" }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 to-white/10" />
+        {/* Fade at bottom to merge with section below */}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-24 sm:h-32"
+          style={{ background: "linear-gradient(to bottom, transparent, #FCFAF6)" }}
+          aria-hidden="true"
+        />
       </div>
 
-      <div className="relative min-h-[420px] sm:min-h-[480px] lg:min-h-[520px] flex flex-col sm:flex-row sm:items-center gap-8 sm:gap-0 py-10 sm:py-14">
+      <div className="relative min-h-[420px] sm:min-h-[480px] lg:min-h-[520px] flex flex-col sm:flex-row sm:items-center gap-8 sm:gap-0 pt-16 sm:pt-14 pb-10 sm:pb-14">
         {/* Text, aligned to the page's standard left inset */}
         <div className="pr-6 max-w-xl" style={{ paddingLeft: CONTAINER_INSET }}>
           <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-wide text-primary uppercase">
@@ -106,7 +112,7 @@ export function OngoingHero({ showSubmitCta }: { showSubmitCta: boolean }) {
               </p>
               <div className="glass-pill-wrap w-full mt-3">
                 <Link href="/post-case" className="glass-pill relative isolate rounded-full block w-full">
-                  <span className="glass-pill-text block w-full px-4 py-2.5 text-xs font-semibold text-center">
+                  <span className="glass-pill-text text-primary hover:text-ink/80 hover:bg-beige/30 block w-full px-4 py-2.5 text-xs font-semibold text-center">
                     Submit a Case →
                   </span>
                 </Link>

@@ -464,3 +464,27 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
   mix-blend-mode: overlay;
   animation: btn-sheen-move 3.2s linear infinite;
 }
+
+@keyframes underlineDraw {
+  0% {
+    stroke-dashoffset: 320;
+  }
+  19% {
+    stroke-dashoffset: 0;
+  }
+  86% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -320;
+  }
+}
+
+@keyframes arrowPush {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}

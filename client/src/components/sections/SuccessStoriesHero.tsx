@@ -45,6 +45,12 @@ export function SuccessStoriesHero() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
         />
+        {/* Fade at bottom to merge with section below */}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-24 sm:h-32"
+          style={{ background: "linear-gradient(to bottom, transparent, #FCFAF6)" }}
+          aria-hidden="true"
+        />
       </div>
 
       <div className="relative min-h-[420px] sm:min-h-[480px] lg:min-h-[520px] flex items-center py-14">
@@ -127,9 +133,9 @@ export function SuccessStoriesHero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.35, ease: "easeOut" }}
           >
-            <div className="glass-pill-wrap mt-6 group/cta">
+            <div className="glass-pill-wrap mt-5 group/cta">
               <Link href="/about" className="glass-pill relative isolate rounded-full block">
-                <span className="glass-pill-text block px-6 py-3 text-sm font-semibold">
+                <span className="glass-pill-text block px-4 py-3 text-sm font-semibold">
                   <span className="relative z-10 flex items-center gap-1.5">
                     <BookHeart size={15} /> Learn About Us
                     <ArrowRight size={14} className="transition-transform duration-200 group-hover/cta:translate-x-1" />

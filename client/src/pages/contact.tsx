@@ -66,9 +66,9 @@ export default function ContactPage() {
               <textarea required rows={5} value={message} onChange={(e) => setMessage(e.target.value)} className={inputClass} placeholder="How can we help?" />
             </FormField>
             {error && <p className="text-sm text-red-600">{error}</p>}
-            <div className="glass-button-wrap w-full">
+            <div className="glass-button-wrap   w-full">
               <button type="submit" disabled={loading} className={cn("glass-button relative z-10 w-full rounded-full isolate transition-all", loading && "opacity-70")}>
-                <span className="glass-button-text relative block select-none tracking-tighter w-full py-3.5 text-center font-semibold">
+                <span className="glass-button-text relative block select-none tracking-tighter w-full py-3.5 text-center font-semibold ">
                   {loading ? "Sending..." : "Send Message"}
                 </span>
               </button>

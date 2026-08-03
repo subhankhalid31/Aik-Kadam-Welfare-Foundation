@@ -26,7 +26,12 @@ const milestones = [
 
 export function About() {
   return (
-    <section id="about" className="py-24 border-t border-border">
+    <section id="about" className="relative py-24 bg-background">
+      {/* Bottom curve for smooth transition to HowItWorks section */}
+      <svg className="absolute bottom-0 left-0 w-full h-20 text-background" viewBox="0 0 1440 100" fill="none" preserveAspectRatio="none">
+        <path d="M0,40 C360,100 1080,100 1440,40 L1440,100 L0,100 Z" fill="currentColor" />
+      </svg>
+
       <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-14 items-center">
         <NgoImageSlideshow images={NGO_IMAGES} />
 
@@ -39,7 +44,7 @@ export function About() {
           <span className="text-xs font-semibold tracking-wide text-brand-green uppercase">
             Our Story
           </span>
-          <h2 className="mt-3 font-display text-3xl sm:text-4xl leading-tight text-ink">
+          <h2 className="mt-3 font-serif text-3xl sm:text-4xl leading-tight text-ink">
             Charity built the way trust actually works, <span className="italic text-brand-green"> step by visible step.</span>
           </h2>
           <p className="mt-5 text-muted leading-relaxed">

@@ -22,6 +22,7 @@ const PROJECTS_HEADER = { icon: Compass, title: "Explore our projects" };
 const GET_INVOLVED_LINKS = [
   { label: "Volunteers", desc: "Meet our volunteer community", href: "/volunteers", icon: Users },
   { label: "Partner With Us", desc: "Explore partnership opportunities", href: "/partner", icon: Handshake },
+  { label: "Contact", desc: "Get in touch with us", href: "/contact", icon: HelpCircle },
 ];
 
 const GET_INVOLVED_HEADER = { icon: HeartHandshake, title: "Ways to get involved" };
@@ -61,32 +62,38 @@ export function Navbar() {
     <header
       className={`transition-all duration-300 ${
         scrolled
-          ? "bg-background/90 backdrop-blur-md border-b border-border shadow-[0_4px_20px_-4px_rgba(10,12,16,0.06)]"
+          ? "bg-background/25 backdrop-blur-md border-b border-border/60 shadow-[0_4px_20px_-4px_rgba(10,12,16,0.06)]"
           : "bg-transparent border-b border-transparent"
       }`}
     >
       {/* Logo + nav links clustered left, actions clustered right */}
-      <nav className="max-w-6xl mx-auto h-[76px] flex items-center justify-between gap-4 px-6 sm:px-8">
-        <div className="flex items-center gap-6 min-w-0">
+      <nav className="max-w-7xl mx-auto h-[76px] flex items-center justify-between gap-4 px-5 sm:px-6">
+        <div className="flex items-center gap-6 min-w-0 md:hidden">
           <button className="md:hidden text-ink shrink-0" onClick={() => setOpen(!open)} aria-label="Toggle menu">
             {open ? <X size={22} /> : <Menu size={22} />}
           </button>
+        </div>
+
+        <Link href="/" className="shrink-0 md:hidden">
+          <Logo imgClassName="h-6 sm:h-7 w-auto object-contain -mt-1.5" />
+        </Link>
+
+        <div className="hidden md:flex items-center gap-6 min-w-0">
           <Link href="/" className="shrink-0">
-            <Logo imgClassName="h-6 sm:h-7 w-auto object-contain" />
+            <Logo imgClassName="h-6 sm:h-7 w-auto object-contain -mt-1.5" />
           </Link>
-          <div className="hidden md:flex items-center gap-9">
+          <div className="flex items-center gap-9">
             <Link href="/about" className="text-sm font-medium text-ink/80 hover:text-brand-green transition-colors">About</Link>
             <NavDropdown label="Projects" items={PROJECT_LINKS} header={PROJECTS_HEADER} />
             <Link href="/success-stories" className="text-sm font-medium text-ink/80 hover:text-brand-green transition-colors">Success Stories</Link>
             <NavDropdown label="Get Involved" items={GET_INVOLVED_LINKS} header={GET_INVOLVED_HEADER} />
-            <Link href="/contact" className="text-sm font-medium text-ink/80 hover:text-brand-green transition-colors">Contact</Link>
           </div>
         </div>
 
         <div className="flex items-center gap-5 justify-self-end min-w-0">
           {!isAdmin && (
             <div className="hidden sm:block">
-              <ArrowCta href="/donate" variant="ink" shape="square" size="sm" sheen sheenMode="continuous">Donate Now</ArrowCta>
+              <ArrowCta href="/donate" variant={scrolled ? "ivory" : "ink"} shape="square" size="sm" sheen sheenMode="continuous" animateArrow className="pl-6 pr-5">Donate Now</ArrowCta>
             </div>
           )}
           {user ? (
@@ -189,8 +196,6 @@ export function Navbar() {
                 </div>
               )}
 
-              <Link href="/contact" onClick={closeMobileMenu} className="block py-2.5 text-sm text-ink/80">Contact</Link>
-
               <div className="mt-2 pt-2 border-t border-border">
                 <Link href="/help" onClick={closeMobileMenu} className="flex items-center gap-2.5 py-2.5 text-sm text-ink/80">
                   <HelpCircle size={15} /> Help &amp; Support
@@ -267,7 +272,7 @@ function NavDropdown({
             align === "right" ? "right-0" : "left-1/2 -translate-x-1/2"
           }`}
         >
-          <div className="glass-panel rounded-2xl overflow-hidden">
+          <div className="glass-panel rounded-2xl overflow-hidden" style={{ backdropFilter: "blur(20px)", backgroundColor: "rgba(252, 250, 246, 0.95)" }}>
             <div className="flex items-center gap-2.5 px-4 py-3.5 border-b border-white/50">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-green/10 text-brand-green">
                 <HeaderIcon size={16} />
@@ -331,7 +336,7 @@ function AvatarMenu({ isAdmin, onLogout }: { isAdmin: boolean; onLogout: () => v
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-3 w-64 glass-panel rounded-2xl overflow-hidden">
+        <div className="absolute top-full right-0 mt-3 w-64 glass-panel rounded-2xl overflow-hidden" style={{ backdropFilter: "blur(20px)", backgroundColor: "rgba(252, 250, 246, 0.95)" }}>
           <div className="px-4 py-3 border-b border-white/50">
             <p className="font-semibold text-ink text-sm">{user.name}</p>
             {user.volunteerStatus === "approved" && (

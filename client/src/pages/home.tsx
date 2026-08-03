@@ -11,7 +11,7 @@ import { OngoingTeaser } from "@/components/sections/OngoingTeaser";
 
 export default function Home() {
   return (
-    <PageLayout>
+    <PageLayout transparentHero>
       <main>
         <Hero />
         <Founder />

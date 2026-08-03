@@ -167,9 +167,17 @@ export default function DonatePage() {
                 confirm your donation and track it, sign in, this keeps every donation
                 traceable to a real person and lets you see where it went afterward.
               </p>
-              <a href="/login" className="glass-surface mt-6 inline-flex items-center justify-center w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors gap-2">
-                <LogIn size={16} /> Sign In to Confirm
-              </a>
+              <div className="glass-pill-wrap mt-6 w-full group">
+                <a href="/login" className="glass-pill btn-sheen relative isolate rounded-full block w-full bg-primary hover:bg-beige  hover:text-black transition-colors duration-300">
+                  <span className=" flex items-center justify-center gap-2 w-full px-7 py-3.5 font-semibold text-background group-hover:text-black">
+                    <span className="relative ml-1 shrink-0 h-4 w-4">
+                      <LogIn size={16} className="absolute inset-0 -translate-x-2 transition-transform duration-300 group-hover:translate-x-0" />
+                    </span>
+                    Sign In to Confirm
+                  </span>
+                </a>
+                <div className="glass-pill-shadow rounded-full" />
+              </div>
             </>
           ) : (
             <>
@@ -252,7 +260,7 @@ export default function DonatePage() {
 
             {error && <p className="text-sm text-red-600">{error}</p>}
 
-            <button type="submit" disabled={loading || !caseId} className="glass-surface w-full rounded-full bg-accent px-7 py-3.5 font-semibold text-ink hover:bg-accent-dark transition-colors disabled:opacity-60">
+            <button type="submit" disabled={loading || !caseId} className="glass-surface btn-sheen w-full rounded-full bg-accent hover:bg-beige/90 px-7 py-3.5 font-semibold text-ink transition-colors disabled:opacity-90">
               {loading ? "Submitting..." : frequency === "monthly" ? "I've Sent This Month's Payment" : "I've Sent the Payment"}
             </button>
           </form>

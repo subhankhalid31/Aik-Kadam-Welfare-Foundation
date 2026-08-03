@@ -27,6 +27,12 @@ export function CompletedHero() {
           transition={{ duration: 3, ease: "easeOut" }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 to-white/10" />
+        {/* Fade at bottom to merge with section below */}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-24 sm:h-32"
+          style={{ background: "linear-gradient(to bottom, transparent, #FCFAF6)" }}
+          aria-hidden="true"
+        />
       </div>
 
       <div className="relative min-h-[420px] sm:min-h-[480px] lg:min-h-[520px] flex flex-col sm:flex-row sm:items-center gap-8 sm:gap-0 py-10 sm:py-14">

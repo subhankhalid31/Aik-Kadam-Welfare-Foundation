@@ -46,12 +46,12 @@ export default function LoginPage() {
             animationSpeed={2.4}
             containerClassName="bg-background"
             colors={[
-              [31, 97, 239],
-              [15, 78, 215],
-              [13, 66, 181],
+              [124, 179, 66],
+              [110, 160, 55],
+              [96, 140, 45],
             ]}
             dotSize={5}
-            totalSize={11}
+            totalSize={9}
             opacities={[0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.85, 0.9, 0.95, 1]}
           />
         </div>
@@ -70,7 +70,7 @@ export default function LoginPage() {
             <div className="relative">
               <span className="text-xs font-semibold tracking-wide text-primary uppercase">Sign In</span>
               <h1 className="mt-3 font-serif font-light text-4xl text-ink">
-                <span className="text-glow-blue">Welcome</span> back.
+                <span className="italic" style={{ color: "#7CB342" }}>Welcome</span> back.
               </h1>
               <p className="mt-2 text-sm text-ink/60">One step closer to where it's needed.</p>
 
