@@ -92,7 +92,7 @@ export default function OngoingProjectsPage() {
   const showSubmitCta = user?.role !== "admin";
 
   return (
-    <PageLayout>
+    <PageLayout transparentHero>
       <OngoingHero showSubmitCta={showSubmitCta} />
       <main className="max-w-6xl mx-auto px-6 pb-24">
         {/* "Active Cases" below is live — it's the real count of ongoing cases, not a fixed number */}
@@ -152,7 +152,7 @@ export default function OngoingProjectsPage() {
                   </div>
                   <div className="glass-pill-wrap">
                     <Link href="/success-stories" className="glass-pill relative isolate rounded-full block">
-                      <span className="glass-pill-text flex items-center gap-1.5 px-5 py-2.5 text-sm font-semibold">
+                      <span className="glass-pill-text hover:text-green/80 hover:bg-beige/30 flex items-center gap-1.5 px-5 py-2.5 text-sm font-semibold">
                         View Success Stories <ArrowRight size={14} />
                       </span>
                     </Link>

@@ -1,13 +1,23 @@
 import { Users, Heart, HandHeart, GraduationCap } from "lucide-react";
 import { impactStats } from "@/lib/dummy-data";
 import { CountUpStat } from "@/components/ui/CountUpStat";
+import { WaveEdge } from "@/components/ui/WaveEdge";
 
 const icons = { users: Users, heart: Heart, hand: HandHeart, cap: GraduationCap };
 
 export function ImpactStats() {
   return (
-    <section className="bg-brand-green">
-      <div className="max-w-6xl mx-auto px-6 py-14 grid grid-cols-2 md:grid-cols-4 gap-8">
+    <section className="relative bg-background">
+      {/* Green wave fills at the top and bottom, same green as the solid
+          middle rect below so there's no visible seam between them — just
+          one continuous green shape with a smooth wavy top/bottom edge
+          instead of a flat rectangle, with a soft drop-shadow so it reads
+          as a raised layer over the cream page background. */}
+      <WaveEdge color="#7CB342" position="top" className="h-16 sm:h-20" />
+      <div className="absolute inset-x-0 top-16 sm:top-20 bottom-16 sm:bottom-20 bg-brand-green" />
+      <WaveEdge color="#7CB342" position="bottom" className="h-16 sm:h-20" />
+
+      <div className="relative z-10 max-w-6xl mx-auto px-6 pt-24 pb-24 grid grid-cols-2 md:grid-cols-4 gap-8">
         {impactStats.map((stat) => {
           const Icon = icons[stat.icon as keyof typeof icons];
           return (

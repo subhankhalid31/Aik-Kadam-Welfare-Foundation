@@ -64,7 +64,17 @@ export function HowItWorks() {
   }, []);
 
   return (
-    <section id="how-it-works" className="py-24 border-t border-border bg-background/40">
+    <section id="how-it-works" className="relative py-24 bg-background">
+      {/* Top curve for smooth transition from About section */}
+      <svg className="absolute top-0 left-0 w-full h-20 text-background" viewBox="0 0 1440 100" fill="none" preserveAspectRatio="none">
+        <path d="M0,60 C360,0 1080,0 1440,60 L1440,0 L0,0 Z" fill="currentColor" />
+      </svg>
+
+      {/* Bottom curve for smooth transition to FAQ section */}
+      <svg className="absolute bottom-0 left-0 w-full h-20 text-background" viewBox="0 0 1440 100" fill="none" preserveAspectRatio="none">
+        <path d="M0,40 C360,100 1080,100 1440,40 L1440,100 L0,100 Z" fill="currentColor" />
+      </svg>
+
       <div className="max-w-3xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

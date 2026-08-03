@@ -82,7 +82,7 @@ export default function CompletedProjectsPage() {
   const fundsDistributed = useMemo(() => events.reduce((sum, e) => sum + firstNumber(e.funds), 0), [events]);
 
   return (
-    <PageLayout>
+    <PageLayout transparentHero>
       <CompletedHero />
       <main className="max-w-6xl mx-auto px-6 pb-24">
         <CompletedStatsBar

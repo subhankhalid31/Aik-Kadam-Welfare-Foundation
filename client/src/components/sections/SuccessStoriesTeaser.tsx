@@ -24,8 +24,18 @@ export function SuccessStoriesTeaser() {
   if (stories.length === 0) return null;
 
   return (
-    <section className="py-20 bg-white border-t border-border overflow-hidden">
-      <div className="max-w-6xl mx-auto px-6">
+    <section className="relative py-20 bg-white overflow-hidden">
+      {/* Top curve for smooth transition from FundTransparency section */}
+      <svg className="absolute top-0 left-0 w-full h-20 text-background" viewBox="0 0 1440 100" fill="none" preserveAspectRatio="none">
+        <path d="M0,60 C360,0 1080,0 1440,60 L1440,0 L0,0 Z" fill="currentColor" />
+      </svg>
+
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-24 sm:h-32 -z-0"
+        style={{ background: "linear-gradient(to bottom, #FCFAF6, rgba(255,255,255,0))" }}
+        aria-hidden="true"
+      />
+      <div className="relative z-10 max-w-6xl mx-auto px-6">
         <div className="text-center">
           <span className="text-xs font-semibold tracking-wide text-brand-green uppercase">
             Success Stories

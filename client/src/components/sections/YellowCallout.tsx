@@ -7,7 +7,7 @@ import { FilePlus2 } from "lucide-react";
 // rectangular section above it.
 export function YellowCallout() {
   return (
-    <div className="my-10 sm:my-14">
+    <div className="my-8 sm:my-12 bg-beige">
       <section className="relative bg-accent py-24 px-6 text-center overflow-hidden">
         {/* top curve: yellow bulges upward in the middle, recedes near the edges */}
         <svg className="absolute top-0 left-0 w-full h-16 sm:h-20 text-background" viewBox="0 0 1440 100" fill="none" preserveAspectRatio="none">
@@ -36,6 +36,6 @@ export function YellowCallout() {
           <path d="M0,40 C360,100 1080,100 1440,40 L1440,100 L0,100 Z" fill="currentColor" />
         </svg>
       </section>
-    </div>
+      </div>
   );
 }

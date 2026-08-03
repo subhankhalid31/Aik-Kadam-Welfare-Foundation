@@ -29,7 +29,12 @@ export function VolunteersHero({ ctaLabel, ctaHref, ctaDisabled, ctaHidden }: { 
   }, []);
 
   return (
-    <section className="relative w-full overflow-hidden">
+    <motion.section
+      className="relative w-full overflow-hidden"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+    >
       <div ref={imgWrapRef} className="absolute inset-0 -z-10">
         <motion.img
           src={teamImg}
@@ -41,6 +46,12 @@ export function VolunteersHero({ ctaLabel, ctaHref, ctaDisabled, ctaHidden }: { 
           transition={{ duration: 2.5, ease: "easeOut" }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 to-white/10" />
+        {/* Fade at bottom to merge with section below */}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-24 sm:h-32"
+          style={{ background: "linear-gradient(to bottom, transparent, #FCFAF6)" }}
+          aria-hidden="true"
+        />
       </div>
 
       <div className="pr-6 py-16 sm:py-20 max-w-2xl" style={{ paddingLeft: CONTAINER_INSET }}>
@@ -123,6 +134,6 @@ export function VolunteersHero({ ctaLabel, ctaHref, ctaDisabled, ctaHidden }: { 
           )}
         </motion.div>
       </div>
-    </section>
+    </motion.section>
   );
 }

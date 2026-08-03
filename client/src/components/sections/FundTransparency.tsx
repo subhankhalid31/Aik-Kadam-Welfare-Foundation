@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { fundDistribution } from "@/lib/dummy-data";
@@ -8,6 +8,16 @@ const CIRCUMFERENCE = 2 * Math.PI * R;
 
 export function FundTransparency() {
   const [active, setActive] = useState(0);
+  const [isHovering, setIsHovering] = useState(false);
+
+  // Auto-rotate through segments every 4 seconds
+  useEffect(() => {
+    if (isHovering) return;
+    const interval = setInterval(() => {
+      setActive((prev) => (prev + 1) % fundDistribution.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [isHovering]);
 
   let offset = 0;
   const segments = fundDistribution.map((d, i) => {
@@ -20,7 +30,12 @@ export function FundTransparency() {
   const activeSegment = fundDistribution[active];
 
   return (
-    <section className="py-24 border-t border-border">
+    <section className="relative py-24 bg-background">
+      {/* Bottom curve for smooth transition to next section */}
+      <svg className="absolute bottom-0 left-0 w-full h-20 text-white" viewBox="0 0 1440 100" fill="none" preserveAspectRatio="none">
+        <path d="M0,40 C360,100 1080,100 1440,40 L1440,100 L0,100 Z" fill="currentColor" />
+      </svg>
+
       <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-14 items-center">
         <div>
           <span className="text-xs font-semibold tracking-wide text-brand-green uppercase">
@@ -74,10 +89,10 @@ export function FundTransparency() {
           <h3 className="font-display text-lg text-ink">Fund Distribution</h3>
 
           <div className="mt-6 flex items-center justify-center">
-            <svg width="220" height="220" viewBox="0 0 220 220" className="-rotate-90">
+            <svg width="220" height="220" viewBox="0 0 220 220" className="rotate-0">
               <circle cx="110" cy="110" r={R} fill="none" stroke="#E7E7E4" strokeWidth="26" />
               {segments.map((seg, i) => (
-                <circle
+                <motion.circle
                   key={seg.label}
                   cx="110"
                   cy="110"
@@ -88,36 +103,46 @@ export function FundTransparency() {
                   strokeDasharray={`${seg.dash} ${CIRCUMFERENCE - seg.dash}`}
                   strokeDashoffset={-seg.offset}
                   strokeLinecap="butt"
-                  onMouseEnter={() => setActive(i)}
+                  onMouseEnter={() => { setActive(i); setIsHovering(true); }}
+                  onMouseLeave={() => setIsHovering(false)}
                   className="cursor-pointer transition-all duration-200"
                   style={{ opacity: active === i ? 1 : 0.85 }}
+                  initial={{ strokeDashoffset: CIRCUMFERENCE }}
+                  whileInView={{ strokeDashoffset: -seg.offset }}
+                  viewport={{ once: true, amount: 0.5 }}
+                  transition={{ duration: 1, ease: "easeOut", delay: i * 0.2 }}
                 />
               ))}
-              <text
+              <motion.text
                 x="110"
-                y="104"
+                y="120"
                 textAnchor="middle"
-                className="rotate-90"
-                style={{ transform: "rotate(90deg)", transformOrigin: "110px 110px" }}
                 fontSize="34"
                 fontWeight="700"
                 fill={activeSegment.color}
-                fontFamily="'JetBrains Mono', monospace"
+                fontFamily="serif"
+                key={activeSegment.value}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
               >
                 {activeSegment.value}%
-              </text>
-              <text
+              </motion.text>
+              <motion.text
                 x="110"
                 y="128"
                 textAnchor="middle"
-                style={{ transform: "rotate(90deg)", transformOrigin: "110px 110px" }}
                 fontSize="11"
                 fill="#6B7280"
-                fontFamily="'Niveau Grotesk', sans-serif"
+                fontFamily="serif"
                 letterSpacing="0.05em"
+                key={activeSegment.label}
+                initial={{ y: 128 + 5, opacity: 0 }}
+                animate={{ y: 128, opacity: 1 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
               >
                 {activeSegment.label.toUpperCase()}
-              </text>
+              </motion.text>
             </svg>
           </div>
 
@@ -125,7 +150,8 @@ export function FundTransparency() {
             {fundDistribution.map((d, i) => (
               <button
                 key={d.label}
-                onMouseEnter={() => setActive(i)}
+                onMouseEnter={() => { setActive(i); setIsHovering(true); }}
+                onMouseLeave={() => setIsHovering(false)}
                 onClick={() => setActive(i)}
                 className="flex items-center gap-2 text-sm"
               >

@@ -11,7 +11,25 @@ import { TaglineBanner } from "./TaglineBanner";
 // The height is measured live (not hardcoded) because the tagline banner
 // only appears once its content loads and can be dismissed by the user,
 // so the stack's height changes at runtime.
-export function PageLayout({ children }: { children: React.ReactNode }) {
+// The tagline banner + navbar render together as one fixed stack pinned
+// to the top of the viewport (not `sticky` — always pinned, doesn't wait
+// to scroll into place).
+//
+// By default, a spacer sized to match the stack's real rendered height is
+// inserted right after it so page content never starts underneath it —
+// the right behaviour for ordinary pages. Pass `transparentHero` for a
+// page whose very first section is a full-bleed image meant to be seen
+// *through* the transparent nav (the homepage hero): that skips the
+// spacer entirely, so the page's content starts at true y=0 and the
+// image is genuinely visible behind the nav instead of the nav just
+// floating over empty page background that looks solid by coincidence.
+export function PageLayout({
+  children,
+  transparentHero = false,
+}: {
+  children: React.ReactNode;
+  transparentHero?: boolean;
+}) {
   const headerRef = useRef<HTMLDivElement>(null);
   const [headerHeight, setHeaderHeight] = useState(0);
 
@@ -31,7 +49,7 @@ export function PageLayout({ children }: { children: React.ReactNode }) {
         <TaglineBanner />
         <Navbar />
       </div>
-      <div style={{ height: headerHeight }} aria-hidden="true" />
+      {!transparentHero && <div style={{ height: headerHeight }} aria-hidden="true" />}
       {children}
       <Footer />
     </>

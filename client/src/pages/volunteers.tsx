@@ -122,7 +122,7 @@ export default function VolunteersPage() {
   const ctaLabel = user?.volunteerStatus === "rejected" ? "Apply Again" : user?.volunteerStatus === "pending" ? "Application Pending" : "Become a Volunteer";
 
   return (
-    <PageLayout>
+    <PageLayout transparentHero>
       <VolunteersHero
         ctaLabel={user?.volunteerStatus === "pending" ? "Application Pending" : ctaLabel}
         ctaHref="/volunteers/register"

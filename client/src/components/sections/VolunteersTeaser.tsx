@@ -41,7 +41,12 @@ export function VolunteersTeaser() {
   if (volunteers.length === 0) return null;
 
   return (
-    <section className="py-20 border-t border-border">
+    <section className="relative py-20">
+      {/* Top curve for smooth transition from CompletedProjectsTeaser section */}
+      <svg className="absolute top-0 left-0 w-full h-20 text-background" viewBox="0 0 1440 100" fill="none" preserveAspectRatio="none">
+        <path d="M0,60 C360,0 1080,0 1440,60 L1440,0 L0,0 Z" fill="currentColor" />
+      </svg>
+
       <div className="max-w-6xl mx-auto px-6">
         <span className="text-xs font-semibold tracking-wide text-brand-green uppercase">Our People</span>
         <h2 className="mt-2 font-display text-2xl sm:text-3xl text-ink">Top volunteers this month.</h2>

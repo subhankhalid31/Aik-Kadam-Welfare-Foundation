@@ -67,7 +67,7 @@ export default function SuccessStoriesPage() {
   const testimonialQuotes = useMemo(() => stories.map((s) => ({ quote: s.quote, name: s.name })), [stories]);
 
   return (
-    <PageLayout>
+    <PageLayout transparentHero>
       <SuccessStoriesHero />
       <main className="max-w-6xl mx-auto px-6 pb-24">
         <SuccessStoriesStatsBar storiesPublished={stories.length} completedProjects={completedProjects} />

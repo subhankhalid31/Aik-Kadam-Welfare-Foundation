@@ -22,8 +22,13 @@ export function OngoingTeaser() {
   if (cases.length === 0) return null;
 
   return (
-    <section className="py-20 bg-white border-t border-border">
-      <div className="max-w-6xl mx-auto px-6">
+    <section className="relative py-20 bg-white overflow-hidden">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-24 sm:h-32 -z-0"
+        style={{ background: "linear-gradient(to bottom, #FCFAF6, rgba(255,255,255,0))" }}
+        aria-hidden="true"
+      />
+      <div className="relative z-10 max-w-6xl mx-auto px-6">
         <span className="text-xs font-semibold tracking-wide text-brand-green uppercase">Ongoing Cases</span>
         <h2 className="mt-2 font-display text-2xl sm:text-3xl text-ink">Steps in progress right now.</h2>
 

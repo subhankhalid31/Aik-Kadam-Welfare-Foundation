@@ -350,9 +350,9 @@ export default function SignupPage() {
             animationSpeed={2.4}
             containerClassName="bg-background"
             colors={[
-              [31, 97, 239],
-              [15, 78, 215],
-              [13, 66, 181],
+              [124, 179, 66],
+              [110, 160, 55],
+              [96, 140, 45],
             ]}
             dotSize={5}
             totalSize={11}
@@ -371,11 +371,11 @@ export default function SignupPage() {
               <motion.div key="email-content" initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="w-full flex flex-col items-center gap-4">
                 <BlurFade delay={0.25} className="w-full">
                   <p className="text-center font-serif font-light text-4xl sm:text-5xl tracking-tight text-ink">
-                    <span className="text-glow-blue">Get started</span> with Us
+                    <span className="text-black">Get started</span> with Us
                   </p>
                 </BlurFade>
                 <BlurFade delay={0.5}>
-                  <p className="text-sm text-muted">Create an account to donate, volunteer, or submit a case.</p>
+                  <p className="text-sm text-muted text-center ">Create an account to donate, volunteer, or submit a case.</p>
                 </BlurFade>
               </motion.div>
             )}
