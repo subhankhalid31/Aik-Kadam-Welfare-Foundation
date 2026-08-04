@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { TaglineBanner } from "./TaglineBanner";
+import { HeaderHeightContext } from "@/lib/header-height-context";
 
 // The tagline banner + navbar render together as one fixed stack pinned
 // to the top of the viewport (not `sticky` — always pinned, doesn't wait
@@ -45,10 +46,12 @@ export function PageLayout({
 
   return (
     <>
-      <div ref={headerRef} className="fixed inset-x-0 top-0 z-50">
-        <TaglineBanner />
-        <Navbar />
-      </div>
+      <HeaderHeightContext.Provider value={headerHeight}>
+        <div ref={headerRef} className="fixed inset-x-0 top-0 z-50">
+          <TaglineBanner />
+          <Navbar />
+        </div>
+      </HeaderHeightContext.Provider>
       {!transparentHero && <div style={{ height: headerHeight }} aria-hidden="true" />}
       {children}
       <Footer />
