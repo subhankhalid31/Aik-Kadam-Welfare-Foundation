@@ -35,7 +35,7 @@ export function CompletedHero() {
         />
       </div>
 
-      <div className="relative min-h-[420px] sm:min-h-[480px] lg:min-h-[520px] flex flex-col sm:flex-row sm:items-center gap-8 sm:gap-0 py-10 sm:py-14">
+      <div className="relative min-h-[420px] sm:min-h-[480px] lg:min-h-[520px] flex flex-col sm:flex-row sm:items-center gap-8 sm:gap-0 pt-24 sm:pt-28 pb-10 sm:pb-14">
         <div className="pr-6 max-w-xl" style={{ paddingLeft: CONTAINER_INSET }}>
           <motion.span
             className="inline-flex items-center gap-2 text-xs font-semibold tracking-wide text-primary uppercase"
