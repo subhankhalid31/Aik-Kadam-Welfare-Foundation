@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { FormField, inputClass } from "@/components/ui/FormField";
+import { GlassButton } from "@/components/ui/GlassButton";
 import { api, ApiError } from "@/lib/api";
 import { CheckCircle2, Handshake } from "lucide-react";
 
@@ -58,9 +59,9 @@ export default function PartnerPage() {
               <textarea required rows={5} value={message} onChange={(e) => setMessage(e.target.value)} className={inputClass} placeholder="What did you have in mind?" />
             </FormField>
             {error && <p className="text-sm text-red-600">{error}</p>}
-            <button type="submit" disabled={loading} className="glass-surface w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60">
-              {loading ? "Sending..." : "Send Inquiry"}
-            </button>
+            <GlassButton type="submit" disabled={loading}>
+              {loading ? "Sending..." : "Submit Application"}
+            </GlassButton>
           </form>
         )}
       </main>
