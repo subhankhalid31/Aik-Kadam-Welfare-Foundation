@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { FlutedGlass } from "@paper-design/shaders-react";
 import { Logo } from "./Logo";
 import { Instagram, Facebook } from "lucide-react";
@@ -46,14 +46,33 @@ const footerLinks = [
 ];
 
 export function Footer() {
+  const [location] = useLocation();
+
+  // Pages where the large brand name should be hidden
+  const hideBrandNamePages = [
+    "/login",
+    "/signup",
+    "/forgot-password",
+    "/verify-otp",
+    "/post-case",
+    "/volunteers/register",
+    "/partner",
+  ];
+
+  const shouldHideBrandName = hideBrandNamePages.some((page) =>
+    location.startsWith(page)
+  );
+
   return (
     <footer className="w-full bg-background relative overflow-hidden antialiased [font-synthesis:none]">
       {/* Large stroke-text brand name */}
-      <div className="relative w-full flex justify-center items-end pt-10 sm:pt-16 md:pt-24 lg:pt-32 pb-0 z-0">
-        <h1 className="text-[42px] sm:text-[80px] md:text-[130px] lg:text-[170px] font-shout font-extrabold text-transparent [-webkit-text-stroke:1px_rgba(21,21,21,0.4)] leading-[0.75] select-none -mb-2 sm:-mb-4 md:-mb-6 opacity-50 whitespace-nowrap">
-          {companyName}
-        </h1>
-      </div>
+      {!shouldHideBrandName && (
+        <div className="relative w-full flex justify-center items-end pt-10 sm:pt-16 md:pt-24 lg:pt-32 pb-0 z-0">
+          <h1 className="text-[42px] sm:text-[80px] md:text-[130px] lg:text-[170px] font-shout font-extrabold text-transparent [-webkit-text-stroke:1px_rgba(21,21,21,0.4)] leading-[0.75] select-none -mb-2 sm:-mb-4 md:-mb-6 opacity-50 whitespace-nowrap">
+            {companyName}
+          </h1>
+        </div>
+      )}
 
       {/* Beige panel with a subtle fluted-glass shader texture */}
       <div className="relative w-full [--color-primary:#7CB342] bg-[var(--color-primary)] z-10 min-h-[260px] sm:min-h-[320px] md:min-h-[400px]">
