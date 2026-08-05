@@ -10,11 +10,18 @@ export function CityPicker({
   city,
   province,
   onChange,
+  inputClassName,
+  iconClassName = "text-muted",
 }: {
   city: string;
   province: string;
   onChange: (city: string, province: string) => void;
+  /** Override for the input/select field style only — the results
+      dropdown panel always stays solid white for legibility regardless. */
+  inputClassName?: string;
+  iconClassName?: string;
 }) {
+  const fieldClass = inputClassName ?? inputClass;
   const [query, setQuery] = useState(city);
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -39,13 +46,13 @@ export function CityPicker({
     <div className="grid sm:grid-cols-2 gap-3">
       <div ref={wrapRef} className="relative">
         <div className="relative">
-          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+          <Search size={15} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${iconClassName}`} />
           <input
             value={query}
             onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
             onFocus={() => setOpen(true)}
             placeholder="Search city..."
-            className={`${inputClass} pl-9`}
+            className={`${fieldClass} pl-9`}
             autoComplete="off"
           />
         </div>
@@ -71,14 +78,14 @@ export function CityPicker({
         <select
           value={province}
           onChange={(e) => onChange(query, e.target.value)}
-          className={`${inputClass} appearance-none pr-9`}
+          className={`${fieldClass} appearance-none pr-9`}
         >
           <option value="">Select province</option>
           {PAKISTAN_PROVINCES.map((p) => (
             <option key={p} value={p}>{p}</option>
           ))}
         </select>
-        <ChevronDown size={15} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-muted" />
+        <ChevronDown size={15} className={`pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 ${iconClassName}`} />
       </div>
     </div>
   );
