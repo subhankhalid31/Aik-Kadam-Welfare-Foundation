@@ -1,14 +1,49 @@
 import { useEffect, useState } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { FormField, inputClass } from "@/components/ui/FormField";
 import { CityPicker } from "@/components/ui/CityPicker";
-import { GlassButton } from "@/components/ui/GlassButton";
-import { CheckCircle2, LogIn } from "lucide-react";
+import { CheckCircle2, LogIn, Paperclip, ChevronDown, X } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useDialog } from "@/lib/dialog-context";
+import postCaseHero from "@assets/hero/postcase-hands.png";
 
 const CASE_CATEGORIES = ["Medical", "Food Drive", "Education", "Shelter", "Emergency Relief", "Other"];
+
+// This page's inputs sit directly on the hero photo rather than in a white
+// card, so they get their own translucent/glass field style instead of the
+// shared `inputClass` used everywhere else on the site.
+const fieldClass =
+  "w-full rounded-xl border border-white/25 bg-white/10 backdrop-blur-md px-4 py-3 text-sm text-white placeholder:text-white/55 focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/15 transition-all duration-200";
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="block text-xs font-semibold tracking-wide text-white/75 uppercase mb-2">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+// Full-bleed photo behind everything, including the (transparent) navbar —
+// shared by all three states of this page (form, sign-in gate, submitted)
+// so the page reads as one consistent design rather than a styled form
+// bolted onto plain utility screens.
+function HeroShell({ children }: { children: React.ReactNode }) {
+  return (
+    <PageLayout transparentHero>
+      <main className="relative min-h-screen overflow-hidden">
+        <img
+          src={postCaseHero}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover object-[center_28%]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-ink/70 via-ink/45 to-ink/80" />
+        <div className="relative z-10 pt-36 pb-20 px-6">{children}</div>
+      </main>
+    </PageLayout>
+  );
+}
 
 export default function PostCasePage() {
   const { user, loading: authLoading } = useAuth();
@@ -82,51 +117,62 @@ export default function PostCasePage() {
 
   if (!user) {
     return (
-      <PageLayout>
-        <main className="max-w-md mx-auto px-6 pt-24 pb-24 text-center">
-          <LogIn className="mx-auto text-primary" size={40} />
-          <h1 className="mt-5 font-display text-3xl text-ink">Sign in required</h1>
-          <p className="mt-3 text-muted leading-relaxed">
+      <HeroShell>
+        <div className="max-w-md mx-auto text-center pt-8 pb-4">
+          <div className="mx-auto h-16 w-16 rounded-full bg-white/10 border border-white/25 backdrop-blur-md flex items-center justify-center">
+            <LogIn className="text-white" size={26} />
+          </div>
+          <h1 className="mt-6 font-display font-extrabold text-3xl sm:text-4xl text-white leading-tight">Sign in required</h1>
+          <p className="mt-3 text-white/75 leading-relaxed">
             You need an account to submit a case, this keeps every request traceable
             back to a real person before our admin team verifies it.
           </p>
-          <a href="/login" className="mt-8 inline-flex items-center justify-center w-full rounded-full bg-primary px-7 py-3.5 font-semibold text-background hover:bg-primary-dark transition-colors">
+          <a href="/login" className="mt-8 inline-flex items-center justify-center w-full rounded-full bg-white px-7 py-3.5 font-bold text-ink hover:bg-beige transition-colors">
             Sign In to Continue
           </a>
-        </main>
-      </PageLayout>
+        </div>
+      </HeroShell>
     );
   }
 
   if (submitted) {
     return (
-      <PageLayout>
-        <main className="max-w-lg mx-auto px-6 pt-24 pb-24 text-center">
-          <CheckCircle2 className="mx-auto text-primary" size={48} />
-          <h1 className="mt-5 font-display text-3xl text-ink">Case submitted.</h1>
-          <p className="mt-3 text-muted leading-relaxed">
+      <HeroShell>
+        <div className="max-w-lg mx-auto text-center pt-8 pb-4">
+          <div className="mx-auto h-16 w-16 rounded-full bg-white/10 border border-white/25 backdrop-blur-md flex items-center justify-center">
+            <CheckCircle2 className="text-white" size={28} />
+          </div>
+          <h1 className="mt-6 font-display font-extrabold text-3xl sm:text-4xl text-white leading-tight">Case submitted.</h1>
+          <p className="mt-3 text-white/75 leading-relaxed">
             Our admin team will review and verify the details. Once approved, it becomes an
             active case others can support.
           </p>
-          <a href="/ongoing-projects" className="mt-8 inline-flex items-center justify-center rounded-full border border-border px-6 py-2.5 text-sm font-semibold text-ink hover:bg-white transition-colors">
+          <a href="/ongoing-projects" className="mt-8 inline-flex items-center justify-center rounded-full border border-white/40 bg-white/10 backdrop-blur-md px-6 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors">
             Back to Ongoing Cases
           </a>
-        </main>
-      </PageLayout>
+        </div>
+      </HeroShell>
     );
   }
 
   return (
-    <PageLayout>
-      <main className="max-w-lg mx-auto px-6 pt-16 pb-24">
-        <span className="text-xs font-semibold tracking-wide text-primary uppercase">Submit a Case</span>
-        <h1 className="mt-3 font-display text-3xl sm:text-4xl text-ink">Request help for someone in need.</h1>
-        <p className="mt-3 text-muted leading-relaxed">
-          An admin will review and verify this before it becomes a public case.
-        </p>
+    <HeroShell>
+      {/* Headline, centered across the full width like the reference */}
+      <div className="max-w-3xl mx-auto text-center">
+        <span className="inline-flex items-center rounded-full bg-white/10 border border-white/25 backdrop-blur-md px-4 py-1.5 text-xs font-semibold tracking-wide text-white/85 uppercase">
+          Submit a Case
+        </span>
+        <h1 className="mt-5 font-display font-extrabold text-4xl sm:text-5xl lg:text-[3.2rem] text-white leading-[1.08]">
+          We're Here To Support You
+          <br className="hidden sm:block" /> Every Step Of The Way
+        </h1>
+      </div>
 
+      {/* Form, left-aligned on larger screens (a little left of center, like
+          the reference), centered on mobile */}
+      <div className="mt-12 max-w-md mx-auto lg:mx-0 lg:ml-[8%]">
         {limit && (
-          <div className={`mt-4 rounded-xl border p-3 text-sm ${!limit.unlimited && limit.limit !== null && limit.used >= limit.limit ? "border-accent/40 bg-accent/10 text-ink/80" : "border-border bg-white text-muted"}`}>
+          <div className={`mb-5 rounded-xl border p-3 text-sm backdrop-blur-md ${!limit.unlimited && limit.limit !== null && limit.used >= limit.limit ? "border-brand-orange/50 bg-brand-orange/15 text-white" : "border-white/20 bg-white/10 text-white/80"}`}>
             {limit.unlimited
               ? "Unlimited case submissions (admin account)"
               : <>
@@ -136,59 +182,89 @@ export default function PostCasePage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-          <FormField label="Case title">
-            <input required type="text" value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} placeholder="e.g. Medical support for a family in Multan" />
-          </FormField>
-          <FormField label="City & Province">
-            <CityPicker city={city} province={province} onChange={(c, p) => { setCity(c); setProvince(p); }} />
-          </FormField>
-          <FormField label="Your phone number (so admins can reach you about this case)">
-            <input required type="tel" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} className={inputClass} placeholder="e.g. 0301-2345678" />
-          </FormField>
-          <FormField label="Your email (from your account)">
-            <input disabled value={user?.email ?? ""} className={`${inputClass} bg-background text-muted cursor-not-allowed`} />
-          </FormField>
-          <FormField label="Category">
-            <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputClass}>
-              {CASE_CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </FormField>
-          <FormField label="Amount needed (Rs.)">
-            <input required type="number" min="0" value={amountNeeded} onChange={(e) => setAmountNeeded(e.target.value)} onWheel={(e) => e.currentTarget.blur()} className={inputClass} placeholder="0" />
-          </FormField>
-          <FormField label="Details">
-            <textarea required rows={5} value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} placeholder="Describe the situation and what the funds are needed for" />
-          </FormField>
-          <FormField label="Photos (optional, up to 5)">
-            <input type="file" accept="image/*" multiple onChange={handleImagesChange} className={`${inputClass} py-2`} />
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <Field label="Case title">
+            <input required type="text" value={title} onChange={(e) => setTitle(e.target.value)} className={fieldClass} placeholder="e.g. Medical support for a family in Multan" />
+          </Field>
+
+          <Field label="City & Province">
+            <CityPicker
+              city={city}
+              province={province}
+              onChange={(c, p) => { setCity(c); setProvince(p); }}
+              inputClassName={fieldClass}
+              iconClassName="text-white/60"
+            />
+          </Field>
+
+          <Field label="Your phone number">
+            <input required type="tel" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} className={fieldClass} placeholder="e.g. 0301-2345678" />
+          </Field>
+
+          <Field label="Your email (from your account)">
+            <input disabled value={user?.email ?? ""} className={`${fieldClass} text-white/60 cursor-not-allowed`} />
+          </Field>
+
+          <Field label="Category">
+            <div className="relative">
+              <select value={category} onChange={(e) => setCategory(e.target.value)} className={`${fieldClass} appearance-none pr-9`}>
+                {CASE_CATEGORIES.map((c) => (
+                  <option key={c} value={c} className="text-ink">{c}</option>
+                ))}
+              </select>
+              <ChevronDown size={15} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-white/60" />
+            </div>
+          </Field>
+
+          <Field label="Amount needed (Rs.)">
+            <input required type="number" min="0" value={amountNeeded} onChange={(e) => setAmountNeeded(e.target.value)} onWheel={(e) => e.currentTarget.blur()} className={fieldClass} placeholder="0" />
+          </Field>
+
+          <Field label="Details">
+            <textarea required rows={5} value={description} onChange={(e) => setDescription(e.target.value)} className={fieldClass} placeholder="Describe the situation and what the funds are needed for" />
+          </Field>
+
+          {/* Attach documents — small circular icon button + label, matching
+              the reference's "ATTACH DOCUMENTS" control */}
+          <div>
+            <label className="inline-flex items-center gap-3 cursor-pointer group">
+              <span className="text-xs font-semibold tracking-wide text-white/75 uppercase">Attach Documents</span>
+              <span className="h-9 w-9 shrink-0 rounded-full border border-white/30 bg-white/10 backdrop-blur-md flex items-center justify-center text-white transition-colors group-hover:bg-white/20">
+                <Paperclip size={15} />
+              </span>
+              <input type="file" accept="image/*" multiple onChange={handleImagesChange} className="hidden" />
+            </label>
+            <span className="block text-xs text-white/50 mt-1.5">Up to 5 photos, optional</span>
+
             {images.length > 0 && (
-              <div className="mt-3 grid grid-cols-5 gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 {images.map((img, i) => (
-                  <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-border">
+                  <div key={i} className="relative h-16 w-16 rounded-lg overflow-hidden border border-white/25">
                     <img src={URL.createObjectURL(img)} alt="" className="w-full h-full object-cover" />
                     <button
                       type="button"
                       onClick={() => removeImage(i)}
-                      className="absolute top-1 right-1 h-5 w-5 rounded-full bg-black/60 text-white flex items-center justify-center"
+                      className="absolute top-0.5 right-0.5 h-4 w-4 rounded-full bg-ink/70 text-white flex items-center justify-center"
                     >
-                      ×
+                      <X size={10} />
                     </button>
                   </div>
                 ))}
               </div>
             )}
-          </FormField>
+          </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-orange-200">{error}</p>}
 
-          <GlassButton type="submit" disabled={loading}>
-            {loading ? "Submitting..." : "Submit for Review"}
-          </GlassButton>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-full bg-white px-7 py-3.5 font-bold tracking-wide text-ink hover:bg-beige transition-colors disabled:opacity-60"
+          >
+            {loading ? "SUBMITTING..." : "SUBMIT FOR REVIEW"}
+          </button>
         </form>
-      </main>
-    </PageLayout>
+      </div>
+    </HeroShell>
   );
 }
