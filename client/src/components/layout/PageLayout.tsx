@@ -3,6 +3,7 @@ import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { TaglineBanner } from "./TaglineBanner";
 import { HeaderHeightContext } from "@/lib/header-height-context";
+import { NavThemeContext, type NavTheme } from "@/lib/nav-theme-context";
 
 // The tagline banner + navbar render together as one fixed stack pinned
 // to the top of the viewport (not `sticky` — always pinned, doesn't wait
@@ -27,9 +28,11 @@ import { HeaderHeightContext } from "@/lib/header-height-context";
 export function PageLayout({
   children,
   transparentHero = false,
+  navTheme = "dark",
 }: {
   children: React.ReactNode;
   transparentHero?: boolean;
+  navTheme?: NavTheme;
 }) {
   const headerRef = useRef<HTMLDivElement>(null);
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -47,10 +50,12 @@ export function PageLayout({
   return (
     <>
       <HeaderHeightContext.Provider value={headerHeight}>
-        <div ref={headerRef} className="fixed inset-x-0 top-0 z-50">
-          <TaglineBanner />
-          <Navbar />
-        </div>
+        <NavThemeContext.Provider value={navTheme}>
+          <div ref={headerRef} className="fixed inset-x-0 top-0 z-50">
+            <TaglineBanner />
+            <Navbar />
+          </div>
+        </NavThemeContext.Provider>
       </HeaderHeightContext.Provider>
       {!transparentHero && <div style={{ height: headerHeight }} aria-hidden="true" />}
       {children}

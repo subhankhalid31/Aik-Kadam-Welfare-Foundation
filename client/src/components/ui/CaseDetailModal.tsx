@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { ImageCarousel } from "@/components/ui/ImageCarousel";
+import { FundingBar, MetaItem, MetaGrid } from "@/components/ui/CaseMeta";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useDialog } from "@/lib/dialog-context";
-import { MapPin, Clock3, CheckCircle2 } from "lucide-react";
+import { MapPin, Clock3, CheckCircle2, UserCheck, ShieldCheck, CalendarDays, Users, HandHeart } from "lucide-react";
 
 type CaseDetail = {
   id: string;
@@ -17,7 +18,17 @@ type CaseDetail = {
   amountCollected: number;
   imageUrl: string | null;
   images?: string[];
+  createdAt: string;
+  approvedAt: string | null;
+  donorCount: number;
+  volunteerCount: number;
+  submittedBy: { name: string; isAdmin: boolean };
 };
+
+function formatDate(iso: string | null) {
+  if (!iso) return null;
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
 
 export function CaseDetailModal({ caseId, onClose }: { caseId: string; onClose: () => void }) {
   const { user } = useAuth();
@@ -71,28 +82,47 @@ export function CaseDetailModal({ caseId, onClose }: { caseId: string; onClose: 
       {loading || !data ? (
         <p className="text-muted text-sm py-8 text-center">Loading...</p>
       ) : (
-        <div className="max-w-md">
+        <div>
           {((data.case.images && data.case.images.length > 0) || data.case.imageUrl) && (
-            <div className="mb-4">
-              <ImageCarousel images={data.case.images?.length ? data.case.images : [data.case.imageUrl!]} alt={data.case.title} />
+            <div className="-mx-6 -mt-6 mb-5">
+              <ImageCarousel
+                images={data.case.images?.length ? data.case.images : [data.case.imageUrl!]}
+                alt={data.case.title}
+                className="w-full h-56 object-cover"
+              />
             </div>
           )}
+
           {data.case.category && (
             <span className="inline-block text-[11px] font-semibold rounded-full bg-emerald-50 text-primary px-2.5 py-1 mb-2">
               {data.case.category}
             </span>
           )}
-          <h2 className="font-display text-2xl text-ink">{data.case.title}</h2>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted"><MapPin size={13} /> {data.case.location}</p>
-          <p className="mt-3 text-sm text-ink/80 leading-relaxed">{data.case.description}</p>
+          <h2 className="font-display text-2xl text-ink leading-tight">{data.case.title}</h2>
+          <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted"><MapPin size={13} /> {data.case.location}</p>
 
-          <div className="mt-4 flex items-center justify-between text-sm">
-            <span className="font-mono text-primary font-semibold">PKR {data.case.amountCollected.toLocaleString()}</span>
-            <span className="text-muted">of {data.case.amountNeeded.toLocaleString()} goal</span>
+          <div className="mt-5 pt-5 border-t border-border">
+            <FundingBar collected={data.case.amountCollected} needed={data.case.amountNeeded} />
+          </div>
+
+          <p className="mt-5 text-sm text-ink/80 leading-relaxed">{data.case.description}</p>
+
+          <div className="mt-5 pt-5 border-t border-border">
+            <MetaGrid>
+              <MetaItem
+                icon={data.case.submittedBy.isAdmin ? ShieldCheck : UserCheck}
+                label="Submitted by"
+                value={data.case.submittedBy.name}
+              />
+              <MetaItem icon={ShieldCheck} label="Verified by" value="Aik Kadam" />
+              <MetaItem icon={CalendarDays} label="Date submitted" value={formatDate(data.case.createdAt) ?? "—"} />
+              <MetaItem icon={Users} label="Donors so far" value={String(data.case.donorCount)} />
+              <MetaItem icon={HandHeart} label="Volunteers on this case" value={String(data.case.volunteerCount)} />
+            </MetaGrid>
           </div>
 
           {isApprovedVolunteer && data.case.status === "ongoing" && (
-            <div className="mt-5 pt-4 border-t border-border">
+            <div className="mt-5 pt-5 border-t border-border">
               {data.pendingRequestType ? (
                 <p className="flex items-center gap-2 text-sm text-accent-dark">
                   <Clock3 size={15} /> {data.pendingRequestType === "assignment" ? "Join request pending admin review." : "Withdrawal request pending admin review."}

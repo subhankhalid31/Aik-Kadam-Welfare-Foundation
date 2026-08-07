@@ -12,6 +12,7 @@ import { useGlobalSearch, type SearchTab } from "@/hooks/useGlobalSearch";
 import { SearchTabs, SearchResultsList } from "@/components/ui/SearchResults";
 import { useAuth } from "@/lib/auth-context";
 import { useHeaderHeight } from "@/lib/header-height-context";
+import { useNavTheme } from "@/lib/nav-theme-context";
 
 const PROJECT_LINKS = [
   { label: "Ongoing Projects", desc: "See active cases in progress", href: "/ongoing-projects", icon: Briefcase },
@@ -82,6 +83,9 @@ function MobileNavRow({
 
 export function Navbar() {
   const headerHeight = useHeaderHeight();
+  const navTheme = useNavTheme();
+  const linkColor = navTheme === "light" ? "text-white/90 hover:text-white" : "text-ink/80 hover:text-brand-green";
+  const iconColor = navTheme === "light" ? "text-white" : "text-ink";
   const [open, setOpen] = useState(false);
   const [mobileQuery, setMobileQuery] = useState("");
   const [mobileTab, setMobileTab] = useState<SearchTab>("Cases");
@@ -117,7 +121,9 @@ export function Navbar() {
     <header
       className={`transition-all duration-300 ${
         scrolled
-          ? "bg-background/25 backdrop-blur-md border-b border-border/60 shadow-[0_4px_20px_-4px_rgba(10,12,16,0.06)]"
+          ? navTheme === "light"
+            ? "bg-ink/55 backdrop-blur-md border-b border-white/10 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.25)]"
+            : "bg-background/25 backdrop-blur-md border-b border-border/60 shadow-[0_4px_20px_-4px_rgba(10,12,16,0.06)]"
           : "bg-transparent border-b border-transparent"
       }`}
     >
@@ -125,7 +131,7 @@ export function Navbar() {
       <nav className="max-w-7xl mx-auto h-[76px] flex items-center justify-between gap-4 px-5 sm:px-6">
         <div className="flex items-center gap-6 min-w-0 md:hidden">
           <button
-            className="group md:hidden text-ink shrink-0 -ml-1 p-1"
+            className={`group md:hidden shrink-0 -ml-1 p-1 ${iconColor}`}
             onClick={() => setOpen(!open)}
             aria-expanded={open}
             aria-label={open ? "Close menu" : "Open menu"}
@@ -159,18 +165,18 @@ export function Navbar() {
         </div>
 
         <Link href="/" className="shrink-0 md:hidden">
-          <Logo imgClassName="h-6 sm:h-7 w-auto object-contain -mt-1.5" />
+          <Logo imgClassName="h-6 sm:h-7 w-auto object-contain -mt-1.5" variant={navTheme} />
         </Link>
 
         <div className="hidden md:flex items-center gap-6 min-w-0">
           <Link href="/" className="shrink-0">
-            <Logo imgClassName="h-6 sm:h-7 w-auto object-contain -mt-1.5" />
+            <Logo imgClassName="h-6 sm:h-7 w-auto object-contain -mt-1.5" variant={navTheme} />
           </Link>
           <div className="flex items-center gap-9">
-            <Link href="/about" className="text-sm font-medium text-ink/80 hover:text-brand-green transition-colors">About</Link>
-            <NavDropdown label="Projects" items={PROJECT_LINKS} header={PROJECTS_HEADER} />
-            <Link href="/success-stories" className="text-sm font-medium text-ink/80 hover:text-brand-green transition-colors">Success Stories</Link>
-            <NavDropdown label="Get Involved" items={GET_INVOLVED_LINKS} header={GET_INVOLVED_HEADER} />
+            <Link href="/about" className={`text-sm font-medium transition-colors ${linkColor}`}>About</Link>
+            <NavDropdown label="Projects" items={PROJECT_LINKS} header={PROJECTS_HEADER} triggerClassName={linkColor} />
+            <Link href="/success-stories" className={`text-sm font-medium transition-colors ${linkColor}`}>Success Stories</Link>
+            <NavDropdown label="Get Involved" items={GET_INVOLVED_LINKS} header={GET_INVOLVED_HEADER} triggerClassName={linkColor} />
           </div>
         </div>
 
@@ -183,7 +189,7 @@ export function Navbar() {
           {user ? (
             <AvatarMenu isAdmin={isAdmin} onLogout={handleLogout} />
           ) : (
-            <Link href="/login" className="hidden sm:inline-block text-sm font-medium text-ink/80 hover:text-brand-green transition-colors">
+            <Link href="/login" className={`hidden sm:inline-block text-sm font-medium transition-colors ${linkColor}`}>
               Sign In
             </Link>
           )}
@@ -390,11 +396,13 @@ function NavDropdown({
   items,
   header,
   align = "center",
+  triggerClassName = "text-ink/80 hover:text-brand-green",
 }: {
   label: string;
   items: { label: string; desc: string; href: string; icon: typeof Briefcase }[];
   header: { icon: typeof Compass; title: string };
   align?: "center" | "right";
+  triggerClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -428,7 +436,7 @@ function NavDropdown({
     >
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 text-sm font-medium text-ink/80 hover:text-brand-green transition-colors"
+        className={`flex items-center gap-1 text-sm font-medium transition-colors ${triggerClassName}`}
         aria-expanded={open}
       >
         {label} <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />

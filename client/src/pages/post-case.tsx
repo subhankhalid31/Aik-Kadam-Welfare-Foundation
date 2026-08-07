@@ -13,7 +13,7 @@ const CASE_CATEGORIES = ["Medical", "Food Drive", "Education", "Shelter", "Emerg
 // card, so they get their own translucent/glass field style instead of the
 // shared `inputClass` used everywhere else on the site.
 const fieldClass =
-  "w-full rounded-xl border border-white/25 bg-white/10 backdrop-blur-md px-4 py-3 text-sm text-white placeholder:text-white/55 focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/15 transition-all duration-200";
+  "field-on-dark w-full rounded-xl border border-white/25 bg-white/10 backdrop-blur-md px-4 py-3 text-sm text-white placeholder:text-white/55 focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/15 transition-all duration-200";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -30,7 +30,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 // bolted onto plain utility screens.
 function HeroShell({ children }: { children: React.ReactNode }) {
   return (
-    <PageLayout transparentHero>
+    <PageLayout transparentHero navTheme="light">
       <main className="relative min-h-screen overflow-hidden">
         <img
           src={postCaseHero}

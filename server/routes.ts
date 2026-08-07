@@ -521,7 +521,17 @@ export function registerRoutes(app: Express) {
     }
 
     const donorCount = await storage.countDonorsForCase(c.id);
-    res.json({ case: { ...c, donorCount }, isAssigned, pendingRequestType });
+    const volunteers = await storage.getCaseVolunteers(c.id);
+    const submitter = await storage.getUserById(c.submittedById);
+    const submittedBy = submitter
+      ? { name: submitter.role === "admin" ? "Aik Kadam" : submitter.name, isAdmin: submitter.role === "admin" }
+      : { name: "Aik Kadam", isAdmin: true };
+
+    res.json({
+      case: { ...c, donorCount, volunteerCount: volunteers.length, submittedBy },
+      isAssigned,
+      pendingRequestType,
+    });
   });
 
   app.post("/api/cases/:id/request-join", requireAuth, async (req, res) => {
@@ -633,7 +643,7 @@ export function registerRoutes(app: Express) {
       return res.status(400).json({ message: "Name, email, and message are required" });
     }
     const escapeHtml = (v: string) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
-    const contactEmail = process.env.CONTACT_EMAIL || "help@aikkadam.org";
+    const contactEmail = process.env.CONTACT_EMAIL || "subhankhalid8787@gmail.com";
     await sendNotificationEmail(
       contactEmail,
       `New contact form message from ${name}`,
@@ -652,16 +662,37 @@ export function registerRoutes(app: Express) {
     const event = await storage.getGalleryEventById(String(req.params.id));
     if (!event) return res.status(404).json({ message: "Project not found" });
 
-    let sourceCase: { amountNeeded: number; amountCollected: number; createdAt: Date; approvedAt: Date | null; completedAt: Date | null } | null = null;
+    let sourceCase:
+      | {
+          amountNeeded: number;
+          amountCollected: number;
+          createdAt: Date;
+          approvedAt: Date | null;
+          completedAt: Date | null;
+          donorCount: number;
+          volunteerCount: number;
+          submittedBy: { name: string; isAdmin: boolean };
+        }
+      | null = null;
     if (event.sourceCaseId) {
       const c = await storage.getCaseById(event.sourceCaseId);
       if (c && !c.isHidden) {
+        const [donorCount, volunteers, submitter] = await Promise.all([
+          storage.countDonorsForCase(c.id),
+          storage.getCaseVolunteers(c.id),
+          storage.getUserById(c.submittedById),
+        ]);
         sourceCase = {
           amountNeeded: c.amountNeeded,
           amountCollected: c.amountCollected,
           createdAt: c.createdAt,
           approvedAt: c.approvedAt,
           completedAt: c.completedAt,
+          donorCount,
+          volunteerCount: volunteers.length,
+          submittedBy: submitter
+            ? { name: submitter.role === "admin" ? "Aik Kadam" : submitter.name, isAdmin: submitter.role === "admin" }
+            : { name: "Aik Kadam", isAdmin: true },
         };
       }
     }
@@ -1321,7 +1352,7 @@ export function registerRoutes(app: Express) {
       return res.status(400).json({ message: "Organization, name, email, and message are required" });
     }
     const escapeHtml = (v: string) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
-    const contactEmail = process.env.CONTACT_EMAIL || "help@aikkadam.org";
+    const contactEmail = process.env.CONTACT_EMAIL || "subhankhalid8787@gmail.com";
     await sendNotificationEmail(
       contactEmail,
       `New partnership inquiry from ${organization}`,

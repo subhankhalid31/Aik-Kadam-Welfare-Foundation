@@ -488,3 +488,47 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
     transform: translateX(4px);
   }
 }
+
+/* Browser autofill (city/phone/email fields are common autofill targets)
+   force black text + a light background via internal user-agent styles
+   that override any author `color`/`background-color` — this is the
+   standard workaround. Applied to any input carrying .field-on-dark
+   (used by post-case.tsx's glass fields, sitting directly on a photo). */
+.field-on-dark:-webkit-autofill,
+.field-on-dark:-webkit-autofill:hover,
+.field-on-dark:-webkit-autofill:focus {
+  -webkit-text-fill-color: #FFFFFF;
+  -webkit-box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.12) inset;
+  box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.12) inset;
+  caret-color: #FFFFFF;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Thin scrollbar that's invisible until the container is hovered — the
+   scroll itself always works either way, this only hides the visual
+   track/thumb so it doesn't sit there as permanent chrome. Replaces the
+   default OS scrollbar (the boxy gray one with arrow buttons) with a
+   slim rounded bar that only appears when it's actually relevant. */
+.scrollbar-hover-reveal {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.scrollbar-hover-reveal:hover {
+  scrollbar-color: rgba(21, 21, 21, 0.25) transparent;
+}
+.scrollbar-hover-reveal::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-hover-reveal::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-hover-reveal::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+}
+.scrollbar-hover-reveal:hover::-webkit-scrollbar-thumb {
+  background: rgba(21, 21, 21, 0.25);
+}
+.scrollbar-hover-reveal:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(21, 21, 21, 0.4);
+}
