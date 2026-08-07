@@ -24,7 +24,7 @@ export function TaglineBanner() {
   if (!tagline || !tagline.trim() || dismissed) return null;
 
   return (
-    <div className="bg-primary-dark text-white">
+    <div className="text-white" style={{ backgroundColor: '#F4B400' }}>
       <div className="max-w-6xl mx-auto flex items-center justify-center gap-3 px-6 py-2 text-sm font-medium text-center relative">
         <span>{tagline}</span>
         {taglineCase && (

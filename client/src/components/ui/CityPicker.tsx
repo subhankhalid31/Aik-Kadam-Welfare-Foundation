@@ -80,9 +80,9 @@ export function CityPicker({
           onChange={(e) => onChange(query, e.target.value)}
           className={`${fieldClass} appearance-none pr-9`}
         >
-          <option value="">Select province</option>
+          <option value="" className="text-ink">Select province</option>
           {PAKISTAN_PROVINCES.map((p) => (
-            <option key={p} value={p}>{p}</option>
+            <option key={p} value={p} className="text-ink">{p}</option>
           ))}
         </select>
         <ChevronDown size={15} className={`pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 ${iconClassName}`} />
