@@ -215,6 +215,31 @@ export const updateCaseSchema = z.object({
   category: z.enum(CASE_CATEGORIES).optional(),
 });
 
+// ─── Inbox (contact form + partnership inquiries, admin-manageable) ──────
+
+export const inboxMessageTypeEnum = pgEnum("inbox_message_type", ["contact", "partnership"]);
+export const inboxMessageStatusEnum = pgEnum("inbox_message_status", ["unread", "read", "replied"]);
+
+export const inboxMessages = pgTable("inbox_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: inboxMessageTypeEnum("type").notNull(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  organization: text("organization"), // partnership inquiries only
+  message: text("message").notNull(),
+  status: inboxMessageStatusEnum("status").notNull().default("unread"),
+  replyText: text("reply_text"),
+  repliedAt: timestamp("replied_at"),
+  repliedBy: text("replied_by"), // admin's name, for an internal record of who answered
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type InboxMessage = typeof inboxMessages.$inferSelect;
+
+export const inboxReplySchema = z.object({
+  reply: z.string().min(1, "Reply message is required").max(5000),
+});
+
 // ─── Gallery events (admin-curated, verified completed events) ───────────
 
 export const galleryEvents = pgTable("gallery_events", {
