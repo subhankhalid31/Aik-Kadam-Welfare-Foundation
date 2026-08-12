@@ -4,6 +4,7 @@ import { AdminLayout, type AdminTabKey } from "@/components/layout/AdminLayout";
 import { FormField, inputClass } from "@/components/ui/FormField";
 import { useAuth } from "@/lib/auth-context";
 import { api, ApiError } from "@/lib/api";
+import { compressImages } from "@/lib/compress-image";
 import { ShieldAlert, X } from "lucide-react";
 
 function goToAdminTab(navigate: (path: string) => void, tab: AdminTabKey) {
@@ -23,12 +24,18 @@ export default function AdminGalleryNewPage() {
   const [items, setItems] = useState("");
   const [funds, setFunds] = useState("");
   const [images, setImages] = useState<File[]>([]);
+  const [compressing, setCompressing] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function handleImages(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleImages(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []).slice(0, 5);
-    setImages(files);
+    setCompressing(true);
+    try {
+      setImages(await compressImages(files));
+    } finally {
+      setCompressing(false);
+    }
   }
 
   function removeImage(idx: number) {
@@ -108,6 +115,7 @@ export default function AdminGalleryNewPage() {
 
           <FormField label="Photos (up to 5)">
             <input type="file" accept="image/*" multiple onChange={handleImages} className={`${inputClass} py-2`} />
+            {compressing && <p className="mt-1.5 text-xs text-muted">Optimizing photos...</p>}
             {images.length > 0 && (
               <div className="mt-3 grid grid-cols-5 gap-2">
                 {images.map((img, i) => (

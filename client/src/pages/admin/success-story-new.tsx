@@ -4,6 +4,7 @@ import { AdminLayout, type AdminTabKey } from "@/components/layout/AdminLayout";
 import { FormField, inputClass } from "@/components/ui/FormField";
 import { useAuth } from "@/lib/auth-context";
 import { api, ApiError } from "@/lib/api";
+import { compressImage } from "@/lib/compress-image";
 import { ShieldAlert } from "lucide-react";
 
 function goToAdminTab(navigate: (path: string) => void, tab: AdminTabKey) {
@@ -83,11 +84,11 @@ export default function AdminSuccessStoryNewPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Before photo">
-              <input required type="file" accept="image/*" onChange={(e) => setBefore(e.target.files?.[0] ?? null)} className={`${inputClass} py-2`} />
+              <input required type="file" accept="image/*" onChange={async (e) => setBefore(e.target.files?.[0] ? await compressImage(e.target.files[0]) : null)} className={`${inputClass} py-2`} />
               {before && <img src={URL.createObjectURL(before)} alt="Before" className="mt-2 aspect-square w-full object-cover rounded-lg border border-border" />}
             </FormField>
             <FormField label="After photo">
-              <input required type="file" accept="image/*" onChange={(e) => setAfter(e.target.files?.[0] ?? null)} className={`${inputClass} py-2`} />
+              <input required type="file" accept="image/*" onChange={async (e) => setAfter(e.target.files?.[0] ? await compressImage(e.target.files[0]) : null)} className={`${inputClass} py-2`} />
               {after && <img src={URL.createObjectURL(after)} alt="After" className="mt-2 aspect-square w-full object-cover rounded-lg border border-border" />}
             </FormField>
           </div>

@@ -5,6 +5,7 @@ import { CheckCircle2, LogIn, Paperclip, ChevronDown, X } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useDialog } from "@/lib/dialog-context";
+import { compressImages } from "@/lib/compress-image";
 import postCaseHero from "@assets/hero/postcase-hands.png";
 
 const CASE_CATEGORIES = ["Medical", "Food Drive", "Education", "Shelter", "Emergency Relief", "Other"];
@@ -59,6 +60,7 @@ export default function PostCasePage() {
   const [amountNeeded, setAmountNeeded] = useState("");
   const [description, setDescription] = useState("");
   const [images, setImages] = useState<File[]>([]);
+  const [compressing, setCompressing] = useState(false);
   const [limit, setLimit] = useState<{ used: number; limit: number | null; resetsInHours: number; unlimited?: boolean } | null>(null);
 
   useEffect(() => {
@@ -67,9 +69,15 @@ export default function PostCasePage() {
     }
   }, [user]);
 
-  function handleImagesChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleImagesChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []).slice(0, 5);
-    setImages(files);
+    setCompressing(true);
+    try {
+      const compressed = await compressImages(files);
+      setImages(compressed);
+    } finally {
+      setCompressing(false);
+    }
   }
 
   function removeImage(idx: number) {
@@ -234,7 +242,9 @@ export default function PostCasePage() {
               </span>
               <input type="file" accept="image/*" multiple onChange={handleImagesChange} className="hidden" />
             </label>
-            <span className="block text-xs text-white/50 mt-1.5">Up to 5 photos, optional</span>
+            <span className="block text-xs text-white/50 mt-1.5">
+              {compressing ? "Optimizing photos..." : "Up to 5 photos, optional"}
+            </span>
 
             {images.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">

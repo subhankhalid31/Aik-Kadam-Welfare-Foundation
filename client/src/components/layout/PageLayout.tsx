@@ -25,6 +25,9 @@ import { NavThemeContext, type NavTheme } from "@/lib/nav-theme-context";
 // spacer entirely, so the page's content starts at true y=0 and the
 // image is genuinely visible behind the nav instead of the nav just
 // floating over empty page background that looks solid by coincidence.
+//
+// When the tagline banner is visible, we always add a spacer for its height
+// to prevent content from being covered, even on transparent hero pages.
 export function PageLayout({
   children,
   transparentHero = false,
@@ -36,6 +39,7 @@ export function PageLayout({
 }) {
   const headerRef = useRef<HTMLDivElement>(null);
   const [headerHeight, setHeaderHeight] = useState(0);
+  const [taglineBannerHeight, setTaglineBannerHeight] = useState(0);
 
   useEffect(() => {
     const el = headerRef.current;
@@ -52,12 +56,15 @@ export function PageLayout({
       <HeaderHeightContext.Provider value={headerHeight}>
         <NavThemeContext.Provider value={navTheme}>
           <div ref={headerRef} className="fixed inset-x-0 top-0 z-50">
-            <TaglineBanner />
+            <TaglineBanner onHeightChange={setTaglineBannerHeight} />
             <Navbar />
           </div>
         </NavThemeContext.Provider>
       </HeaderHeightContext.Provider>
-      {!transparentHero && <div style={{ height: headerHeight }} aria-hidden="true" />}
+      {/* Add spacer for tagline banner when visible */}
+      {taglineBannerHeight > 0 && <div style={{ height: taglineBannerHeight }} aria-hidden="true" />}
+      {/* Add spacer for navbar height on non-transparent hero pages */}
+      {!transparentHero && <div style={{ height: headerHeight - taglineBannerHeight }} aria-hidden="true" />}
       {children}
       <Footer />
     </>

@@ -1,12 +1,13 @@
 import { useEffect, useState, useCallback, useMemo, useRef, type Dispatch, type SetStateAction } from "react";
-import { AdminLayout, type AdminTabKey, PillTabs, VOLUNTEER_SUBTABS, PROJECT_SUBTABS, INBOX_SUBTABS } from "@/components/layout/AdminLayout";
+import { AdminLayout, type AdminTabKey, PillTabs, VOLUNTEER_SUBTABS, PROJECT_SUBTABS } from "@/components/layout/AdminLayout";
 import { CityPicker } from "@/components/ui/CityPicker";
 import { ImageCarousel } from "@/components/ui/ImageCarousel";
 import { useAuth } from "@/lib/auth-context";
 import { useDialog } from "@/lib/dialog-context";
 import { api, ApiError } from "@/lib/api";
+import { compressImage, compressImages } from "@/lib/compress-image";
 import {
-  Check, X, ShieldAlert, Pencil, Wallet, Users, Briefcase, Clock4, CheckCircle2,
+  Check, X, ShieldAlert, Pencil, Wallet, Users, Briefcase, Clock4,
   Undo2, Download, Search, Plus, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, EyeOff, Eye,
 } from "lucide-react";
 
@@ -399,16 +400,6 @@ export default function AdminPage() {
           <div className="mt-4"><PillTabs tabs={PROJECT_SUBTABS} active={tab} onChange={setTab} /></div>
         </div>
       )}
-
-      {(["inboxContact", "inboxPartnership"] as AdminTabKey[]).includes(tab) && (
-        <div className="mb-6">
-          <h1 className="font-display text-2xl text-ink">Inbox</h1>
-          <div className="mt-4"><PillTabs tabs={INBOX_SUBTABS} active={tab} onChange={setTab} /></div>
-        </div>
-      )}
-
-      {tab === "inboxContact" && <InboxPanel type="contact" dialog={dialog} />}
-      {tab === "inboxPartnership" && <InboxPanel type="partnership" dialog={dialog} />}
 
       {tab === "volunteers" && (
         <div>
@@ -884,7 +875,7 @@ function OngoingRow({
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
-          <input type="file" accept="image/*" multiple onChange={(e) => setImages(Array.from(e.target.files ?? []).slice(0, 5))} className="block text-sm" />
+          <input type="file" accept="image/*" multiple onChange={async (e) => setImages(await compressImages(Array.from(e.target.files ?? []).slice(0, 5)))} className="block text-sm" />
           {images.length > 0 && <p className="text-xs text-muted mt-1">{images.length} new photo(s) selected, will replace existing photos.</p>}
           <button disabled={busy} onClick={() => onChange(saveEdit)} className="glass-surface rounded-full bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">
             Save Changes
@@ -1962,147 +1953,7 @@ function RecurringDonationsPanel({ dialog }: { dialog: ReturnType<typeof useDial
   );
 }
 
-// ─── Inbox: contact form + partnership inquiries, reply straight from here ───
-
-type InboxMessageRow = {
-  id: string;
-  type: "contact" | "partnership";
-  name: string;
-  email: string;
-  organization: string | null;
-  message: string;
-  status: "unread" | "read" | "replied";
-  replyText: string | null;
-  repliedAt: string | null;
-  repliedBy: string | null;
-  createdAt: string;
-};
-
-function InboxPanel({ type, dialog }: { type: "contact" | "partnership"; dialog: ReturnType<typeof useDialog> }) {
-  const [messages, setMessages] = useState<InboxMessageRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [replyText, setReplyText] = useState("");
-  const [sending, setSending] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    const data = await api.get<{ messages: InboxMessageRow[] }>(`/api/admin/inbox?type=${type}`);
-    setMessages(data.messages);
-    setLoading(false);
-  }, [type]);
-
-  useEffect(() => {
-    load();
-    setSelectedId(null);
-    setReplyText("");
-  }, [load]);
-
-  const selected = messages.find((m) => m.id === selectedId) ?? null;
-
-  async function openMessage(id: string) {
-    setSelectedId(id);
-    setReplyText("");
-    // Marks it read server-side; reflect that locally without a full reload.
-    const data = await api.get<{ message: InboxMessageRow }>(`/api/admin/inbox/${id}`);
-    setMessages((prev) => prev.map((m) => (m.id === id ? data.message : m)));
-  }
-
-  async function sendReply() {
-    if (!selected || !replyText.trim()) return;
-    setSending(true);
-    try {
-      const data = await api.post<{ message: string; inboxMessage: InboxMessageRow }>(`/api/admin/inbox/${selected.id}/reply`, { reply: replyText });
-      setMessages((prev) => prev.map((m) => (m.id === selected.id ? data.inboxMessage : m)));
-      setReplyText("");
-    } catch (err) {
-      await dialog.alert(err instanceof ApiError ? err.message : "Failed to send reply", "Couldn't send reply");
-      await load();
-    } finally {
-      setSending(false);
-    }
-  }
-
-  if (loading) return <p className="mt-5 text-muted">Loading...</p>;
-
-  return (
-    <div className="mt-5 grid md:grid-cols-[320px_1fr] gap-5">
-      {/* Message list */}
-      <div className="space-y-2 md:max-h-[70vh] md:overflow-y-auto md:pr-1">
-        {messages.length === 0 && <p className="text-muted text-sm">No {type === "contact" ? "contact" : "partnership"} messages yet.</p>}
-        {messages.map((m) => (
-          <button
-            key={m.id}
-            onClick={() => openMessage(m.id)}
-            className={`w-full text-left rounded-xl border p-3 transition-colors ${
-              selected?.id === m.id ? "border-primary bg-primary/5" : "border-border bg-white hover:bg-background"
-            }`}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className={`text-sm truncate ${m.status === "unread" ? "font-bold text-ink" : "font-medium text-ink/80"}`}>{m.name}</span>
-              {m.status === "unread" && <span className="h-2 w-2 rounded-full bg-primary shrink-0" />}
-              {m.status === "replied" && <CheckCircle2 size={13} className="text-success shrink-0" />}
-            </div>
-            {m.organization && <div className="text-xs text-muted truncate">{m.organization}</div>}
-            <div className="text-xs text-muted truncate mt-0.5">{m.message}</div>
-            <div className="text-[11px] text-muted mt-1">{new Date(m.createdAt).toLocaleDateString()}</div>
-          </button>
-        ))}
-      </div>
-
-      {/* Selected message + reply */}
-      <div>
-        {!selected ? (
-          <div className="h-full min-h-[240px] flex items-center justify-center rounded-xl border border-dashed border-border text-muted text-sm">
-            Select a message to read and reply.
-          </div>
-        ) : (
-          <div className="rounded-xl border border-border bg-white p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="font-display text-lg text-ink">{selected.name}</h3>
-                <p className="text-sm text-muted">{selected.email}</p>
-                {selected.organization && <p className="text-sm text-muted">{selected.organization}</p>}
-              </div>
-              <span className="text-xs text-muted shrink-0">{new Date(selected.createdAt).toLocaleString()}</span>
-            </div>
-
-            <p className="mt-4 text-sm text-ink/85 whitespace-pre-wrap leading-relaxed">{selected.message}</p>
-
-            {selected.replyText && (
-              <div className="mt-5 rounded-lg bg-background p-4 border border-border">
-                <p className="text-xs font-semibold text-muted uppercase">
-                  Replied {selected.repliedBy ? `by ${selected.repliedBy}` : ""} &middot; {selected.repliedAt && new Date(selected.repliedAt).toLocaleString()}
-                </p>
-                <p className="mt-2 text-sm text-ink/85 whitespace-pre-wrap leading-relaxed">{selected.replyText}</p>
-              </div>
-            )}
-
-            <div className="mt-5">
-              <label className="block text-sm font-medium text-ink mb-1.5">
-                {selected.replyText ? "Send another reply" : "Write a reply"}
-              </label>
-              <textarea
-                rows={5}
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                placeholder={`This is emailed directly to ${selected.email}`}
-                className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-              <button
-                onClick={sendReply}
-                disabled={sending || !replyText.trim()}
-                className="mt-3 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50"
-              >
-                {sending ? "Sending..." : "Send Reply"}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+// ─── Gallery management: list, edit, add new (editable — auto-created on case completion) ───
 
 type GalleryEventRow = {
   id: string;
@@ -2349,11 +2200,11 @@ function SuccessStoryEditCard({ story, dialog, onChanged }: { story: SuccessStor
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-xs text-muted">Replace before photo</label>
-              <input type="file" accept="image/*" onChange={(e) => setBefore(e.target.files?.[0] ?? null)} className="block text-xs mt-1" />
+              <input type="file" accept="image/*" onChange={async (e) => setBefore(e.target.files?.[0] ? await compressImage(e.target.files[0]) : null)} className="block text-xs mt-1" />
             </div>
             <div>
               <label className="text-xs text-muted">Replace after photo</label>
-              <input type="file" accept="image/*" onChange={(e) => setAfter(e.target.files?.[0] ?? null)} className="block text-xs mt-1" />
+              <input type="file" accept="image/*" onChange={async (e) => setAfter(e.target.files?.[0] ? await compressImage(e.target.files[0]) : null)} className="block text-xs mt-1" />
             </div>
           </div>
           <button disabled={busy} onClick={save} className="glass-surface rounded-full bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">

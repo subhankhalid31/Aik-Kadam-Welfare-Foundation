@@ -12,7 +12,6 @@ import {
   recurringDonations,
   bannedEmails,
   siteSettings,
-  inboxMessages,
   type User,
   type OtpCode,
   type Case,
@@ -22,7 +21,6 @@ import {
   type Donation,
   type RecurringDonation,
   type CaseVolunteerRequest,
-  type InboxMessage,
 } from "@shared/schema";
 
 // Emails are matched case-insensitively everywhere and always stored
@@ -614,7 +612,7 @@ export const storage = {
       description: c.description,
       location: c.location,
       eventDate: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
-      images: c.imageUrl ? [c.imageUrl] : [],
+      images: c.images?.length ? c.images : c.imageUrl ? [c.imageUrl] : [],
       funds: `PKR ${c.amountCollected.toLocaleString()}`,
       sourceCaseId: c.id,
     });
@@ -1062,57 +1060,5 @@ export const storage = {
     } else {
       await db.insert(siteSettings).values({ tagline, taglineCaseId: taglineCaseId ?? null });
     }
-  },
-
-  // ─── Inbox (contact form + partnership inquiries) ────────────────────────
-  async createInboxMessage(data: {
-    type: "contact" | "partnership";
-    name: string;
-    email: string;
-    organization?: string;
-    message: string;
-  }): Promise<InboxMessage> {
-    const [row] = await db.insert(inboxMessages).values(data).returning();
-    return row;
-  },
-
-  async listInboxMessages(type?: "contact" | "partnership"): Promise<InboxMessage[]> {
-    const query = db.select().from(inboxMessages).orderBy(desc(inboxMessages.createdAt));
-    if (type) return query.where(eq(inboxMessages.type, type));
-    return query;
-  },
-
-  async getInboxMessageById(id: string): Promise<InboxMessage | undefined> {
-    const [row] = await db.select().from(inboxMessages).where(eq(inboxMessages.id, id));
-    return row;
-  },
-
-  // Opening a message for the first time flips it from unread -> read, but
-  // never overwrites "replied" back down to "read".
-  async markInboxMessageRead(id: string): Promise<void> {
-    await db
-      .update(inboxMessages)
-      .set({ status: "read" })
-      .where(and(eq(inboxMessages.id, id), eq(inboxMessages.status, "unread")));
-  },
-
-  async replyToInboxMessage(id: string, replyText: string, repliedBy: string): Promise<InboxMessage | undefined> {
-    const [row] = await db
-      .update(inboxMessages)
-      .set({ status: "replied", replyText, repliedAt: new Date(), repliedBy })
-      .where(eq(inboxMessages.id, id))
-      .returning();
-    return row;
-  },
-
-  async countUnreadInboxMessages(): Promise<{ contact: number; partnership: number }> {
-    const rows = await db
-      .select({ type: inboxMessages.type, count: sql<number>`count(*)` })
-      .from(inboxMessages)
-      .where(eq(inboxMessages.status, "unread"))
-      .groupBy(inboxMessages.type);
-    const result = { contact: 0, partnership: 0 };
-    for (const r of rows) result[r.type] = Number(r.count);
-    return result;
   },
 };
