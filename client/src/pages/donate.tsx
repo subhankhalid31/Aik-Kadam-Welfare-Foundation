@@ -4,6 +4,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { FormField, inputClass } from "@/components/ui/FormField";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { api, ApiError } from "@/lib/api";
+import { compressImage } from "@/lib/compress-image";
 import { useAuth } from "@/lib/auth-context";
 import { CheckCircle2, LogIn, Copy } from "lucide-react";
 import { JazzCashLogo, EasypaisaLogo, HblLogo } from "@/components/ui/PaymentLogos";
@@ -48,8 +49,9 @@ export default function DonatePage() {
 
   const selectedCase = useMemo(() => cases.find((c) => c.id === caseId), [cases, caseId]);
 
-  function handleReceiptChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] ?? null;
+  async function handleReceiptChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.files?.[0] ?? null;
+    const file = raw ? await compressImage(raw) : null;
     setReceipt(file);
     setReceiptPreview(file ? URL.createObjectURL(file) : null);
   }

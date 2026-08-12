@@ -4,7 +4,7 @@ import crypto from "crypto";
 import rateLimit from "express-rate-limit";
 import { OAuth2Client } from "google-auth-library";
 import { storage } from "./storage";
-import { sendOtpEmail, sendNotificationEmail, sendReplyEmail } from "./lib/email";
+import { sendOtpEmail, sendNotificationEmail } from "./lib/email";
 import { generateOtpCode, hashOtpCode, otpExpiresAt, isOtpExpired, MAX_ATTEMPTS } from "./lib/otp";
 import { requireAuth, requireRole } from "./middleware/auth";
 import { uploadImage, uploadReceipt, uploadedFileUrl, receiptUrl, receiptFilePath, verifyIsRealImage } from "./lib/upload";
@@ -28,7 +28,6 @@ import {
   banUserSchema,
   hideCaseSchema,
   updateTaglineSchema,
-  inboxReplySchema,
   toPublicUser,
 } from "@shared/schema";
 
@@ -522,7 +521,17 @@ export function registerRoutes(app: Express) {
     }
 
     const donorCount = await storage.countDonorsForCase(c.id);
-    res.json({ case: { ...c, donorCount }, isAssigned, pendingRequestType });
+    const volunteers = await storage.getCaseVolunteers(c.id);
+    const submitter = await storage.getUserById(c.submittedById);
+    const submittedBy = submitter
+      ? { name: submitter.role === "admin" ? "Aik Kadam" : submitter.name, isAdmin: submitter.role === "admin" }
+      : { name: "Aik Kadam", isAdmin: true };
+
+    res.json({
+      case: { ...c, donorCount, volunteerCount: volunteers.length, submittedBy },
+      isAssigned,
+      pendingRequestType,
+    });
   });
 
   app.post("/api/cases/:id/request-join", requireAuth, async (req, res) => {
@@ -634,13 +643,11 @@ export function registerRoutes(app: Express) {
       return res.status(400).json({ message: "Name, email, and message are required" });
     }
     const escapeHtml = (v: string) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
-    const contactEmail = process.env.CONTACT_EMAIL || "subhankhalid8787@gmail.com";
-    await storage.createInboxMessage({ type: "contact", name, email, message });
+    const contactEmail = process.env.CONTACT_EMAIL || "help@aikkadam.org";
     await sendNotificationEmail(
       contactEmail,
       `New contact form message from ${name}`,
       `<strong>From:</strong> ${escapeHtml(name)} (${escapeHtml(email)})<br/><br/>${escapeHtml(message).replace(/\n/g, "<br/>")}`,
-      email,
     );
     res.json({ message: "Message sent" });
   });
@@ -655,16 +662,37 @@ export function registerRoutes(app: Express) {
     const event = await storage.getGalleryEventById(String(req.params.id));
     if (!event) return res.status(404).json({ message: "Project not found" });
 
-    let sourceCase: { amountNeeded: number; amountCollected: number; createdAt: Date; approvedAt: Date | null; completedAt: Date | null } | null = null;
+    let sourceCase:
+      | {
+          amountNeeded: number;
+          amountCollected: number;
+          createdAt: Date;
+          approvedAt: Date | null;
+          completedAt: Date | null;
+          donorCount: number;
+          volunteerCount: number;
+          submittedBy: { name: string; isAdmin: boolean };
+        }
+      | null = null;
     if (event.sourceCaseId) {
       const c = await storage.getCaseById(event.sourceCaseId);
       if (c && !c.isHidden) {
+        const [donorCount, volunteers, submitter] = await Promise.all([
+          storage.countDonorsForCase(c.id),
+          storage.getCaseVolunteers(c.id),
+          storage.getUserById(c.submittedById),
+        ]);
         sourceCase = {
           amountNeeded: c.amountNeeded,
           amountCollected: c.amountCollected,
           createdAt: c.createdAt,
           approvedAt: c.approvedAt,
           completedAt: c.completedAt,
+          donorCount,
+          volunteerCount: volunteers.length,
+          submittedBy: submitter
+            ? { name: submitter.role === "admin" ? "Aik Kadam" : submitter.name, isAdmin: submitter.role === "admin" }
+            : { name: "Aik Kadam", isAdmin: true },
         };
       }
     }
@@ -1324,59 +1352,12 @@ export function registerRoutes(app: Express) {
       return res.status(400).json({ message: "Organization, name, email, and message are required" });
     }
     const escapeHtml = (v: string) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
-    const contactEmail = process.env.CONTACT_EMAIL || "subhankhalid8787@gmail.com";
-    await storage.createInboxMessage({ type: "partnership", name, email, organization, message });
+    const contactEmail = process.env.CONTACT_EMAIL || "help@aikkadam.org";
     await sendNotificationEmail(
       contactEmail,
       `New partnership inquiry from ${organization}`,
       `<strong>Organization:</strong> ${escapeHtml(organization)}<br/><strong>Contact:</strong> ${escapeHtml(name)} (${escapeHtml(email)})<br/><br/>${escapeHtml(message).replace(/\n/g, "<br/>")}`,
-      email,
     );
     res.json({ message: "Partnership inquiry sent" });
-  });
-
-  // ─── Admin: Inbox (contact + partnership messages) ────────────────────
-  // `type` filters to one tab; omit it to get everything. Newest first.
-  app.get("/api/admin/inbox", requireAuth, requireRole("admin"), async (req, res) => {
-    const type = req.query.type === "contact" || req.query.type === "partnership" ? req.query.type : undefined;
-    const messages = await storage.listInboxMessages(type);
-    res.json({ messages });
-  });
-
-  app.get("/api/admin/inbox/unread-counts", requireAuth, requireRole("admin"), async (_req, res) => {
-    res.json(await storage.countUnreadInboxMessages());
-  });
-
-  // Opening a message marks it read (no-op if it's already read/replied).
-  app.get("/api/admin/inbox/:id", requireAuth, requireRole("admin"), async (req, res) => {
-    const msg = await storage.getInboxMessageById(String(req.params.id));
-    if (!msg) return res.status(404).json({ message: "Message not found" });
-    await storage.markInboxMessageRead(msg.id);
-    res.json({ message: { ...msg, status: msg.status === "unread" ? "read" : msg.status } });
-  });
-
-  app.post("/api/admin/inbox/:id/reply", requireAuth, requireRole("admin"), async (req, res) => {
-    const parsed = inboxReplySchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Invalid reply" });
-    }
-    const msg = await storage.getInboxMessageById(String(req.params.id));
-    if (!msg) return res.status(404).json({ message: "Message not found" });
-
-    const admin = req.session.userId ? await storage.getUserById(req.session.userId) : undefined;
-    const result = await sendReplyEmail(msg.email, msg.name, msg.message, parsed.data.reply, msg.type);
-    if (!result.ok) {
-      // Save the reply either way — the admin shouldn't have to retype it —
-      // but tell them clearly that delivery failed so they know to check
-      // Resend (most likely cause: the sending domain isn't verified yet).
-      const saved = await storage.replyToInboxMessage(msg.id, parsed.data.reply, admin?.name ?? "Admin");
-      return res.status(502).json({
-        message: `Reply saved, but sending failed: ${result.error}. Your domain is probably not verified in Resend yet.`,
-        inboxMessage: saved,
-      });
-    }
-
-    const updated = await storage.replyToInboxMessage(msg.id, parsed.data.reply, admin?.name ?? "Admin");
-    res.json({ message: "Reply sent", inboxMessage: updated });
   });
 }

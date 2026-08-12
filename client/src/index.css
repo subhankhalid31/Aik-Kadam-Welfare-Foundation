@@ -194,6 +194,7 @@ html {
    shadcn-style theme-variable setup.
    ───────────────────────────────────────────────────────────────────── */
 
+@layer components {
 input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none !important; } input[type="password"]::-webkit-credentials-auto-fill-button, input[type="password"]::-webkit-strong-password-auto-fill-button { display: none !important; } input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active { -webkit-box-shadow: 0 0 0 30px transparent inset !important; -webkit-text-fill-color: #0A0C10 !important; background-color: transparent !important; background-clip: content-box !important; transition: background-color 5000s ease-in-out 0s !important; color: #0A0C10 !important; caret-color: #0A0C10 !important; } input:autofill { background-color: transparent !important; background-clip: content-box !important; -webkit-text-fill-color: #0A0C10 !important; color: #0A0C10 !important; } input:-internal-autofill-selected { background-color: transparent !important; background-image: none !important; color: #0A0C10 !important; -webkit-text-fill-color: #0A0C10 !important; } input:-webkit-autofill::first-line { color: #0A0C10 !important; -webkit-text-fill-color: #0A0C10 !important; }
 @property --angle-1 { syntax: "<angle>"; inherits: false; initial-value: -75deg; } @property --angle-2 { syntax: "<angle>"; inherits: false; initial-value: -45deg; }
 .glass-button-wrap { --anim-time: 400ms; --anim-ease: cubic-bezier(0.25, 1, 0.5, 1); --border-width: clamp(1px, 0.0625em, 4px); position: relative; z-index: 2; transform-style: preserve-3d; transition: transform var(--anim-time) var(--anim-ease); } .glass-button-wrap:has(.glass-button:active) { transform: rotateX(25deg); } .glass-button-shadow { --shadow-cutoff-fix: 2em; position: absolute; width: calc(100% + var(--shadow-cutoff-fix)); height: calc(100% + var(--shadow-cutoff-fix)); top: calc(0% - var(--shadow-cutoff-fix) / 2); left: calc(0% - var(--shadow-cutoff-fix) / 2); filter: blur(clamp(2px, 0.125em, 12px)); transition: filter var(--anim-time) var(--anim-ease); pointer-events: none; z-index: 0; } .glass-button-shadow::after { content: ""; position: absolute; inset: 0; border-radius: 9999px; background: linear-gradient(180deg, rgba(10, 12, 16, 0.2), rgba(10, 12, 16, 0.1)); width: calc(100% - var(--shadow-cutoff-fix) - 0.25em); height: calc(100% - var(--shadow-cutoff-fix) - 0.25em); top: calc(var(--shadow-cutoff-fix) - 0.5em); left: calc(var(--shadow-cutoff-fix) - 0.875em); padding: 0.125em; box-sizing: border-box; mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; transition: all var(--anim-time) var(--anim-ease); opacity: 1; }
@@ -419,6 +420,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
           0 0 0 1px rgba(10, 12, 16, 0.05),
           0 20px 40px -14px rgba(10, 12, 16, 0.2),
           inset 0 1px 1px rgba(255, 255, 255, 0.55);
+}
 }
 
 /* Static glow for a headline's emphasized word/phrase — NOT an

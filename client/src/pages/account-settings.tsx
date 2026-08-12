@@ -4,6 +4,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { FormField, inputClass } from "@/components/ui/FormField";
 import { useAuth } from "@/lib/auth-context";
 import { api, ApiError } from "@/lib/api";
+import { compressImage } from "@/lib/compress-image";
 import { Camera, ArrowLeft } from "lucide-react";
 
 export default function AccountSettingsPage() {
@@ -33,8 +34,9 @@ export default function AccountSettingsPage() {
   }
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const raw = e.target.files?.[0];
+    if (!raw) return;
+    const file = await compressImage(raw);
     setUploading(true);
     try {
       const formData = new FormData();

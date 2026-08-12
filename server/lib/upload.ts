@@ -36,10 +36,16 @@ function imageFileFilter(_req: any, file: Express.Multer.File, cb: multer.FileFi
 // Public images: case photos, gallery photos, avatars, success story photos.
 // Meant to be viewed by anyone, so these stay under /uploads (served
 // statically — see server/index.ts).
+//
+// The client compresses images before upload now (see
+// client/src/lib/compress-image.ts), so this limit is a safety net rather
+// than the primary defense — mainly there for HEIC/HEIF files, which
+// can't be resized in-browser (no non-Safari browser can decode them into
+// a <canvas>) and so arrive at whatever size the phone camera produced.
 export const uploadImage = multer({
   storage: makeStorage(PUBLIC_UPLOAD_DIR),
   fileFilter: imageFileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
 });
 
 // Donation receipts: private. Written to a directory that's never served
@@ -48,7 +54,7 @@ export const uploadImage = multer({
 export const uploadReceipt = multer({
   storage: makeStorage(PRIVATE_UPLOAD_DIR),
   fileFilter: imageFileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 20 * 1024 * 1024 },
 });
 
 export function uploadedFileUrl(filename: string) {
