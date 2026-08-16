@@ -20,6 +20,7 @@ import {
   UserCog,
   FolderKanban,
   Repeat,
+  Mail,
   Menu,
   X,
 } from "lucide-react";
@@ -37,7 +38,9 @@ export type AdminTabKey =
   | "summary"
   | "namechange"
   | "hidden"
-  | "rejected";
+  | "rejected"
+  | "inboxContact"
+  | "inboxPartnership";
 
 // Sub-tabs shown as capsule pills inside "Volunteer Services".
 export const VOLUNTEER_SUBTABS: { key: AdminTabKey; label: string }[] = [
@@ -55,6 +58,12 @@ export const PROJECT_SUBTABS: { key: AdminTabKey; label: string }[] = [
   { key: "hidden", label: "Hidden Cases" },
 ];
 
+// Sub-tabs shown as capsule pills inside "Inbox".
+export const INBOX_SUBTABS: { key: AdminTabKey; label: string }[] = [
+  { key: "inboxContact", label: "Contact Emails" },
+  { key: "inboxPartnership", label: "Partnership Emails" },
+];
+
 type NavEntry =
   | { type: "link"; label: string; icon: typeof UserCheck; href: string }
   | { type: "tab"; label: string; icon: typeof UserCheck; key: AdminTabKey; group?: AdminTabKey[] };
@@ -63,6 +72,7 @@ const NAV_ITEMS: NavEntry[] = [
   { type: "link", label: "Submit a Case", icon: Plus, href: "/post-case" },
   { type: "tab", label: "Volunteer Services", icon: UserCog, key: "approved", group: VOLUNTEER_SUBTABS.map((t) => t.key) },
   { type: "tab", label: "Projects", icon: FolderKanban, key: "cases", group: PROJECT_SUBTABS.map((t) => t.key) },
+  { type: "tab", label: "Inbox", icon: Mail, key: "inboxContact", group: INBOX_SUBTABS.map((t) => t.key) },
   { type: "tab", label: "Donations", icon: Wallet, key: "donations" },
   { type: "tab", label: "Monthly Pledges", icon: Repeat, key: "recurring" },
   { type: "tab", label: "Success Stories", icon: Heart, key: "stories" },

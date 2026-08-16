@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo, useRef, type Dispatch, type SetStateAction } from "react";
-import { AdminLayout, type AdminTabKey, PillTabs, VOLUNTEER_SUBTABS, PROJECT_SUBTABS } from "@/components/layout/AdminLayout";
+import { AdminLayout, type AdminTabKey, PillTabs, VOLUNTEER_SUBTABS, PROJECT_SUBTABS, INBOX_SUBTABS } from "@/components/layout/AdminLayout";
 import { CityPicker } from "@/components/ui/CityPicker";
 import { ImageCarousel } from "@/components/ui/ImageCarousel";
 import { useAuth } from "@/lib/auth-context";
@@ -7,7 +7,7 @@ import { useDialog } from "@/lib/dialog-context";
 import { api, ApiError } from "@/lib/api";
 import { compressImage, compressImages } from "@/lib/compress-image";
 import {
-  Check, X, ShieldAlert, Pencil, Wallet, Users, Briefcase, Clock4,
+  Check, X, ShieldAlert, Pencil, Wallet, Users, Briefcase, Clock4, CircleCheckBig, Send,
   Undo2, Download, Search, Plus, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, EyeOff, Eye,
 } from "lucide-react";
 
@@ -401,6 +401,16 @@ export default function AdminPage() {
         </div>
       )}
 
+      {(["inboxContact", "inboxPartnership"] as AdminTabKey[]).includes(tab) && (
+        <div className="mb-6">
+          <h1 className="font-display text-2xl text-ink">Inbox</h1>
+          <div className="mt-4"><PillTabs tabs={INBOX_SUBTABS} active={tab} onChange={setTab} /></div>
+        </div>
+      )}
+
+      {tab === "inboxContact" && <InboxPanel type="contact" dialog={dialog} />}
+      {tab === "inboxPartnership" && <InboxPanel type="partnership" dialog={dialog} />}
+
       {tab === "volunteers" && (
         <div>
           <div className="flex flex-col sm:flex-row gap-3">
@@ -477,6 +487,7 @@ export default function AdminPage() {
                             act(v.id, () => api.post(`/api/admin/volunteers/${v.id}/approve`));
                           }}
                           className="glass-surface h-8 w-8 rounded-lg bg-success text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
+                          title="Approve"
                         >
                           <Check size={16} />
                         </button>
@@ -488,6 +499,7 @@ export default function AdminPage() {
                             act(v.id, () => api.post(`/api/admin/volunteers/${v.id}/reject`, { reason: reason || undefined }));
                           }}
                           className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+                          title="Reject"
                         >
                           <X size={16} />
                         </button>
@@ -594,6 +606,7 @@ export default function AdminPage() {
                             act(c.id, () => api.post(`/api/admin/cases/${c.id}/approve`));
                           }}
                           className="glass-surface h-8 w-8 rounded-lg bg-success text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
+                          title="Approve"
                         >
                           <Check size={16} />
                         </button>
@@ -605,6 +618,7 @@ export default function AdminPage() {
                             act(c.id, () => api.post(`/api/admin/cases/${c.id}/reject`, { reason: reason || undefined }));
                           }}
                           className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+                          title="Reject"
                         >
                           <X size={16} />
                         </button>
@@ -857,8 +871,9 @@ function OngoingRow({
               onChange(() => api.delete(`/api/admin/cases/${caseRow.id}`));
             }}
             className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+            title="Delete case"
           >
-            <X size={14} />
+            <Trash2 size={14} />
           </button>
         </div>
       </div>
@@ -1425,7 +1440,7 @@ function RejectedCasesPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }
               <button disabled={busy === c.id} onClick={() => restore(c)} className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-semibold text-ink hover:bg-background disabled:opacity-50">
                 <Undo2 size={14} /> Restore
               </button>
-              <button disabled={busy === c.id} onClick={() => remove(c)} className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50">
+              <button disabled={busy === c.id} onClick={() => remove(c)} className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50" title="Delete case">
                 <Trash2 size={14} />
               </button>
             </div>
@@ -1482,6 +1497,7 @@ function NameChangeRequestsPanel({ dialog }: { dialog: ReturnType<typeof useDial
                 disabled={busy === r.id}
                 onClick={() => act(r.id, () => api.post(`/api/admin/name-change-requests/${r.id}/approve`))}
                 className="glass-surface h-8 w-8 rounded-lg bg-success text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
+                title="Approve"
               >
                 <Check size={16} />
               </button>
@@ -1492,6 +1508,7 @@ function NameChangeRequestsPanel({ dialog }: { dialog: ReturnType<typeof useDial
                   act(r.id, () => api.post(`/api/admin/name-change-requests/${r.id}/reject`));
                 }}
                 className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+                title="Reject"
               >
                 <X size={16} />
               </button>
@@ -1752,6 +1769,7 @@ function DonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
                               act(d.id, () => api.post(`/api/admin/donations/${d.id}/confirm`));
                             }}
                             className="glass-surface h-8 w-8 rounded-lg bg-success text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
+                            title="Confirm donation"
                           >
                             <Check size={16} />
                           </button>
@@ -1763,6 +1781,7 @@ function DonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
                               act(d.id, () => api.post(`/api/admin/donations/${d.id}/reject`, { reason: reason || undefined }));
                             }}
                             className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+                            title="Reject donation"
                           >
                             <X size={16} />
                           </button>
@@ -1953,6 +1972,272 @@ function RecurringDonationsPanel({ dialog }: { dialog: ReturnType<typeof useDial
   );
 }
 
+// ─── Inbox: contact form + partnership inquiries, threaded, reply/compose from here ───
+
+type InboxMessageRow = {
+  id: string;
+  type: "contact" | "partnership";
+  name: string;
+  email: string;
+  organization: string | null;
+  message: string;
+  status: "unread" | "read" | "replied";
+  resolved: boolean;
+  createdAt: string;
+};
+
+type ThreadMessageRow = {
+  id: string;
+  direction: "outbound" | "inbound";
+  body: string;
+  authorName: string | null;
+  createdAt: string;
+};
+
+function InboxPanel({ type, dialog }: { type: "contact" | "partnership"; dialog: ReturnType<typeof useDialog> }) {
+  const [messages, setMessages] = useState<InboxMessageRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [thread, setThread] = useState<ThreadMessageRow[]>([]);
+  const [replyText, setReplyText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [composing, setComposing] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const data = await api.get<{ messages: InboxMessageRow[] }>(`/api/admin/inbox?type=${type}`);
+    setMessages(data.messages);
+    setLoading(false);
+  }, [type]);
+
+  useEffect(() => {
+    load();
+    setSelectedId(null);
+    setThread([]);
+    setReplyText("");
+  }, [load]);
+
+  const selected = messages.find((m) => m.id === selectedId) ?? null;
+
+  async function openMessage(id: string) {
+    setSelectedId(id);
+    setReplyText("");
+    const data = await api.get<{ message: InboxMessageRow; thread: ThreadMessageRow[] }>(`/api/admin/inbox/${id}`);
+    setMessages((prev) => prev.map((m) => (m.id === id ? data.message : m)));
+    setThread(data.thread);
+  }
+
+  async function sendReply() {
+    if (!selected || !replyText.trim()) return;
+    setSending(true);
+    try {
+      const data = await api.post<{ message: string; inboxMessage: InboxMessageRow; threadEntry: ThreadMessageRow }>(`/api/admin/inbox/${selected.id}/reply`, { reply: replyText });
+      setMessages((prev) => prev.map((m) => (m.id === selected.id ? data.inboxMessage : m)));
+      setThread((prev) => [...prev, data.threadEntry]);
+      setReplyText("");
+    } catch (err) {
+      await dialog.alert(err instanceof ApiError ? err.message : "Failed to send reply", "Couldn't send reply");
+      await openMessage(selected.id);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function toggleResolved() {
+    if (!selected) return;
+    const data = await api.post<{ inboxMessage: InboxMessageRow }>(`/api/admin/inbox/${selected.id}/resolve`, { resolved: !selected.resolved });
+    setMessages((prev) => prev.map((m) => (m.id === selected.id ? data.inboxMessage : m)));
+  }
+
+  if (loading) return <p className="mt-5 text-muted">Loading...</p>;
+
+  return (
+    <div className="mt-5">
+      <div className="flex justify-end mb-3">
+        <button
+          onClick={() => setComposing(true)}
+          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark"
+        >
+          <Send size={14} /> Compose
+        </button>
+      </div>
+
+      <div className="grid md:grid-cols-[320px_1fr] gap-5">
+        {/* Message list */}
+        <div className="space-y-2 md:max-h-[70vh] md:overflow-y-auto md:pr-1">
+          {messages.length === 0 && <p className="text-muted text-sm">No {type === "contact" ? "contact" : "partnership"} messages yet.</p>}
+          {messages.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => openMessage(m.id)}
+              className={`w-full text-left rounded-xl border p-3 transition-colors ${
+                selected?.id === m.id ? "border-primary bg-primary/5" : "border-border bg-white hover:bg-background"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className={`text-sm truncate ${m.status === "unread" ? "font-bold text-ink" : "font-medium text-ink/80"}`}>{m.name}</span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {m.resolved && <CircleCheckBig size={13} className="text-success" />}
+                  {m.status === "unread" && <span className="h-2 w-2 rounded-full bg-primary" />}
+                </div>
+              </div>
+              {m.organization && <div className="text-xs text-muted truncate">{m.organization}</div>}
+              <div className="text-xs text-muted truncate mt-0.5">{m.message}</div>
+              <div className="text-[11px] text-muted mt-1">{new Date(m.createdAt).toLocaleDateString()}</div>
+            </button>
+          ))}
+        </div>
+
+        {/* Selected conversation */}
+        <div>
+          {!selected ? (
+            <div className="h-full min-h-[240px] flex items-center justify-center rounded-xl border border-dashed border-border text-muted text-sm">
+              Select a message to read and reply.
+            </div>
+          ) : (
+            <div className="rounded-xl border border-border bg-white p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-0.5">
+                  <p className="text-sm"><span className="font-semibold text-ink">Name:</span> <span className="text-ink/85">{selected.name}</span></p>
+                  <p className="text-sm"><span className="font-semibold text-ink">Email:</span> <span className="text-ink/85">{selected.email}</span></p>
+                  {selected.organization && (
+                    <p className="text-sm"><span className="font-semibold text-ink">Organization:</span> <span className="text-ink/85">{selected.organization}</span></p>
+                  )}
+                </div>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <span className="text-xs text-muted">{new Date(selected.createdAt).toLocaleString()}</span>
+                  <button
+                    onClick={toggleResolved}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      selected.resolved ? "bg-success/10 text-success-dark hover:bg-success/20" : "bg-background border border-border text-ink/70 hover:bg-border/40"
+                    }`}
+                    title={selected.resolved ? "Reopen this case" : "Mark as solved"}
+                  >
+                    <CircleCheckBig size={13} /> {selected.resolved ? "Resolved" : "Mark Solved"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Thread: original message, then each reply in order, Gmail-ish */}
+              <div className="mt-4 space-y-3">
+                <div className="rounded-lg bg-background p-4 border border-border">
+                  <p className="text-xs font-semibold text-muted uppercase">{selected.name} &middot; {new Date(selected.createdAt).toLocaleString()}</p>
+                  <p className="mt-2 text-sm text-ink/85 whitespace-pre-wrap leading-relaxed">{selected.message}</p>
+                </div>
+                {thread.map((t) => (
+                  <div
+                    key={t.id}
+                    className={`rounded-lg p-4 border ${t.direction === "outbound" ? "bg-primary/5 border-primary/20 ml-6" : "bg-background border-border mr-6"}`}
+                  >
+                    <p className="text-xs font-semibold text-muted uppercase">
+                      {t.direction === "outbound" ? (t.authorName ?? "Aik Kadam") : selected.name} &middot; {new Date(t.createdAt).toLocaleString()}
+                    </p>
+                    <p className="mt-2 text-sm text-ink/85 whitespace-pre-wrap leading-relaxed">{t.body}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-5">
+                <label className="block text-sm font-medium text-ink mb-1.5">Write a reply</label>
+                <textarea
+                  rows={5}
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  placeholder={`This is emailed directly to ${selected.email}`}
+                  className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <button
+                  onClick={sendReply}
+                  disabled={sending || !replyText.trim()}
+                  className="mt-3 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50"
+                >
+                  {sending ? "Sending..." : "Send Reply"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {composing && (
+        <ComposeModal
+          onClose={() => setComposing(false)}
+          onSent={(msg) => {
+            setComposing(false);
+            if (msg.type === type) setMessages((prev) => [msg, ...prev]);
+          }}
+          dialog={dialog}
+        />
+      )}
+    </div>
+  );
+}
+
+function ComposeModal({
+  onClose,
+  onSent,
+  dialog,
+}: {
+  onClose: () => void;
+  onSent: (msg: InboxMessageRow) => void;
+  dialog: ReturnType<typeof useDialog>;
+}) {
+  const [to, setTo] = useState("");
+  const [name, setName] = useState("");
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [sending, setSending] = useState(false);
+
+  async function send() {
+    if (!to.trim() || !name.trim() || !subject.trim() || !body.trim()) return;
+    setSending(true);
+    try {
+      const data = await api.post<{ message: string; inboxMessage: InboxMessageRow }>("/api/admin/inbox/compose", { to, name, subject, body });
+      onSent(data.inboxMessage);
+    } catch (err) {
+      await dialog.alert(err instanceof ApiError ? err.message : "Failed to send", "Couldn't send email");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-ink/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="w-full max-w-lg rounded-2xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-display text-lg text-ink">Compose Email</h3>
+        <div className="mt-4 space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-ink mb-1.5">Recipient email</label>
+            <input value={to} onChange={(e) => setTo(e.target.value)} type="email" placeholder="someone@example.com" className="w-full rounded-lg border border-border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-ink mb-1.5">Recipient name</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Their name" className="w-full rounded-lg border border-border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-ink mb-1.5">Subject</label>
+            <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="w-full rounded-lg border border-border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-ink mb-1.5">Message</label>
+            <textarea rows={6} value={body} onChange={(e) => setBody(e.target.value)} placeholder="Write your message" className="w-full rounded-lg border border-border px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          </div>
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <button onClick={onClose} className="rounded-full px-4 py-2 text-sm font-semibold text-ink border border-border hover:bg-background">Cancel</button>
+          <button
+            onClick={send}
+            disabled={sending || !to.trim() || !name.trim() || !subject.trim() || !body.trim()}
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50"
+          >
+            <Send size={14} /> {sending ? "Sending..." : "Send"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Gallery management: list, edit, add new (editable — auto-created on case completion) ───
 
 type GalleryEventRow = {
@@ -2059,8 +2344,9 @@ function GalleryEditRow({ event, onSaved, dialog }: { event: GalleryEventRow; on
             onSaved();
           }}
           className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 shrink-0 ml-2"
+          title="Delete event"
         >
-          <X size={14} />
+          <Trash2 size={14} />
         </button>
       </div>
 
@@ -2185,8 +2471,8 @@ function SuccessStoryEditCard({ story, dialog, onChanged }: { story: SuccessStor
           <button onClick={() => setEditing((v) => !v)} className="glass-surface glass-surface-outline h-8 w-8 rounded-lg border flex items-center justify-center hover:bg-background">
             <Pencil size={13} />
           </button>
-          <button onClick={remove} disabled={busy} className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50">
-            <X size={13} />
+          <button onClick={remove} disabled={busy} className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50" title="Delete story">
+            <Trash2 size={13} />
           </button>
         </div>
       </div>
@@ -2468,6 +2754,7 @@ function CaseVolunteerRequestsPanel({ dialog, onResolved }: { dialog: ReturnType
                   act(r.id, () => api.post(`/api/admin/case-volunteer-requests/${r.id}/approve`));
                 }}
                 className="glass-surface h-8 w-8 rounded-lg bg-success text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"
+                title="Approve"
               >
                 <Check size={16} />
               </button>
@@ -2475,6 +2762,7 @@ function CaseVolunteerRequestsPanel({ dialog, onResolved }: { dialog: ReturnType
                 disabled={busy === r.id}
                 onClick={() => act(r.id, () => api.post(`/api/admin/case-volunteer-requests/${r.id}/reject`))}
                 className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+                title="Reject"
               >
                 <X size={16} />
               </button>
