@@ -1,10 +1,11 @@
 import type { Express } from "express";
+import express from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import rateLimit from "express-rate-limit";
 import { OAuth2Client } from "google-auth-library";
 import { storage } from "./storage";
-import { sendOtpEmail, sendNotificationEmail } from "./lib/email";
+import { sendOtpEmail, sendNotificationEmail, sendReplyEmail, sendComposeEmail, verifyInboundWebhook, getReceivedEmail } from "./lib/email";
 import { generateOtpCode, hashOtpCode, otpExpiresAt, isOtpExpired, MAX_ATTEMPTS } from "./lib/otp";
 import { requireAuth, requireRole } from "./middleware/auth";
 import { uploadImage, uploadReceipt, uploadedFileUrl, receiptUrl, receiptFilePath, verifyIsRealImage } from "./lib/upload";
@@ -28,6 +29,8 @@ import {
   banUserSchema,
   hideCaseSchema,
   updateTaglineSchema,
+  inboxReplySchema,
+  inboxComposeSchema,
   toPublicUser,
 } from "@shared/schema";
 
@@ -643,11 +646,13 @@ export function registerRoutes(app: Express) {
       return res.status(400).json({ message: "Name, email, and message are required" });
     }
     const escapeHtml = (v: string) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
-    const contactEmail = process.env.CONTACT_EMAIL || "help@aikkadam.org";
+    const contactEmail = process.env.CONTACT_EMAIL || "subhankhalid8787@gmail.com";
+    await storage.createInboxMessage({ type: "contact", name, email, message });
     await sendNotificationEmail(
       contactEmail,
       `New contact form message from ${name}`,
       `<strong>From:</strong> ${escapeHtml(name)} (${escapeHtml(email)})<br/><br/>${escapeHtml(message).replace(/\n/g, "<br/>")}`,
+      email,
     );
     res.json({ message: "Message sent" });
   });
@@ -1352,12 +1357,172 @@ export function registerRoutes(app: Express) {
       return res.status(400).json({ message: "Organization, name, email, and message are required" });
     }
     const escapeHtml = (v: string) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
-    const contactEmail = process.env.CONTACT_EMAIL || "help@aikkadam.org";
+    const contactEmail = process.env.CONTACT_EMAIL || "subhankhalid8787@gmail.com";
+    await storage.createInboxMessage({ type: "partnership", name, email, organization, message });
     await sendNotificationEmail(
       contactEmail,
       `New partnership inquiry from ${organization}`,
       `<strong>Organization:</strong> ${escapeHtml(organization)}<br/><strong>Contact:</strong> ${escapeHtml(name)} (${escapeHtml(email)})<br/><br/>${escapeHtml(message).replace(/\n/g, "<br/>")}`,
+      email,
     );
     res.json({ message: "Partnership inquiry sent" });
+  });
+
+  // ─── Admin: Inbox (contact + partnership messages) ────────────────────
+  // `type` filters to one tab; omit it to get everything. Newest first.
+  app.get("/api/admin/inbox", requireAuth, requireRole("admin"), async (req, res) => {
+    const type = req.query.type === "contact" || req.query.type === "partnership" ? req.query.type : undefined;
+    const messages = await storage.listInboxMessages(type);
+    res.json({ messages });
+  });
+
+  app.get("/api/admin/inbox/unread-counts", requireAuth, requireRole("admin"), async (_req, res) => {
+    res.json(await storage.countUnreadInboxMessages());
+  });
+
+  // Opening a message marks it read (no-op if it's already read/replied)
+  // and returns the full thread alongside it.
+  app.get("/api/admin/inbox/:id", requireAuth, requireRole("admin"), async (req, res) => {
+    const msg = await storage.getInboxMessageById(String(req.params.id));
+    if (!msg) return res.status(404).json({ message: "Message not found" });
+    await storage.markInboxMessageRead(msg.id);
+    const thread = await storage.listThreadMessages(msg.id);
+    res.json({ message: { ...msg, status: msg.status === "unread" ? "read" : msg.status }, thread });
+  });
+
+  app.post("/api/admin/inbox/:id/reply", requireAuth, requireRole("admin"), async (req, res) => {
+    const parsed = inboxReplySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Invalid reply" });
+    }
+    const msg = await storage.getInboxMessageById(String(req.params.id));
+    if (!msg) return res.status(404).json({ message: "Message not found" });
+
+    const admin = req.session.userId ? await storage.getUserById(req.session.userId) : undefined;
+    const adminName = admin?.name ?? "Admin";
+
+    const priorThread = await storage.listThreadMessages(msg.id);
+    const prior = [
+      { authorLabel: msg.name, date: msg.createdAt, body: msg.message },
+      ...priorThread.map((t) => ({ authorLabel: t.direction === "outbound" ? (t.authorName ?? "Aik Kadam") : msg.name, date: t.createdAt, body: t.body })),
+    ];
+    const subject = msg.type === "partnership" ? "Your partnership inquiry — Aik Kadam" : "Your message to Aik Kadam";
+
+    const result = await sendReplyEmail(msg.email, msg.name, subject, parsed.data.reply, prior, msg.id);
+    // Save the reply either way — the admin shouldn't have to retype it —
+    // but tell them clearly if delivery failed (most likely cause: the
+    // sending domain isn't verified yet in Resend).
+    const threadEntry = await storage.addThreadMessage({
+      inboxMessageId: msg.id,
+      direction: "outbound",
+      body: parsed.data.reply,
+      authorName: adminName,
+      resendEmailId: result.ok ? result.emailId : undefined,
+    });
+    const updated = await storage.replyToInboxMessage(msg.id, parsed.data.reply, adminName);
+
+    if (!result.ok) {
+      return res.status(502).json({
+        message: `Reply saved, but sending failed: ${result.error}. Your domain is probably not verified in Resend yet.`,
+        inboxMessage: updated,
+        threadEntry,
+      });
+    }
+    res.json({ message: "Reply sent", inboxMessage: updated, threadEntry });
+  });
+
+  // Starts a brand-new conversation from the admin side rather than
+  // replying to an inbound form submission.
+  app.post("/api/admin/inbox/compose", requireAuth, requireRole("admin"), async (req, res) => {
+    const parsed = inboxComposeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Invalid message" });
+    }
+    const admin = req.session.userId ? await storage.getUserById(req.session.userId) : undefined;
+    const { to, name, subject, body } = parsed.data;
+
+    const msg = await storage.createComposedInboxMessage({ name, email: to, message: body });
+    const result = await sendComposeEmail(to, name, subject, body, msg.id);
+    await storage.addThreadMessage({
+      inboxMessageId: msg.id,
+      direction: "outbound",
+      body,
+      authorName: admin?.name ?? "Admin",
+      resendEmailId: result.ok ? result.emailId : undefined,
+    });
+
+    if (!result.ok) {
+      return res.status(502).json({ message: `Saved, but sending failed: ${result.error}. Your domain is probably not verified in Resend yet.`, inboxMessage: msg });
+    }
+    res.json({ message: "Email sent", inboxMessage: msg });
+  });
+
+  app.post("/api/admin/inbox/:id/resolve", requireAuth, requireRole("admin"), async (req, res) => {
+    const resolved = req.body.resolved !== false;
+    const updated = await storage.setInboxMessageResolved(String(req.params.id), resolved);
+    if (!updated) return res.status(404).json({ message: "Message not found" });
+    res.json({ inboxMessage: updated });
+  });
+}
+
+// Registered separately in index.ts, BEFORE the global express.json()
+// middleware — webhook signature verification needs the exact raw request
+// bytes, which express.json() would already have consumed and re-serialized
+// by the time a route inside registerRoutes() runs. See index.ts for why
+// this can't just live inline above with everything else.
+export function registerInboundWebhook(app: Express) {
+  // Public — Resend calls this, there's no admin session. Trust nothing
+  // except a verified signature. See server/lib/email.ts for setup notes.
+  app.post("/api/webhooks/resend-inbound", express.raw({ type: "application/json" }), async (req, res) => {
+    const payload = req.body instanceof Buffer ? req.body.toString("utf8") : JSON.stringify(req.body);
+    const svixId = req.headers["svix-id"];
+    const svixTimestamp = req.headers["svix-timestamp"];
+    const svixSignature = req.headers["svix-signature"];
+    if (typeof svixId !== "string" || typeof svixTimestamp !== "string" || typeof svixSignature !== "string") {
+      return res.status(400).json({ message: "Missing signature headers" });
+    }
+
+    let event: { type: string; data: { email_id: string; to: string[] } };
+    try {
+      event = verifyInboundWebhook(payload, { id: svixId, timestamp: svixTimestamp, signature: svixSignature });
+    } catch (err) {
+      console.error("[WEBHOOK] Resend inbound signature verification failed:", err);
+      return res.status(401).json({ message: "Invalid signature" });
+    }
+
+    if (event.type !== "email.received") return res.json({ received: true });
+
+    // Which conversation is this? We encoded it in the address we set as
+    // reply-to: msg-<inboxMessageId>@<inbound domain>.
+    const target = event.data.to.find((addr) => /^msg-[^@]+@/.test(addr));
+    const inboxMessageId = target?.match(/^msg-([^@]+)@/)?.[1];
+    if (!inboxMessageId) return res.json({ received: true, note: "No matching conversation address" });
+
+    // Resend retries webhook delivery — skip if we've already stored this exact email.
+    if (await storage.threadMessageExistsForResendId(event.data.email_id)) {
+      return res.json({ received: true, note: "Already processed" });
+    }
+
+    const msg = await storage.getInboxMessageById(inboxMessageId);
+    if (!msg) return res.json({ received: true, note: "Conversation not found" });
+
+    try {
+      const email = await getReceivedEmail(event.data.email_id);
+      const body = email.text || email.html?.replace(/<[^>]+>/g, " ") || "(empty reply)";
+      await storage.addThreadMessage({
+        inboxMessageId,
+        direction: "inbound",
+        body,
+        authorName: msg.name,
+        resendEmailId: event.data.email_id,
+      });
+      // A new reply from the visitor un-resolves the conversation, since it
+      // needs the admin's attention again.
+      await storage.setInboxMessageResolved(inboxMessageId, false);
+    } catch (err) {
+      console.error("[WEBHOOK] Failed to fetch/store inbound email content:", err);
+    }
+
+    res.json({ received: true });
   });
 }

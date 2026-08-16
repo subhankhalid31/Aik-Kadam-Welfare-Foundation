@@ -6,7 +6,7 @@ import helmet from "helmet";
 import { createServer } from "http";
 import path from "path";
 import { pool } from "./db";
-import { registerRoutes } from "./routes";
+import { registerRoutes, registerInboundWebhook } from "./routes";
 import { setupVite, serveStatic } from "./vite";
 
 if (process.env.NODE_ENV === "production" && !process.env.SESSION_SECRET) {
@@ -26,6 +26,10 @@ app.use(
     contentSecurityPolicy: false,
   }),
 );
+// Must be registered before express.json(): webhook signature verification
+// needs the exact raw bytes Resend sent, not a re-serialized copy of a
+// JSON-parsed object (which can differ byte-for-byte and fail verification).
+registerInboundWebhook(app);
 app.use(express.json());
 app.use("/uploads", express.static(path.resolve(import.meta.dirname, "..", "uploads")));
 

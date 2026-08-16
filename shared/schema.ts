@@ -218,7 +218,11 @@ export const updateCaseSchema = z.object({
 // ─── Inbox (contact form + partnership inquiries, admin-manageable) ──────
 
 export const inboxMessageTypeEnum = pgEnum("inbox_message_type", ["contact", "partnership"]);
+// unread/read/replied track the ORIGINAL inbound message's lifecycle;
+// resolved is a separate flag admins set manually once a conversation is
+// done, independent of read state (a resolved thread can still be read).
 export const inboxMessageStatusEnum = pgEnum("inbox_message_status", ["unread", "read", "replied"]);
+export const inboxThreadDirectionEnum = pgEnum("inbox_thread_direction", ["outbound", "inbound"]);
 
 export const inboxMessages = pgTable("inbox_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -228,6 +232,7 @@ export const inboxMessages = pgTable("inbox_messages", {
   organization: text("organization"), // partnership inquiries only
   message: text("message").notNull(),
   status: inboxMessageStatusEnum("status").notNull().default("unread"),
+  resolved: boolean("resolved").notNull().default(false),
   replyText: text("reply_text"),
   repliedAt: timestamp("replied_at"),
   repliedBy: text("replied_by"), // admin's name, for an internal record of who answered
@@ -236,8 +241,30 @@ export const inboxMessages = pgTable("inbox_messages", {
 
 export type InboxMessage = typeof inboxMessages.$inferSelect;
 
+// Every reply after the original message — either the admin replying
+// (outbound) or the visitor emailing back (inbound, captured via the
+// Resend inbound webhook). Ordered by createdAt to render as a thread.
+export const inboxThreadMessages = pgTable("inbox_thread_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  inboxMessageId: varchar("inbox_message_id").notNull().references(() => inboxMessages.id, { onDelete: "cascade" }),
+  direction: inboxThreadDirectionEnum("direction").notNull(),
+  body: text("body").notNull(),
+  authorName: text("author_name"), // admin's name (outbound) or the visitor's name (inbound)
+  resendEmailId: text("resend_email_id"), // Resend's own id for this specific email, for dedup on webhook retries
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type InboxThreadMessage = typeof inboxThreadMessages.$inferSelect;
+
 export const inboxReplySchema = z.object({
   reply: z.string().min(1, "Reply message is required").max(5000),
+});
+
+export const inboxComposeSchema = z.object({
+  to: z.string().email("Enter a valid email address"),
+  name: z.string().min(1, "Recipient name is required").max(120),
+  subject: z.string().min(1, "Subject is required").max(200),
+  body: z.string().min(1, "Message is required").max(5000),
 });
 
 // ─── Gallery events (admin-curated, verified completed events) ───────────

@@ -12,6 +12,8 @@ import {
   recurringDonations,
   bannedEmails,
   siteSettings,
+  inboxMessages,
+  inboxThreadMessages,
   type User,
   type OtpCode,
   type Case,
@@ -21,6 +23,8 @@ import {
   type Donation,
   type RecurringDonation,
   type CaseVolunteerRequest,
+  type InboxMessage,
+  type InboxThreadMessage,
 } from "@shared/schema";
 
 // Emails are matched case-insensitively everywhere and always stored
@@ -1060,5 +1064,101 @@ export const storage = {
     } else {
       await db.insert(siteSettings).values({ tagline, taglineCaseId: taglineCaseId ?? null });
     }
+  },
+
+  // ─── Inbox (contact form + partnership inquiries) ────────────────────────
+  async createInboxMessage(data: {
+    type: "contact" | "partnership";
+    name: string;
+    email: string;
+    organization?: string;
+    message: string;
+  }): Promise<InboxMessage> {
+    const [row] = await db.insert(inboxMessages).values(data).returning();
+    return row;
+  },
+
+  async listInboxMessages(type?: "contact" | "partnership"): Promise<InboxMessage[]> {
+    const query = db.select().from(inboxMessages).orderBy(desc(inboxMessages.createdAt));
+    if (type) return query.where(eq(inboxMessages.type, type));
+    return query;
+  },
+
+  async getInboxMessageById(id: string): Promise<InboxMessage | undefined> {
+    const [row] = await db.select().from(inboxMessages).where(eq(inboxMessages.id, id));
+    return row;
+  },
+
+  // Opening a message for the first time flips it from unread -> read, but
+  // never overwrites "replied" back down to "read".
+  async markInboxMessageRead(id: string): Promise<void> {
+    await db
+      .update(inboxMessages)
+      .set({ status: "read" })
+      .where(and(eq(inboxMessages.id, id), eq(inboxMessages.status, "unread")));
+  },
+
+  async replyToInboxMessage(id: string, replyText: string, repliedBy: string): Promise<InboxMessage | undefined> {
+    const [row] = await db
+      .update(inboxMessages)
+      .set({ status: "replied", replyText, repliedAt: new Date(), repliedBy })
+      .where(eq(inboxMessages.id, id))
+      .returning();
+    return row;
+  },
+
+  // A brand-new conversation the admin starts from the inbox (not a reply
+  // to an inbound form submission). Stored the same way so it shows up in
+  // the same list and can be threaded/resolved identically; `type` is
+  // "contact" so it lands in that tab — there's no separate visitor form
+  // that originated it.
+  async createComposedInboxMessage(data: { name: string; email: string; message: string }): Promise<InboxMessage> {
+    const [row] = await db
+      .insert(inboxMessages)
+      .values({ type: "contact", name: data.name, email: data.email, message: data.message, status: "replied" })
+      .returning();
+    return row;
+  },
+
+  async addThreadMessage(data: {
+    inboxMessageId: string;
+    direction: "outbound" | "inbound";
+    body: string;
+    authorName?: string;
+    resendEmailId?: string;
+  }): Promise<InboxThreadMessage> {
+    const [row] = await db.insert(inboxThreadMessages).values(data).returning();
+    return row;
+  },
+
+  async listThreadMessages(inboxMessageId: string): Promise<InboxThreadMessage[]> {
+    return db
+      .select()
+      .from(inboxThreadMessages)
+      .where(eq(inboxThreadMessages.inboxMessageId, inboxMessageId))
+      .orderBy(inboxThreadMessages.createdAt);
+  },
+
+  // Resend retries webhook delivery on timeout, so the same inbound email
+  // can arrive twice — skip it if we've already stored this exact email id.
+  async threadMessageExistsForResendId(resendEmailId: string): Promise<boolean> {
+    const [row] = await db.select({ id: inboxThreadMessages.id }).from(inboxThreadMessages).where(eq(inboxThreadMessages.resendEmailId, resendEmailId));
+    return !!row;
+  },
+
+  async setInboxMessageResolved(id: string, resolved: boolean): Promise<InboxMessage | undefined> {
+    const [row] = await db.update(inboxMessages).set({ resolved }).where(eq(inboxMessages.id, id)).returning();
+    return row;
+  },
+
+  async countUnreadInboxMessages(): Promise<{ contact: number; partnership: number }> {
+    const rows = await db
+      .select({ type: inboxMessages.type, count: sql<number>`count(*)` })
+      .from(inboxMessages)
+      .where(eq(inboxMessages.status, "unread"))
+      .groupBy(inboxMessages.type);
+    const result = { contact: 0, partnership: 0 };
+    for (const r of rows) result[r.type] = Number(r.count);
+    return result;
   },
 };
