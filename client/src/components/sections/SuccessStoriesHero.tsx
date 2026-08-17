@@ -133,8 +133,8 @@ export function SuccessStoriesHero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.35, ease: "easeOut" }}
           >
-            <div className="glass-pill-wrap mt-5 group/cta">
-              <Link href="/about" className="glass-pill relative isolate rounded-full block">
+            <div className="glass-pill-wrap mt-5 inline-block group/cta">
+              <Link href="/about" className="glass-pill relative isolate rounded-full inline-block bg-white/10">
                 <span className="glass-pill-text block px-4 py-3 text-sm font-semibold">
                   <span className="relative z-10 flex items-center gap-1.5">
                     <BookHeart size={15} /> Learn About Us

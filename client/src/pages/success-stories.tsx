@@ -81,7 +81,9 @@ export default function SuccessStoriesPage() {
         >
           <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
             <SearchBar value={query} onChange={setQuery} placeholder="Search stories by name, location or keyword..." />
-            <SortDropdown value={sort} onChange={setSort} options={SORT_OPTIONS} />
+            <div className="ml-auto shrink-0">
+              <SortDropdown value={sort} onChange={setSort} options={SORT_OPTIONS} />
+            </div>
           </div>
           {user?.role === "admin" && (
             <a
