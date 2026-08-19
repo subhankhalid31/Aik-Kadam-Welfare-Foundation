@@ -7,18 +7,25 @@ import confetti from "canvas-confetti";
 import type { GlobalOptions as ConfettiGlobalOptions, CreateTypes as ConfettiInstance, Options as ConfettiOptions } from "canvas-confetti";
 import { cn } from "@/lib/utils";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { CanvasRevealEffect } from "@/components/ui/CanvasRevealEffect";
+import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import { GoogleSignInButton } from "@/components/ui/GoogleSignInButton";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+
+const SIGNUP_STEPS = [
+  { title: "Create your account", description: "Just an email, a name, and a password to start." },
+  { title: "Verify your email", description: "A quick code confirms it's really you." },
+  { title: "Start making an impact", description: "Donate, volunteer, or submit a case in minutes." },
+];
 
 // ─────────────────────────────────────────────────────────────────────────
 // This page ports a "liquid glass" auth UI (originally a 21st.dev demo
 // component) onto Aik Kadam's real signup flow. Three things changed from
 // the demo on purpose:
-//   1. Background is our own CanvasRevealEffect particle field, not the
-//      demo's gradient blobs — darkened and de-blued so it reads through
-//      the glass blur instead of washing out.
+//   1. Background sits inside AuthSplitLayout (shared with login/forgot-
+//      password) instead of the demo's gradient blobs — a static right-
+//      side panel, not an animated particle field, since that field was
+//      the thing making these pages slow.
 //   2. The GitHub button and fake Google button are gone. There's exactly
 //      one working OAuth path (Google), using the site's real
 //      GoogleSignInButton — a decorative-only OAuth button would be a
@@ -339,32 +346,12 @@ export default function SignupPage() {
       <Confetti ref={confettiRef} manualstart className="fixed top-0 left-0 w-full h-full pointer-events-none z-[999]" />
       <Modal />
 
-      <main className="relative overflow-hidden bg-background min-h-[calc(100vh-4rem)] flex items-center justify-center px-6 py-16">
-        {/* Same particle field as the rest of the site (brand blue, matching
-            login's palette). A backdrop-blur veil sits in front of it —
-            between the canvas and the glass content — so the dots read as
-            a soft, out-of-focus field behind frosted glass rather than a
-            crisp pattern sitting right up against the inputs. */}
-        <div className="absolute inset-0">
-          <CanvasRevealEffect
-            animationSpeed={2.4}
-            containerClassName="bg-background"
-            colors={[
-              [124, 179, 66],
-              [110, 160, 55],
-              [96, 140, 45],
-            ]}
-            dotSize={5}
-            totalSize={11}
-            opacities={[0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.85, 0.9, 0.95, 1]}
-          />
-        </div>
-        {/* The blur veil. Bump `backdrop-blur-md` up to `-lg`/`-xl`/`-2xl` for
-            a softer/dreamier background, or down to `-sm` for sharper dots —
-            this one line controls it. */}
-        {/*<div className="absolute inset-0 backdrop-blur-md" />*/}
-        {/*<div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(246,247,245,0.02)_0%,_rgba(246,247,245,0.3)_85%)]" />*/}
-
+      <AuthSplitLayout
+        eyebrow="Sign Up"
+        heading="Get started with Aik Kadam."
+        subheading="Complete these easy steps to create your account."
+        steps={SIGNUP_STEPS}
+      >
         <fieldset disabled={modalStatus !== "closed"} className="relative z-10 flex flex-col items-center gap-8 w-[280px] mx-auto">
           <AnimatePresence mode="wait">
             {authStep === "email" && (
@@ -620,7 +607,7 @@ export default function SignupPage() {
             </a>
           </p>
         </fieldset>
-      </main>
+      </AuthSplitLayout>
     </PageLayout>
   );
 }

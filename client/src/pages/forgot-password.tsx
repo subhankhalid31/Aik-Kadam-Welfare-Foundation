@@ -1,10 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { CanvasRevealEffect } from "@/components/ui/CanvasRevealEffect";
+import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import { cn } from "@/lib/utils";
 import { api, ApiError } from "@/lib/api";
 import { Mail, KeyRound, Lock } from "lucide-react";
+
+const FORGOT_PASSWORD_STEPS = [
+  { title: "Enter your email", description: "We'll look up the account tied to it." },
+  { title: "Check your inbox", description: "A one-time reset code lands there within moments." },
+  { title: "Set a new password", description: "Then you're straight back in." },
+];
 
 export default function ForgotPasswordPage() {
   const [, navigate] = useLocation();
@@ -68,24 +74,16 @@ export default function ForgotPasswordPage() {
 
   return (
     <PageLayout>
-      <main className="relative overflow-hidden bg-background min-h-[calc(100vh-4rem)] flex items-center justify-center px-6 py-16">
-        {/* Same particle field as login/signup, for a consistent feel across
-            all three auth pages. */}
-        <div className="absolute inset-0">
-          <CanvasRevealEffect
-            animationSpeed={2.4}
-            containerClassName="bg-background"
-            colors={[
-              [31, 97, 239],
-              [15, 78, 215],
-              [13, 66, 181],
-            ]}
-            dotSize={5}
-            totalSize={11}
-            opacities={[0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.85, 0.9, 0.95, 1]}
-          />
-        </div>
-
+      <AuthSplitLayout
+        eyebrow={step === "email" ? "Forgot Password" : "Reset Password"}
+        heading={step === "email" ? "Reset your password." : "Check your inbox."}
+        subheading={
+          step === "email"
+            ? "A few steps back to your account."
+            : "Almost there — the code is on its way."
+        }
+        steps={FORGOT_PASSWORD_STEPS}
+      >
         <div className="relative w-full max-w-md">
           <div className="absolute -inset-6 rounded-[3rem] bg-primary/25 blur-3xl -z-10" />
 
@@ -221,7 +219,7 @@ export default function ForgotPasswordPage() {
             </div>
           </div>
         </div>
-      </main>
+      </AuthSplitLayout>
     </PageLayout>
   );
 }

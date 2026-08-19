@@ -2,11 +2,17 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { GoogleSignInButton } from "@/components/ui/GoogleSignInButton";
-import { CanvasRevealEffect } from "@/components/ui/CanvasRevealEffect";
+import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import { cn } from "@/lib/utils";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+
+const LOGIN_STEPS = [
+  { title: "Sign in securely", description: "One account for donating, volunteering, and tracking cases." },
+  { title: "Pick up where you left off", description: "Your dashboard, hours, and history are right where you left them." },
+  { title: "Keep the momentum going", description: "Every login is one more step toward someone who needs it." },
+];
 
 export default function LoginPage() {
   const [, navigate] = useLocation();
@@ -38,26 +44,12 @@ export default function LoginPage() {
 
   return (
     <PageLayout>
-      <main className="relative overflow-hidden bg-background min-h-[calc(100vh-4rem)] flex items-center justify-center px-6 py-16">
-        {/* Same particle field + blur veil as signup, for a consistent feel
-            across both auth pages. */}
-        <div className="absolute inset-0">
-          <CanvasRevealEffect
-            animationSpeed={2.4}
-            containerClassName="bg-background"
-            colors={[
-              [124, 179, 66],
-              [110, 160, 55],
-              [96, 140, 45],
-            ]}
-            dotSize={5}
-            totalSize={9}
-            opacities={[0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.85, 0.9, 0.95, 1]}
-          />
-        </div>
-        {/*<div className="absolute inset-0 backdrop-blur-1" />*/}
-        {/*<div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(246,247,245,0.02)_0%,_rgba(246,247,245,0.05)_85%)]" />*/}
-
+      <AuthSplitLayout
+        eyebrow="Sign In"
+        heading="Welcome back to Aik Kadam."
+        subheading="Every login is one step closer to where it's needed."
+        steps={LOGIN_STEPS}
+      >
         {/* Unlike signup — whose pill inputs float directly on the
             background with no container — login sits inside a bordered
             .glass-card (defined in index.css) so the panel itself is
@@ -157,7 +149,7 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
-      </main>
+      </AuthSplitLayout>
     </PageLayout>
   );
 }
