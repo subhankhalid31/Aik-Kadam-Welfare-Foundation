@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { PageLayout } from "@/components/layout/PageLayout";
+import { motion } from "framer-motion";
 import { GoogleSignInButton } from "@/components/ui/GoogleSignInButton";
 import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
+import { BlurFade } from "@/components/ui/BlurFade";
 import { cn } from "@/lib/utils";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
@@ -43,7 +45,7 @@ export default function LoginPage() {
   }
 
   return (
-    <PageLayout>
+    <PageLayout transparentHero navTheme="light">
       <AuthSplitLayout
         eyebrow="Sign In"
         heading="Welcome back to Aik Kadam."
@@ -54,20 +56,41 @@ export default function LoginPage() {
             background with no container — login sits inside a bordered
             .glass-card (defined in index.css) so the panel itself is
             clearly recognizable as a distinct surface, not just loose
-            floating controls. */}
-        <div className="relative w-full max-w-md">
-          <div className="absolute -inset-6 rounded-[3rem] bg-primary/25 blur-3xl -z-10" />
+            floating controls. The whole card fades/slides in on mount,
+            same as signup's step transitions, and the glow behind it is a
+            plain black shadow (not the brand green) so it reads as a
+            drop shadow, not a colored halo bleeding out of the card. */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="relative w-full max-w-md"
+        >
+          <div className="absolute -inset-6 rounded-[3rem] bg-black/45 blur-3xl -z-10" />
 
-          <div className="glass-card p-8 sm:p-10">
+          {/* .glass-card is fully see-through by default (fine on the old
+              plain-color background), so on mobile — sitting directly on a
+              busy photo — it read as tinted by whatever color was behind
+              it (green, from the photo). !bg-white/45 gives it an actual
+              white backing there; lg:!bg-white/0 keeps the original pure
+              glass look on desktop, where it only ever sits on the plain
+              ivory page background anyway. */}
+          <div className="glass-card p-8 sm:p-10 !bg-white/20 lg:!bg-white/0 !border-none">
             <div className="relative">
-              <span className="text-xs font-semibold tracking-wide text-primary uppercase">Sign In</span>
-              <h1 className="mt-3 font-serif font-light text-4xl text-ink">
-                <span className="italic" style={{ color: "#7CB342" }}>Welcome</span> back.
-              </h1>
-              <p className="mt-2 text-sm text-ink/60">One step closer to where it's needed.</p>
+              <BlurFade delay={0.05}>
+                <span className="text-xs font-semibold tracking-wide text-white uppercase">Sign In</span>
+                <h1 className="mt-3 font-serif font-light text-4xl sm:text-5xl tracking-tight text-white lg:text-ink">
+                  {/* Whole heading is white on mobile for contrast against
+                      the photo; back to ink + the brand-green italic
+                      accent on desktop where it sits on the plain
+                      background. */}
+                  <span className="lg:italic lg:text-white">Welcome</span> back.
+                </h1>
+                <p className="mt-2 text-sm text-white/80 lg:text-ink/60">One step closer to where it's needed.</p>
+              </BlurFade>
 
               <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-                <div>
+                <BlurFade delay={0.15}>
                   <label className="block text-sm font-medium text-ink mb-1.5">Email</label>
                   <div className="glass-input-wrap w-full">
                     <div className="glass-input">
@@ -88,9 +111,9 @@ export default function LoginPage() {
                       />
                     </div>
                   </div>
-                </div>
+                </BlurFade>
 
-                <div>
+                <BlurFade delay={0.25}>
                   <label className="block text-sm font-medium text-ink mb-1.5">Password</label>
                   <div className="glass-input-wrap w-full">
                     <div className="glass-input">
@@ -116,39 +139,47 @@ export default function LoginPage() {
                       </button>
                     </div>
                   </div>
-                </div>
+                </BlurFade>
 
-                <a href="/forgot-password" className="block text-sm text-primary font-medium -mt-2 hover:text-primary-dark transition-colors">
-                  Forgot password?
-                </a>
+                <BlurFade delay={0.32}>
+                  <a href="/forgot-password" className="block text-sm text-white font-medium -mt-2 hover:text-black transition-colors">
+                    Forgot password?
+                  </a>
+                </BlurFade>
 
                 {error && <p className="text-sm text-red-600">{error}</p>}
 
-                <div className="glass-button-wrap w-full">
-                  <button type="submit" disabled={loading} className={cn("glass-button relative z-10 w-full rounded-full isolate transition-all", loading && "opacity-70")}>
-                    <span className="glass-button-text relative block select-none tracking-tighter w-full py-3.5 text-center font-semibold">{loading ? "Signing in..." : "Sign In"}</span>
-                  </button>
-                  <div className="glass-button-shadow rounded-full pointer-events-none" />
-                </div>
+                <BlurFade delay={0.4}>
+                  <div className="glass-button-wrap w-full">
+                    <button type="submit" disabled={loading} className={cn("glass-button relative z-10 w-full rounded-full isolate transition-all", loading && "opacity-70")}>
+                      <span className="glass-button-text relative block select-none tracking-tighter w-full py-3.5 text-center font-semibold">{loading ? "Signing in..." : "Sign In"}</span>
+                    </button>
+                    <div className="glass-button-shadow rounded-full pointer-events-none" />
+                  </div>
+                </BlurFade>
               </form>
 
-              <GoogleSignInButton
-                onSuccess={async (role) => {
-                  await refresh();
-                  navigate(role === "admin" ? "/admin" : "/");
-                }}
-                onError={setError}
-              />
+              <BlurFade delay={0.48}>
+                <GoogleSignInButton
+                  onSuccess={async (role) => {
+                    await refresh();
+                    navigate(role === "admin" ? "/admin" : "/");
+                  }}
+                  onError={setError}
+                />
+              </BlurFade>
 
-              <p className="mt-6 text-center text-sm text-ink/60">
-                Don't have an account?{" "}
-                <a href="/signup" className="text-primary font-medium hover:text-primary-dark transition-colors">
-                  Create one
-                </a>
-              </p>
+              <BlurFade delay={0.55}>
+                <p className="mt-6 text-center text-sm text-ink/60">
+                  Don't have an account?{" "}
+                  <a href="/signup" className="text-white font-medium hover:text-black transition-colors">
+                    Create one
+                  </a>
+                </p>
+              </BlurFade>
             </div>
           </div>
-        </div>
+        </motion.div>
       </AuthSplitLayout>
     </PageLayout>
   );
