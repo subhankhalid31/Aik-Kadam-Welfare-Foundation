@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
+import { motion, AnimatePresence } from "framer-motion";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
+import { BlurFade } from "@/components/ui/BlurFade";
 import { cn } from "@/lib/utils";
 import { api, ApiError } from "@/lib/api";
 import { Mail, KeyRound, Lock } from "lucide-react";
@@ -73,7 +75,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <PageLayout>
+    <PageLayout transparentHero navTheme="light">
       <AuthSplitLayout
         eyebrow={step === "email" ? "Forgot Password" : "Reset Password"}
         heading={step === "email" ? "Reset your password." : "Check your inbox."}
@@ -84,141 +86,159 @@ export default function ForgotPasswordPage() {
         }
         steps={FORGOT_PASSWORD_STEPS}
       >
-        <div className="relative w-full max-w-md">
-          <div className="absolute -inset-6 rounded-[3rem] bg-primary/25 blur-3xl -z-10" />
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="relative w-full max-w-md"
+        >
+          <div className="absolute -inset-6 rounded-[3rem] bg-black/45 blur-3xl -z-10" />
 
-          <div className="glass-card p-8 sm:p-10">
+          {/* Same white backing fix as login.tsx — see the comment there. */}
+          <div className="glass-card p-8 sm:p-10 !bg-white/45 lg:!bg-white/0">
             <div className="relative">
-              <span className="text-xs font-semibold tracking-wide text-primary uppercase">
-                {step === "email" ? "Forgot Password" : "Reset Password"}
-              </span>
-              <h1 className="mt-3 font-serif font-light text-4xl text-ink">
-                {step === "email" ? (
-                  <><span className="text-glow-blue">Reset</span> your password.</>
-                ) : (
-                  <>Check <span className="text-glow-blue">your</span> inbox.</>
-                )}
-              </h1>
-              <p className="mt-2 text-sm text-ink/60">
-                {step === "email"
-                  ? "Enter your account email and we'll send a reset code."
-                  : "Enter the code we sent you and choose a new password."}
-              </p>
+              <AnimatePresence mode="wait">
+                <motion.div key={step} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25, ease: "easeOut" }}>
+                  <BlurFade delay={0.05}>
+                    <span className="text-xs font-semibold tracking-wide text-white uppercase">
+                      {step === "email" ? "Forgot Password" : "Reset Password"}
+                    </span>
+                    <h1 className="mt-3 font-serif font-light text-4xl sm:text-5xl tracking-tight text-white lg:text-ink">
+                      {step === "email" ? (
+                        <><span className="lg:italic lg:text-white">Reset</span> your password.</>
+                      ) : (
+                        <>Check <span className="lg:italic lg:text-white">your</span> inbox.</>
+                      )}
+                    </h1>
+                    <p className="mt-2 text-sm text-white/80 lg:text-ink/60">
+                      {step === "email"
+                        ? "Enter your account email and we'll send a reset code."
+                        : "Enter the code we sent you and choose a new password."}
+                    </p>
+                  </BlurFade>
 
-              {step === "email" ? (
-                <form onSubmit={handleRequestCode} className="mt-8 space-y-5">
-                  <div>
-                    <label className="block text-sm font-medium text-ink mb-1.5">Email</label>
-                    <div className="glass-input-wrap w-full">
-                      <div className="glass-input">
-                        <span className="glass-input-text-area" />
-                        <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pl-2">
-                          <Mail className="h-5 w-5 text-ink/70 flex-shrink-0" />
+                  {step === "email" ? (
+                    <form onSubmit={handleRequestCode} className="mt-8 space-y-5">
+                      <BlurFade delay={0.15}>
+                        <label className="block text-sm font-medium text-ink mb-1.5">Email</label>
+                        <div className="glass-input-wrap w-full">
+                          <div className="glass-input">
+                            <span className="glass-input-text-area" />
+                            <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pl-2">
+                              <Mail className="h-5 w-5 text-ink/70 flex-shrink-0" />
+                            </div>
+                            <input
+                              required
+                              type="email"
+                              autoCapitalize="none"
+                              autoCorrect="off"
+                              spellCheck={false}
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              className="relative z-10 h-full w-0 flex-grow bg-transparent text-ink placeholder:text-ink/50 focus:outline-none py-2.5 pr-4"
+                              placeholder="you@example.com"
+                            />
+                          </div>
                         </div>
-                        <input
-                          required
-                          type="email"
-                          autoCapitalize="none"
-                          autoCorrect="off"
-                          spellCheck={false}
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="relative z-10 h-full w-0 flex-grow bg-transparent text-ink placeholder:text-ink/50 focus:outline-none py-2.5 pr-4"
-                          placeholder="you@example.com"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                      </BlurFade>
 
-                  {error && <p className="text-sm text-red-600">{error}</p>}
+                      {error && <p className="text-sm text-red-600">{error}</p>}
 
-                  <div className="glass-button-wrap w-full">
-                    <button type="submit" disabled={loading} className={cn("glass-button relative z-10 w-full rounded-full isolate transition-all", loading && "opacity-70")}>
-                      <span className="glass-button-text relative block select-none tracking-tighter w-full py-3.5 text-center font-semibold">
-                        {loading ? "Sending..." : "Send Reset Code"}
-                      </span>
-                    </button>
-                    <div className="glass-button-shadow rounded-full pointer-events-none" />
-                  </div>
-                </form>
-              ) : (
-                <form onSubmit={handleReset} className="mt-8 space-y-5">
-                  {info && <p className="text-sm text-primary">{info}</p>}
-
-                  <div>
-                    <label className="block text-sm font-medium text-ink mb-1.5">Reset code</label>
-                    <div className="glass-input-wrap w-full">
-                      <div className="glass-input">
-                        <span className="glass-input-text-area" />
-                        <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pl-2">
-                          <KeyRound className="h-5 w-5 text-ink/70 flex-shrink-0" />
+                      <BlurFade delay={0.25}>
+                        <div className="glass-button-wrap w-full">
+                          <button type="submit" disabled={loading} className={cn("glass-button relative z-10 w-full rounded-full isolate transition-all", loading && "opacity-70")}>
+                            <span className="glass-button-text relative block select-none tracking-tighter w-full py-3.5 text-center font-semibold">
+                              {loading ? "Sending..." : "Send Reset Code"}
+                            </span>
+                          </button>
+                          <div className="glass-button-shadow rounded-full pointer-events-none" />
                         </div>
-                        <input
-                          required
-                          type="text"
-                          inputMode="numeric"
-                          maxLength={6}
-                          value={code}
-                          onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                          className="relative z-10 h-full w-0 flex-grow bg-transparent text-ink placeholder:text-ink/50 focus:outline-none py-2.5 pr-4 text-center tracking-[0.5em] font-mono"
-                          placeholder="------"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                      </BlurFade>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleReset} className="mt-8 space-y-5">
+                      {info && <p className="text-sm text-white">{info}</p>}
 
-                  <div>
-                    <label className="block text-sm font-medium text-ink mb-1.5">New password</label>
-                    <div className="glass-input-wrap w-full">
-                      <div className="glass-input">
-                        <span className="glass-input-text-area" />
-                        <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pl-2">
-                          <Lock className="h-5 w-5 text-ink/70 flex-shrink-0" />
+                      <BlurFade delay={0.15}>
+                        <label className="block text-sm font-medium text-ink mb-1.5">Reset code</label>
+                        <div className="glass-input-wrap w-full">
+                          <div className="glass-input">
+                            <span className="glass-input-text-area" />
+                            <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pl-2">
+                              <KeyRound className="h-5 w-5 text-ink/70 flex-shrink-0" />
+                            </div>
+                            <input
+                              required
+                              type="text"
+                              inputMode="numeric"
+                              maxLength={6}
+                              value={code}
+                              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                              className="relative z-10 h-full w-0 flex-grow bg-transparent text-ink placeholder:text-ink/50 focus:outline-none py-2.5 pr-4 text-center tracking-[0.5em] font-mono"
+                              placeholder="------"
+                            />
+                          </div>
                         </div>
-                        <input
-                          required
-                          type="password"
-                          minLength={8}
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          className="relative z-10 h-full w-0 flex-grow bg-transparent text-ink placeholder:text-ink/50 focus:outline-none py-2.5 pr-4"
-                          placeholder="At least 8 characters"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                      </BlurFade>
 
-                  {error && <p className="text-sm text-red-600">{error}</p>}
+                      <BlurFade delay={0.22}>
+                        <label className="block text-sm font-medium text-ink mb-1.5">New password</label>
+                        <div className="glass-input-wrap w-full">
+                          <div className="glass-input">
+                            <span className="glass-input-text-area" />
+                            <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pl-2">
+                              <Lock className="h-5 w-5 text-ink/70 flex-shrink-0" />
+                            </div>
+                            <input
+                              required
+                              type="password"
+                              minLength={8}
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              className="relative z-10 h-full w-0 flex-grow bg-transparent text-ink placeholder:text-ink/50 focus:outline-none py-2.5 pr-4"
+                              placeholder="At least 8 characters"
+                            />
+                          </div>
+                        </div>
+                      </BlurFade>
 
-                  <div className="glass-button-wrap w-full">
-                    <button type="submit" disabled={loading || code.length !== 6} className={cn("glass-button relative z-10 w-full rounded-full isolate transition-all", (loading || code.length !== 6) && "opacity-70")}>
-                      <span className="glass-button-text relative block select-none tracking-tighter w-full py-3.5 text-center font-semibold">
-                        {loading ? "Resetting..." : "Reset Password"}
-                      </span>
-                    </button>
-                    <div className="glass-button-shadow rounded-full pointer-events-none" />
-                  </div>
+                      {error && <p className="text-sm text-red-600">{error}</p>}
 
-                  <button
-                    type="button"
-                    onClick={handleResend}
-                    disabled={cooldown > 0}
-                    className="w-full text-center text-sm text-primary font-medium disabled:text-muted disabled:cursor-not-allowed transition-colors"
-                  >
-                    {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
-                  </button>
-                </form>
-              )}
+                      <BlurFade delay={0.3}>
+                        <div className="glass-button-wrap w-full">
+                          <button type="submit" disabled={loading || code.length !== 6} className={cn("glass-button relative z-10 w-full rounded-full isolate transition-all", (loading || code.length !== 6) && "opacity-70")}>
+                            <span className="glass-button-text relative block select-none tracking-tighter w-full py-3.5 text-center font-semibold">
+                              {loading ? "Resetting..." : "Reset Password"}
+                            </span>
+                          </button>
+                          <div className="glass-button-shadow rounded-full pointer-events-none" />
+                        </div>
 
-              <p className="mt-6 text-center text-sm text-ink/60">
-                Remembered it?{" "}
-                <a href="/login" className="text-primary font-medium hover:text-primary-dark transition-colors">
-                  Back to sign in
-                </a>
-              </p>
+                        <button
+                          type="button"
+                          onClick={handleResend}
+                          disabled={cooldown > 0}
+                          className="mt-3 w-full text-center text-sm text-white font-medium disabled:text-muted disabled:cursor-not-allowed transition-colors"
+                        >
+                          {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
+                        </button>
+                      </BlurFade>
+                    </form>
+                  )}
+
+                  <BlurFade delay={0.38}>
+                    <p className="mt-6 text-center text-sm text-ink/60">
+                      Remembered it?{" "}
+                      <a href="/login" className="text-white font-medium hover:text-black transition-colors">
+                        Back to sign in
+                      </a>
+                    </p>
+                  </BlurFade>
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
-        </div>
+        </motion.div>
       </AuthSplitLayout>
     </PageLayout>
   );

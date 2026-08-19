@@ -2,13 +2,14 @@ import { useState, useRef, useEffect, useCallback, useMemo, forwardRef, useImper
 import { useLocation } from "wouter";
 import { cva, type VariantProps } from "class-variance-authority";
 import { ArrowRight, Mail, User, Lock, Eye, EyeOff, ArrowLeft, X, AlertCircle, PartyPopper, Loader } from "lucide-react";
-import { AnimatePresence, motion, useInView, type Variants, type Transition } from "framer-motion";
+import { AnimatePresence, motion, type Variants, type Transition } from "framer-motion";
 import confetti from "canvas-confetti";
 import type { GlobalOptions as ConfettiGlobalOptions, CreateTypes as ConfettiInstance, Options as ConfettiOptions } from "canvas-confetti";
 import { cn } from "@/lib/utils";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import { GoogleSignInButton } from "@/components/ui/GoogleSignInButton";
+import { BlurFade } from "@/components/ui/BlurFade";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
@@ -108,48 +109,6 @@ function TextLoop({
         </motion.div>
       </AnimatePresence>
     </div>
-  );
-}
-
-// ─── BlurFade — fade+blur reveal on mount / scroll-into-view ──────────────
-function BlurFade({
-  children,
-  className,
-  duration = 0.4,
-  delay = 0,
-  yOffset = 6,
-  inView = true,
-  inViewMargin = "-50px",
-  blur = "6px",
-}: {
-  children: React.ReactNode;
-  className?: string;
-  duration?: number;
-  delay?: number;
-  yOffset?: number;
-  inView?: boolean;
-  inViewMargin?: string;
-  blur?: string;
-}) {
-  const ref = useRef(null);
-  const inViewResult = useInView(ref, { once: true, margin: inViewMargin as any });
-  const isInView = !inView || inViewResult;
-  const variants: Variants = {
-    hidden: { y: yOffset, opacity: 0, filter: `blur(${blur})` },
-    visible: { y: -yOffset, opacity: 1, filter: `blur(0px)` },
-  };
-  return (
-    <motion.div
-      ref={ref}
-      initial="hidden"
-      animate={isInView ? "visible" : "hidden"}
-      exit="hidden"
-      variants={variants}
-      transition={{ delay: 0.04 + delay, duration, ease: "easeOut" }}
-      className={className}
-    >
-      {children}
-    </motion.div>
   );
 }
 
@@ -342,7 +301,7 @@ export default function SignupPage() {
   );
 
   return (
-    <PageLayout>
+    <PageLayout transparentHero navTheme="light">
       <Confetti ref={confettiRef} manualstart className="fixed top-0 left-0 w-full h-full pointer-events-none z-[999]" />
       <Modal />
 
@@ -600,9 +559,9 @@ export default function SignupPage() {
             </AnimatePresence>
           </form>
 
-          <p className="text-center text-sm text-ink/60">
+          <p className="text-center text-sm text-white/80">
             Already have an account?{" "}
-            <a href="/login" className="text-primary font-medium hover:text-primary-dark transition-colors">
+            <a href="/login" className="text-white font-medium hover:text-black transition-colors">
               Log in
             </a>
           </p>
