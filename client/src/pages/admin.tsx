@@ -805,7 +805,17 @@ function OngoingRow({
   const [contactPhone, setContactPhone] = useState(caseRow.contactPhone ?? "");
   const [amountNeeded, setAmountNeeded] = useState(String(caseRow.amountNeeded));
   const [category, setCategory] = useState(caseRow.category ?? "Other");
-  const [images, setImages] = useState<File[]>([]);
+
+  // ── Photo manager: existing (already-uploaded) photos the admin can
+  // remove individually, plus newly-picked files added via the "+" tile.
+  // Save sends both — kept existing URLs + new files — so it's a real
+  // add/remove, not the old "any new upload wipes every existing photo".
+  const initialImages = caseRow.images?.length ? caseRow.images : caseRow.imageUrl ? [caseRow.imageUrl] : [];
+  const [existingImages, setExistingImages] = useState<string[]>(initialImages);
+  const [newImages, setNewImages] = useState<File[]>([]);
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignedIds, setAssignedIds] = useState<Set<string>>(new Set());
   const [savingAssignment, setSavingAssignment] = useState(false);
@@ -835,6 +845,41 @@ function OngoingRow({
     }
   }
 
+  async function handleAddImages(e: React.ChangeEvent<HTMLInputElement>) {
+    const room = Math.max(0, 5 - newImages.length);
+    const picked = await compressImages(Array.from(e.target.files ?? []).slice(0, room));
+    setNewImages((prev) => [...prev, ...picked]);
+    setNewImagePreviews((prev) => [...prev, ...picked.map((f) => URL.createObjectURL(f))]);
+    e.target.value = "";
+  }
+
+  function removeExistingImage(url: string) {
+    setExistingImages((prev) => prev.filter((u) => u !== url));
+  }
+
+  function removeNewImage(index: number) {
+    setNewImagePreviews((prev) => {
+      URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, i) => i !== index);
+    });
+    setNewImages((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function cancelEdit() {
+    setTitle(caseRow.title);
+    setDescription(caseRow.description);
+    setCity(caseRow.city ?? caseRow.location.split(",")[0]?.trim() ?? "");
+    setProvince(caseRow.province ?? caseRow.location.split(",")[1]?.trim() ?? "");
+    setContactPhone(caseRow.contactPhone ?? "");
+    setAmountNeeded(String(caseRow.amountNeeded));
+    setCategory(caseRow.category ?? "Other");
+    setExistingImages(initialImages);
+    newImagePreviews.forEach((url) => URL.revokeObjectURL(url));
+    setNewImages([]);
+    setNewImagePreviews([]);
+    setEditing(false);
+  }
+
   async function saveEdit() {
     const formData = new FormData();
     formData.append("title", title);
@@ -844,8 +889,12 @@ function OngoingRow({
     formData.append("contactPhone", contactPhone);
     formData.append("amountNeeded", amountNeeded);
     formData.append("category", category);
-    images.forEach((img) => formData.append("images", img));
+    formData.append("existingImages", JSON.stringify(existingImages));
+    newImages.forEach((img) => formData.append("images", img));
     await api.patchForm(`/api/admin/cases/${caseRow.id}`, formData);
+    newImagePreviews.forEach((url) => URL.revokeObjectURL(url));
+    setNewImages([]);
+    setNewImagePreviews([]);
     setEditing(false);
   }
 
@@ -861,7 +910,7 @@ function OngoingRow({
           </div>
         </div>
         <div className="flex gap-2 shrink-0">
-          <button onClick={() => setEditing((e) => !e)} className="glass-surface glass-surface-outline h-8 w-8 rounded-lg border flex items-center justify-center hover:bg-background">
+          <button onClick={() => setEditing(true)} className="glass-surface glass-surface-outline h-8 w-8 rounded-lg border flex items-center justify-center hover:bg-background" title="Edit case">
             <Pencil size={14} />
           </button>
           <button
@@ -890,11 +939,62 @@ function OngoingRow({
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
-          <input type="file" accept="image/*" multiple onChange={async (e) => setImages(await compressImages(Array.from(e.target.files ?? []).slice(0, 5)))} className="block text-sm" />
-          {images.length > 0 && <p className="text-xs text-muted mt-1">{images.length} new photo(s) selected, will replace existing photos.</p>}
-          <button disabled={busy} onClick={() => onChange(saveEdit)} className="glass-surface rounded-full bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">
-            Save Changes
-          </button>
+
+          <div>
+            <label className="text-xs font-medium text-ink block mb-1.5">Photos</label>
+            <div className="flex flex-wrap gap-2">
+              {existingImages.map((url) => (
+                <div key={url} className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-border">
+                  <img src={url} alt="" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removeExistingImage(url)}
+                    title="Remove photo"
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <X size={11} />
+                  </button>
+                </div>
+              ))}
+              {newImagePreviews.map((url, i) => (
+                <div key={url} className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-primary/40">
+                  <img src={url} alt="" className="h-full w-full object-cover" />
+                  <span className="absolute bottom-0.5 left-0.5 rounded bg-primary/90 px-1 text-[9px] font-semibold text-white">New</span>
+                  <button
+                    type="button"
+                    onClick={() => removeNewImage(i)}
+                    title="Remove photo"
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <X size={11} />
+                  </button>
+                </div>
+              ))}
+              {existingImages.length + newImages.length < 8 && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Add photos"
+                  className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-border text-muted transition-colors hover:border-primary hover:text-primary"
+                >
+                  <Plus size={20} />
+                </button>
+              )}
+              <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleAddImages} className="hidden" />
+            </div>
+            {existingImages.length === 0 && newImages.length === 0 && (
+              <p className="mt-1.5 text-xs text-muted">No photos — this case will show with no image.</p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button disabled={busy} onClick={() => onChange(saveEdit)} className="glass-surface rounded-full bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">
+              Save Changes
+            </button>
+            <button type="button" disabled={busy} onClick={cancelEdit} className="glass-surface glass-surface-outline rounded-full border px-4 py-2 text-sm font-semibold text-ink hover:bg-background disabled:opacity-50">
+              Cancel
+            </button>
+          </div>
         </div>
       )}
 
