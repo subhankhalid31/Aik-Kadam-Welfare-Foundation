@@ -100,14 +100,14 @@ export default function ForgotPasswordPage() {
               <AnimatePresence mode="wait">
                 <motion.div key={step} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25, ease: "easeOut" }}>
                   <BlurFade delay={0.05}>
-                    <span className="text-xs font-semibold tracking-wide text-white uppercase">
+                    <span className="text-xs font-semibold tracking-wide text-primary uppercase">
                       {step === "email" ? "Forgot Password" : "Reset Password"}
                     </span>
                     <h1 className="mt-3 font-serif font-light text-4xl sm:text-5xl tracking-tight text-white lg:text-ink">
                       {step === "email" ? (
-                        <><span className="lg:italic lg:text-white">Reset</span> your password.</>
+                        <><span className="lg:italic lg:text-primary">Reset</span> your password.</>
                       ) : (
-                        <>Check <span className="lg:italic lg:text-white">your</span> inbox.</>
+                        <>Check <span className="lg:italic lg:text-primary">your</span> inbox.</>
                       )}
                     </h1>
                     <p className="mt-2 text-sm text-white/80 lg:text-ink/60">
@@ -157,7 +157,7 @@ export default function ForgotPasswordPage() {
                     </form>
                   ) : (
                     <form onSubmit={handleReset} className="mt-8 space-y-5">
-                      {info && <p className="text-sm text-white">{info}</p>}
+                      {info && <p className="text-sm text-primary">{info}</p>}
 
                       <BlurFade delay={0.15}>
                         <label className="block text-sm font-medium text-ink mb-1.5">Reset code</label>
@@ -218,7 +218,7 @@ export default function ForgotPasswordPage() {
                           type="button"
                           onClick={handleResend}
                           disabled={cooldown > 0}
-                          className="mt-3 w-full text-center text-sm text-white font-medium disabled:text-muted disabled:cursor-not-allowed transition-colors"
+                          className="mt-3 w-full text-center text-sm text-primary font-medium disabled:text-muted disabled:cursor-not-allowed transition-colors"
                         >
                           {cooldown > 0 ? `Resend code in ${cooldown}s` : "Resend code"}
                         </button>
@@ -229,7 +229,7 @@ export default function ForgotPasswordPage() {
                   <BlurFade delay={0.38}>
                     <p className="mt-6 text-center text-sm text-ink/60">
                       Remembered it?{" "}
-                      <a href="/login" className="text-white font-medium hover:text-black transition-colors">
+                      <a href="/login" className="text-primary font-medium hover:text-primary-dark transition-colors">
                         Back to sign in
                       </a>
                     </p>

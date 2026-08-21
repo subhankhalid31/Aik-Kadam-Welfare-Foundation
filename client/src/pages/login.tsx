@@ -75,16 +75,16 @@ export default function LoginPage() {
               white backing there; lg:!bg-white/0 keeps the original pure
               glass look on desktop, where it only ever sits on the plain
               ivory page background anyway. */}
-          <div className="glass-card p-8 sm:p-10 !bg-white/20 lg:!bg-white/0 !border-none">
+          <div className="glass-card p-8 sm:p-10 !bg-white/45 lg:!bg-white/0">
             <div className="relative">
               <BlurFade delay={0.05}>
-                <span className="text-xs font-semibold tracking-wide text-white uppercase">Sign In</span>
+                <span className="text-xs font-semibold tracking-wide text-primary uppercase">Sign In</span>
                 <h1 className="mt-3 font-serif font-light text-4xl sm:text-5xl tracking-tight text-white lg:text-ink">
                   {/* Whole heading is white on mobile for contrast against
                       the photo; back to ink + the brand-green italic
                       accent on desktop where it sits on the plain
                       background. */}
-                  <span className="lg:italic lg:text-white">Welcome</span> back.
+                  <span className="lg:italic lg:text-primary">Welcome</span> back.
                 </h1>
                 <p className="mt-2 text-sm text-white/80 lg:text-ink/60">One step closer to where it's needed.</p>
               </BlurFade>
@@ -142,7 +142,7 @@ export default function LoginPage() {
                 </BlurFade>
 
                 <BlurFade delay={0.32}>
-                  <a href="/forgot-password" className="block text-sm text-white font-medium -mt-2 hover:text-black transition-colors">
+                  <a href="/forgot-password" className="block text-sm text-primary font-medium -mt-2 hover:text-primary-dark transition-colors">
                     Forgot password?
                   </a>
                 </BlurFade>
@@ -172,7 +172,7 @@ export default function LoginPage() {
               <BlurFade delay={0.55}>
                 <p className="mt-6 text-center text-sm text-ink/60">
                   Don't have an account?{" "}
-                  <a href="/signup" className="text-white font-medium hover:text-black transition-colors">
+                  <a href="/signup" className="text-primary font-medium hover:text-primary-dark transition-colors">
                     Create one
                   </a>
                 </p>
