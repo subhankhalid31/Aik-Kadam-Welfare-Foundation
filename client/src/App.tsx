@@ -11,6 +11,7 @@ import CompletedProjects from "@/pages/completed-projects";
 import ProjectMap from "@/pages/project-map";
 import SuccessStories from "@/pages/success-stories";
 import OngoingProjects from "@/pages/ongoing-projects";
+import CaseDetail from "@/pages/case-detail";
 import PostCase from "@/pages/post-case";
 import Contact from "@/pages/contact";
 import Partner from "@/pages/partner";
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="/project-map" component={ProjectMap} />
         <Route path="/success-stories" component={SuccessStories} />
         <Route path="/ongoing-projects" component={OngoingProjects} />
+        <Route path="/cases/:id" component={CaseDetail} />
         <Route path="/post-case" component={PostCase} />
         <Route path="/contact" component={Contact} />
         <Route path="/partner" component={Partner} />

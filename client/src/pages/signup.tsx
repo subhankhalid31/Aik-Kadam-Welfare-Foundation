@@ -559,9 +559,9 @@ export default function SignupPage() {
             </AnimatePresence>
           </form>
 
-          <p className="text-center text-sm text-white/80">
+          <p className="text-center text-sm text-ink/60">
             Already have an account?{" "}
-            <a href="/login" className="text-white font-medium hover:text-black transition-colors">
+            <a href="/login" className="text-primary font-medium hover:text-primary-dark transition-colors">
               Log in
             </a>
           </p>

@@ -897,6 +897,14 @@ export function registerRoutes(app: Express) {
   });
 
   app.patch("/api/admin/cases/:id", requireAuth, requireRole("admin"), uploadImage.array("images", 5), verifyIsRealImage, async (req, res) => {
+    let existingImages: string[] | undefined;
+    if (typeof req.body.existingImages === "string") {
+      try {
+        existingImages = JSON.parse(req.body.existingImages);
+      } catch {
+        return res.status(400).json({ message: "Invalid existingImages" });
+      }
+    }
     const parsed = updateCaseSchema.safeParse({
       title: req.body.title || undefined,
       description: req.body.description || undefined,
@@ -905,15 +913,24 @@ export function registerRoutes(app: Express) {
       contactPhone: req.body.contactPhone || undefined,
       amountNeeded: req.body.amountNeeded ? Number(req.body.amountNeeded) : undefined,
       category: req.body.category || undefined,
+      existingImages,
     });
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Invalid input" });
     }
+    const { existingImages: keptImages, ...rest } = parsed.data;
     const files = (req.files as Express.Multer.File[]) || [];
-    const images = files.length ? files.map((f) => uploadedFileUrl(f.filename)) : undefined;
+    const newlyUploaded = files.map((f) => uploadedFileUrl(f.filename));
+    // Photo manager sends existingImages whenever the admin has interacted
+    // with it (even with none kept and no new files — i.e. "delete every
+    // photo"), so its presence, not its length, is what should decide
+    // whether we touch the images column at all. Falls back to the old
+    // "new files fully replace" behavior for any other caller that still
+    // posts files without existingImages.
+    const images = keptImages !== undefined ? [...keptImages, ...newlyUploaded] : newlyUploaded.length ? newlyUploaded : undefined;
     const updated = await storage.updateCaseAdmin(String(req.params.id), {
-      ...parsed.data,
-      ...(images ? { images, imageUrl: images[0] } : {}),
+      ...rest,
+      ...(images !== undefined ? { images, imageUrl: images[0] ?? null } : {}),
     });
     res.json({ case: updated });
   });

@@ -213,6 +213,12 @@ export const updateCaseSchema = z.object({
   contactPhone: z.string().min(7).max(20).optional(),
   amountNeeded: z.coerce.number().int().positive().optional(),
   category: z.enum(CASE_CATEGORIES).optional(),
+  // URLs of previously-uploaded photos the admin chose to KEEP (i.e. didn't
+  // delete in the image manager). Sent as a JSON-stringified array since
+  // this rides alongside multipart file uploads in the same form. Newly
+  // uploaded files (if any) are appended after these, not a full replace —
+  // see the route handler.
+  existingImages: z.array(z.string()).optional(),
 });
 
 // ─── Inbox (contact form + partnership inquiries, admin-manageable) ──────
