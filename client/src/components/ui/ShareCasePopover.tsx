@@ -6,7 +6,10 @@ export function ShareCasePopover({ caseId, title }: { caseId: string; title: str
   const [copied, setCopied] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
 
-  const shareUrl = `${window.location.origin}/ongoing-projects?case=${caseId}`;
+  // Points at the case's own page now that it exists — that's the actual
+  // shareable link (works standalone, no need to land on the listing page
+  // and have a modal auto-open from a query param).
+  const shareUrl = `${window.location.origin}/cases/${caseId}`;
   const shareText = `Help support: ${title}`;
 
   useEffect(() => {

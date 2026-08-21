@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { MapPin, Heart, Info, Users2, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { ShareCasePopover } from "./ShareCasePopover";
@@ -22,11 +23,11 @@ export function OngoingCaseCard({ id, title, image, location, description, colle
 
   return (
     <article className="group rounded-2xl border border-border overflow-hidden bg-white transition-all duration-[250ms] hover:-translate-y-2 hover:shadow-xl hover:border-brand-green/40">
-      <button
-        onClick={() => onViewDetails?.(id)}
-        disabled={!onViewDetails}
-        className="aspect-[16/9] overflow-hidden w-full block disabled:cursor-default bg-border/30"
-      >
+      {/* Photo + title open the full case page (like clicking a product in
+          a store) — "View details" below stays a shortcut that opens the
+          quick-look modal instead, for anyone who'd rather not leave this
+          list. */}
+      <Link href={`/cases/${id}`} className="aspect-[16/9] overflow-hidden w-full block bg-border/30">
         <img
           src={image}
           alt={title}
@@ -36,15 +37,15 @@ export function OngoingCaseCard({ id, title, image, location, description, colle
           loading="lazy"
           onLoad={() => setImgLoaded(true)}
         />
-      </button>
+      </Link>
       <div className="p-4 sm:p-6">
         <div className="flex items-center gap-1.5 text-xs text-muted">
           <MapPin size={13} />
           {location}
         </div>
-        <button onClick={() => onViewDetails?.(id)} disabled={!onViewDetails} className="text-left w-full">
+        <Link href={`/cases/${id}`} className="text-left w-full block">
           <h3 className="mt-1.5 font-display text-lg sm:text-xl text-brand-green hover:underline">{title}</h3>
-        </button>
+        </Link>
         <p className="mt-2 text-sm text-muted leading-relaxed line-clamp-2 sm:line-clamp-none">{description}</p>
 
         {/* Collected/Goal breakdown — full detail on larger screens, kept out of the way on mobile */}
