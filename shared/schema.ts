@@ -390,6 +390,10 @@ export const updateGalleryEventSchema = z.object({
   families: z.string().optional(),
   items: z.string().optional(),
   funds: z.string().optional(),
+  // Same pattern as updateCaseSchema.existingImages — URLs of previously-
+  // uploaded photos the admin kept, JSON-stringified alongside any new
+  // file uploads in the same multipart form. See the route handler.
+  existingImages: z.array(z.string()).optional(),
 });
 
 export const assignVolunteersSchema = z.object({
