@@ -1279,16 +1279,18 @@ function CompletedCasesPanel({ dialog }: { dialog: ReturnType<typeof useDialog> 
     return rows.filter((c) => c.title.toLowerCase().includes(q) || c.location.toLowerCase().includes(q));
   }, [rows, search]);
 
+  function onChange(fn: () => Promise<unknown>) {
+    setBusy("pending");
+    fn().finally(() => {
+      setBusy(null);
+      load();
+    });
+  }
+
   async function hide(c: CaseRow) {
     const reason = await dialog.prompt(`Why are you hiding "${c.title}"? (required, admin-only note)`);
     if (!reason) return;
-    setBusy(c.id);
-    try {
-      await api.post(`/api/admin/cases/${c.id}/hide`, { reason });
-      load();
-    } finally {
-      setBusy(null);
-    }
+    onChange(() => api.post(`/api/admin/cases/${c.id}/hide`, { reason }));
   }
 
   return (
@@ -1310,24 +1312,200 @@ function CompletedCasesPanel({ dialog }: { dialog: ReturnType<typeof useDialog> 
         {loading && <p className="text-muted">Loading...</p>}
         {!loading && filtered.length === 0 && <p className="text-muted">No completed cases yet.</p>}
         {filtered.map((c) => (
-          <div key={c.id} className="rounded-lg border border-border bg-white p-3.5 flex items-start justify-between gap-4">
-            <div className="flex gap-4">
-              {c.imageUrl && <img src={c.imageUrl} alt="" className="h-16 w-16 rounded-lg object-cover shrink-0" />}
-              <div>
-                <h3 className="font-display text-base text-ink">{c.title}</h3>
-                <p className="text-sm text-muted">{c.location} &middot; PKR {c.amountCollected.toLocaleString()} raised</p>
-              </div>
-            </div>
-            <button
-              disabled={busy === c.id}
-              onClick={() => hide(c)}
-              className="glass-surface glass-surface-outline inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10 disabled:opacity-50 shrink-0"
-            >
-              <EyeOff size={14} /> Hide
-            </button>
-          </div>
+          <CompletedCaseRow key={c.id} caseRow={c} busy={busy === "pending"} onChange={onChange} onHide={() => hide(c)} dialog={dialog} />
         ))}
       </div>
+    </div>
+  );
+}
+
+function CompletedCaseRow({
+  caseRow,
+  busy,
+  onChange,
+  onHide,
+  dialog,
+}: {
+  caseRow: CaseRow;
+  busy: boolean;
+  onChange: (fn: () => Promise<unknown>) => void;
+  onHide: () => void;
+  dialog: ReturnType<typeof useDialog>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(caseRow.title);
+  const [description, setDescription] = useState(caseRow.description);
+  const [city, setCity] = useState(caseRow.city ?? caseRow.location.split(",")[0]?.trim() ?? "");
+  const [province, setProvince] = useState(caseRow.province ?? caseRow.location.split(",")[1]?.trim() ?? "");
+  const [contactPhone, setContactPhone] = useState(caseRow.contactPhone ?? "");
+  const [amountNeeded, setAmountNeeded] = useState(String(caseRow.amountNeeded));
+  const [category, setCategory] = useState(caseRow.category ?? "Other");
+
+  const initialImages = caseRow.images?.length ? caseRow.images : caseRow.imageUrl ? [caseRow.imageUrl] : [];
+  const [existingImages, setExistingImages] = useState<string[]>(initialImages);
+  const [newImages, setNewImages] = useState<File[]>([]);
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleAddImages(e: React.ChangeEvent<HTMLInputElement>) {
+    const room = Math.max(0, 5 - newImages.length);
+    const picked = await compressImages(Array.from(e.target.files ?? []).slice(0, room));
+    setNewImages((prev) => [...prev, ...picked]);
+    setNewImagePreviews((prev) => [...prev, ...picked.map((f) => URL.createObjectURL(f))]);
+    e.target.value = "";
+  }
+
+  function removeExistingImage(url: string) {
+    setExistingImages((prev) => prev.filter((u) => u !== url));
+  }
+
+  function removeNewImage(index: number) {
+    setNewImagePreviews((prev) => {
+      URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, i) => i !== index);
+    });
+    setNewImages((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function cancelEdit() {
+    setTitle(caseRow.title);
+    setDescription(caseRow.description);
+    setCity(caseRow.city ?? caseRow.location.split(",")[0]?.trim() ?? "");
+    setProvince(caseRow.province ?? caseRow.location.split(",")[1]?.trim() ?? "");
+    setContactPhone(caseRow.contactPhone ?? "");
+    setAmountNeeded(String(caseRow.amountNeeded));
+    setCategory(caseRow.category ?? "Other");
+    setExistingImages(initialImages);
+    newImagePreviews.forEach((url) => URL.revokeObjectURL(url));
+    setNewImages([]);
+    setNewImagePreviews([]);
+    setEditing(false);
+  }
+
+  async function saveEdit() {
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("city", city);
+    formData.append("province", province);
+    formData.append("contactPhone", contactPhone);
+    formData.append("amountNeeded", amountNeeded);
+    formData.append("category", category);
+    formData.append("existingImages", JSON.stringify(existingImages));
+    newImages.forEach((img) => formData.append("images", img));
+    await api.patchForm(`/api/admin/cases/${caseRow.id}`, formData);
+    newImagePreviews.forEach((url) => URL.revokeObjectURL(url));
+    setNewImages([]);
+    setNewImagePreviews([]);
+    setEditing(false);
+  }
+
+  return (
+    <div className="rounded-lg border border-border bg-white p-3.5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex gap-4">
+          {caseRow.imageUrl && <img src={caseRow.imageUrl} alt="" className="h-16 w-16 rounded-lg object-cover shrink-0" />}
+          <div>
+            <h3 className="font-display text-base text-ink">{caseRow.title}</h3>
+            <p className="text-sm text-muted">{caseRow.location} &middot; PKR {caseRow.amountCollected.toLocaleString()} raised</p>
+          </div>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <button onClick={() => setEditing(true)} className="glass-surface glass-surface-outline h-8 w-8 rounded-lg border flex items-center justify-center hover:bg-background" title="Edit case">
+            <Pencil size={14} />
+          </button>
+          <button
+            disabled={busy}
+            onClick={onHide}
+            className="glass-surface glass-surface-outline h-8 w-8 rounded-lg border flex items-center justify-center text-danger hover:bg-danger/10 disabled:opacity-50"
+            title="Hide case"
+          >
+            <EyeOff size={14} />
+          </button>
+          <button
+            disabled={busy}
+            onClick={async () => {
+              if (!(await dialog.confirm(`Delete "${caseRow.title}"? This removes it entirely. This can't be undone.`))) return;
+              onChange(() => api.delete(`/api/admin/cases/${caseRow.id}`));
+            }}
+            className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50"
+            title="Delete case"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+
+      {editing && (
+        <div className="mt-4 pt-4 border-t border-border space-y-3">
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
+          <CityPicker city={city} province={province} onChange={(c, p) => { setCity(c); setProvince(p); }} />
+          <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="Contact phone" className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" rows={3} className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
+          <input type="number" value={amountNeeded} onChange={(e) => setAmountNeeded(e.target.value)} onWheel={(e) => e.currentTarget.blur()} placeholder="Amount needed" className="block w-40 rounded-lg border border-border px-3 py-2 text-sm" />
+          <select value={category} onChange={(e) => setCategory(e.target.value)} className="block w-48 rounded-lg border border-border px-3 py-2 text-sm bg-white">
+            {["Medical", "Food Drive", "Education", "Shelter", "Emergency Relief", "Other"].map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+
+          <div>
+            <label className="text-xs font-medium text-ink block mb-1.5">Photos</label>
+            <div className="flex flex-wrap gap-2">
+              {existingImages.map((url) => (
+                <div key={url} className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-border">
+                  <img src={url} alt="" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removeExistingImage(url)}
+                    title="Remove photo"
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <X size={11} />
+                  </button>
+                </div>
+              ))}
+              {newImagePreviews.map((url, i) => (
+                <div key={url} className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-primary/40">
+                  <img src={url} alt="" className="h-full w-full object-cover" />
+                  <span className="absolute bottom-0.5 left-0.5 rounded bg-primary/90 px-1 text-[9px] font-semibold text-white">New</span>
+                  <button
+                    type="button"
+                    onClick={() => removeNewImage(i)}
+                    title="Remove photo"
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <X size={11} />
+                  </button>
+                </div>
+              ))}
+              {existingImages.length + newImages.length < 8 && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Add photos"
+                  className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-border text-muted transition-colors hover:border-primary hover:text-primary"
+                >
+                  <Plus size={20} />
+                </button>
+              )}
+              <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleAddImages} className="hidden" />
+            </div>
+            {existingImages.length === 0 && newImages.length === 0 && (
+              <p className="mt-1.5 text-xs text-muted">No photos — this case will show with no image.</p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button disabled={busy} onClick={() => onChange(saveEdit)} className="glass-surface rounded-full bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">
+              Save Changes
+            </button>
+            <button type="button" disabled={busy} onClick={cancelEdit} className="glass-surface glass-surface-outline rounded-full border px-4 py-2 text-sm font-semibold text-ink hover:bg-background disabled:opacity-50">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2398,10 +2576,67 @@ function GalleryEditRow({ event, onSaved, dialog }: { event: GalleryEventRow; on
   const [saving, setSaving] = useState(false);
   const [imgIndex, setImgIndex] = useState(0);
 
+  // Same photo-manager pattern as OngoingRow/CompletedCaseRow — kept
+  // existing photos + newly-picked files, merged server-side, instead of
+  // any upload wiping the whole gallery image set.
+  const [existingImages, setExistingImages] = useState<string[]>(event.images);
+  const [newImages, setNewImages] = useState<File[]>([]);
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleAddImages(e: React.ChangeEvent<HTMLInputElement>) {
+    const room = Math.max(0, 5 - newImages.length);
+    const picked = await compressImages(Array.from(e.target.files ?? []).slice(0, room));
+    setNewImages((prev) => [...prev, ...picked]);
+    setNewImagePreviews((prev) => [...prev, ...picked.map((f) => URL.createObjectURL(f))]);
+    e.target.value = "";
+  }
+
+  function removeExistingImage(url: string) {
+    setExistingImages((prev) => prev.filter((u) => u !== url));
+  }
+
+  function removeNewImage(index: number) {
+    setNewImagePreviews((prev) => {
+      URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, i) => i !== index);
+    });
+    setNewImages((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function cancelEdit() {
+    setTitle(event.title);
+    setDescription(event.description);
+    setLocation(event.location);
+    setEventDate(event.eventDate);
+    setFamilies(event.families ?? "");
+    setItems(event.items ?? "");
+    setFunds(event.funds ?? "");
+    setExistingImages(event.images);
+    newImagePreviews.forEach((url) => URL.revokeObjectURL(url));
+    setNewImages([]);
+    setNewImagePreviews([]);
+    setEditing(false);
+  }
+
   async function save() {
     setSaving(true);
     try {
-      await api.patch(`/api/admin/gallery/${event.id}`, { title, description, location, eventDate, families, items, funds });
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("location", location);
+      formData.append("eventDate", eventDate);
+      formData.append("families", families);
+      formData.append("items", items);
+      formData.append("funds", funds);
+      formData.append("existingImages", JSON.stringify(existingImages));
+      newImages.forEach((img) => formData.append("images", img));
+      await api.patchForm(`/api/admin/gallery/${event.id}`, formData);
+      newImagePreviews.forEach((url) => URL.revokeObjectURL(url));
+      setNewImages([]);
+      setNewImagePreviews([]);
+      setImgIndex(0);
       setEditing(false);
       onSaved();
     } finally {
@@ -2434,20 +2669,27 @@ function GalleryEditRow({ event, onSaved, dialog }: { event: GalleryEventRow; on
             <p className="mt-1 text-xs text-muted">{event.families} &middot; {event.items} &middot; {event.funds}</p>
           </div>
         </div>
-        <button onClick={() => setEditing((v) => !v)} className="h-8 w-8 rounded-lg border border-border flex items-center justify-center hover:bg-background shrink-0">
-          <Pencil size={14} />
-        </button>
-        <button
-          onClick={async () => {
-            if (!(await dialog.confirm(`Delete "${event.title}" from Completed Projects? This can't be undone.`))) return;
-            await api.delete(`/api/admin/gallery/${event.id}`);
-            onSaved();
-          }}
-          className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 shrink-0 ml-2"
-          title="Delete event"
-        >
-          <Trash2 size={14} />
-        </button>
+        {/* Grouped into one flex container (they weren't before — each
+            button was its own sibling of the header row under
+            justify-between, which spaced the pair apart unevenly instead
+            of pinning them together as a tight group; that's what read as
+            "not aligned" row to row). */}
+        <div className="flex gap-2 shrink-0">
+          <button onClick={() => setEditing(true)} className="glass-surface glass-surface-outline h-8 w-8 rounded-lg border flex items-center justify-center hover:bg-background" title="Edit event">
+            <Pencil size={14} />
+          </button>
+          <button
+            onClick={async () => {
+              if (!(await dialog.confirm(`Delete "${event.title}" from Completed Projects? This can't be undone.`))) return;
+              await api.delete(`/api/admin/gallery/${event.id}`);
+              onSaved();
+            }}
+            className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20"
+            title="Delete event"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
       </div>
 
       {editing && (
@@ -2461,9 +2703,62 @@ function GalleryEditRow({ event, onSaved, dialog }: { event: GalleryEventRow; on
             <input value={items} onChange={(e) => setItems(e.target.value)} className="rounded-lg border border-border px-3 py-2 text-sm" placeholder="Items" />
             <input value={funds} onChange={(e) => setFunds(e.target.value)} className="rounded-lg border border-border px-3 py-2 text-sm" placeholder="Funds used" />
           </div>
-          <button disabled={saving} onClick={save} className="glass-surface rounded-full bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
+
+          <div>
+            <label className="text-xs font-medium text-ink block mb-1.5">Photos</label>
+            <div className="flex flex-wrap gap-2">
+              {existingImages.map((url) => (
+                <div key={url} className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-border">
+                  <img src={url} alt="" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removeExistingImage(url)}
+                    title="Remove photo"
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <X size={11} />
+                  </button>
+                </div>
+              ))}
+              {newImagePreviews.map((url, i) => (
+                <div key={url} className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-primary/40">
+                  <img src={url} alt="" className="h-full w-full object-cover" />
+                  <span className="absolute bottom-0.5 left-0.5 rounded bg-primary/90 px-1 text-[9px] font-semibold text-white">New</span>
+                  <button
+                    type="button"
+                    onClick={() => removeNewImage(i)}
+                    title="Remove photo"
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <X size={11} />
+                  </button>
+                </div>
+              ))}
+              {existingImages.length + newImages.length < 8 && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Add photos"
+                  className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-border text-muted transition-colors hover:border-primary hover:text-primary"
+                >
+                  <Plus size={20} />
+                </button>
+              )}
+              <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleAddImages} className="hidden" />
+            </div>
+            {existingImages.length === 0 && newImages.length === 0 && (
+              <p className="mt-1.5 text-xs text-muted">No photos — this event will show with no image.</p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button disabled={saving} onClick={save} className="glass-surface rounded-full bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+            <button type="button" disabled={saving} onClick={cancelEdit} className="glass-surface glass-surface-outline rounded-full border px-4 py-2 text-sm font-semibold text-ink hover:bg-background disabled:opacity-50">
+              Cancel
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -2523,8 +2818,44 @@ function SuccessStoryEditCard({ story, dialog, onChanged }: { story: SuccessStor
   const [storyDate, setStoryDate] = useState(story.storyDate);
   const [quote, setQuote] = useState(story.quote);
   const [before, setBefore] = useState<File | null>(null);
+  const [beforePreview, setBeforePreview] = useState<string | null>(null);
   const [after, setAfter] = useState<File | null>(null);
+  const [afterPreview, setAfterPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const beforeInputRef = useRef<HTMLInputElement>(null);
+  const afterInputRef = useRef<HTMLInputElement>(null);
+
+  async function pickBefore(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const compressed = await compressImage(file);
+    setBefore(compressed);
+    setBeforePreview(URL.createObjectURL(compressed));
+  }
+
+  async function pickAfter(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const compressed = await compressImage(file);
+    setAfter(compressed);
+    setAfterPreview(URL.createObjectURL(compressed));
+  }
+
+  function cancelEdit() {
+    setName(story.name);
+    setTitle(story.title);
+    setStoryDate(story.storyDate);
+    setQuote(story.quote);
+    if (beforePreview) URL.revokeObjectURL(beforePreview);
+    if (afterPreview) URL.revokeObjectURL(afterPreview);
+    setBefore(null);
+    setBeforePreview(null);
+    setAfter(null);
+    setAfterPreview(null);
+    setEditing(false);
+  }
 
   async function save() {
     setBusy(true);
@@ -2537,6 +2868,12 @@ function SuccessStoryEditCard({ story, dialog, onChanged }: { story: SuccessStor
       if (before) formData.append("before", before);
       if (after) formData.append("after", after);
       await api.patchForm(`/api/admin/success-stories/${story.id}`, formData);
+      if (beforePreview) URL.revokeObjectURL(beforePreview);
+      if (afterPreview) URL.revokeObjectURL(afterPreview);
+      setBefore(null);
+      setBeforePreview(null);
+      setAfter(null);
+      setAfterPreview(null);
       setEditing(false);
       onChanged();
     } finally {
@@ -2557,7 +2894,11 @@ function SuccessStoryEditCard({ story, dialog, onChanged }: { story: SuccessStor
 
   return (
     <div className="rounded-2xl border border-border bg-white p-4">
-      <div className="flex gap-3">
+      {/* items-start (rather than the implicit stretch default) is what
+          keeps the icon column pinned to the top of the card regardless of
+          how many lines the quote wraps to — that row-height-driven drift
+          was the misalignment across cards. */}
+      <div className="flex items-start gap-3">
         <div className="grid grid-cols-2 gap-1 shrink-0">
           <img src={story.beforeImage} alt="Before" className="h-16 w-16 rounded-lg object-cover" />
           <img src={story.afterImage} alt="After" className="h-16 w-16 rounded-lg object-cover" />
@@ -2568,7 +2909,7 @@ function SuccessStoryEditCard({ story, dialog, onChanged }: { story: SuccessStor
           <p className="mt-1 text-xs text-ink/70 line-clamp-2">{story.quote}</p>
         </div>
         <div className="flex flex-col gap-1.5 shrink-0">
-          <button onClick={() => setEditing((v) => !v)} className="glass-surface glass-surface-outline h-8 w-8 rounded-lg border flex items-center justify-center hover:bg-background">
+          <button onClick={() => setEditing(true)} className="glass-surface glass-surface-outline h-8 w-8 rounded-lg border flex items-center justify-center hover:bg-background" title="Edit story">
             <Pencil size={13} />
           </button>
           <button onClick={remove} disabled={busy} className="glass-surface h-8 w-8 rounded-lg bg-danger/10 text-danger flex items-center justify-center hover:bg-danger/20 disabled:opacity-50" title="Delete story">
@@ -2583,19 +2924,48 @@ function SuccessStoryEditCard({ story, dialog, onChanged }: { story: SuccessStor
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
           <input value={storyDate} onChange={(e) => setStoryDate(e.target.value)} placeholder="Date" className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
           <textarea value={quote} onChange={(e) => setQuote(e.target.value)} rows={3} placeholder="Quote" className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
-          <div className="grid grid-cols-2 gap-2">
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-muted">Replace before photo</label>
-              <input type="file" accept="image/*" onChange={async (e) => setBefore(e.target.files?.[0] ? await compressImage(e.target.files[0]) : null)} className="block text-xs mt-1" />
+              <label className="text-xs font-medium text-ink block mb-1.5">Before photo</label>
+              <button
+                type="button"
+                onClick={() => beforeInputRef.current?.click()}
+                className="group relative block h-20 w-20 overflow-hidden rounded-lg border border-border"
+              >
+                <img src={beforePreview ?? story.beforeImage} alt="Before" className="h-full w-full object-cover transition-opacity group-hover:opacity-60" />
+                <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition-all group-hover:bg-black/30 group-hover:opacity-100">
+                  <Plus size={18} />
+                </span>
+                {beforePreview && <span className="absolute bottom-0.5 left-0.5 rounded bg-primary/90 px-1 text-[9px] font-semibold text-white">New</span>}
+              </button>
+              <input ref={beforeInputRef} type="file" accept="image/*" onChange={pickBefore} className="hidden" />
             </div>
             <div>
-              <label className="text-xs text-muted">Replace after photo</label>
-              <input type="file" accept="image/*" onChange={async (e) => setAfter(e.target.files?.[0] ? await compressImage(e.target.files[0]) : null)} className="block text-xs mt-1" />
+              <label className="text-xs font-medium text-ink block mb-1.5">After photo</label>
+              <button
+                type="button"
+                onClick={() => afterInputRef.current?.click()}
+                className="group relative block h-20 w-20 overflow-hidden rounded-lg border border-border"
+              >
+                <img src={afterPreview ?? story.afterImage} alt="After" className="h-full w-full object-cover transition-opacity group-hover:opacity-60" />
+                <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition-all group-hover:bg-black/30 group-hover:opacity-100">
+                  <Plus size={18} />
+                </span>
+                {afterPreview && <span className="absolute bottom-0.5 left-0.5 rounded bg-primary/90 px-1 text-[9px] font-semibold text-white">New</span>}
+              </button>
+              <input ref={afterInputRef} type="file" accept="image/*" onChange={pickAfter} className="hidden" />
             </div>
           </div>
-          <button disabled={busy} onClick={save} className="glass-surface rounded-full bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">
-            {busy ? "Saving..." : "Save Changes"}
-          </button>
+
+          <div className="flex items-center gap-2 pt-1">
+            <button disabled={busy} onClick={save} className="glass-surface rounded-full bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">
+              {busy ? "Saving..." : "Save Changes"}
+            </button>
+            <button type="button" disabled={busy} onClick={cancelEdit} className="glass-surface glass-surface-outline rounded-full border px-4 py-2 text-sm font-semibold text-ink hover:bg-background disabled:opacity-50">
+              Cancel
+            </button>
+          </div>
         </div>
       )}
     </div>
