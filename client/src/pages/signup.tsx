@@ -316,39 +316,39 @@ export default function SignupPage() {
             {authStep === "email" && (
               <motion.div key="email-content" initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="w-full flex flex-col items-center gap-4">
                 <BlurFade delay={0.25} className="w-full">
-                  <p className="text-center font-serif font-light text-4xl sm:text-5xl tracking-tight text-ink">
-                    <span className="text-black">Get started</span> with Us
+                  <p className="text-center font-serif font-light text-4xl sm:text-5xl tracking-tight text-white lg:text-ink">
+                    <span className="text-white lg:text-black">Get started</span> with Us
                   </p>
                 </BlurFade>
                 <BlurFade delay={0.5}>
-                  <p className="text-sm text-muted text-center ">Create an account to donate, volunteer, or submit a case.</p>
+                  <p className="text-sm text-white/80 lg:text-muted text-center ">Create an account to donate, volunteer, or submit a case.</p>
                 </BlurFade>
               </motion.div>
             )}
             {authStep === "name" && (
               <motion.div key="name-title" initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="w-full flex flex-col items-center text-center gap-4">
                 <BlurFade className="w-full">
-                  <p className="text-center font-serif font-light text-4xl sm:text-5xl tracking-tight text-ink">What should we call you?</p>
+                  <p className="text-center font-serif font-light text-4xl sm:text-5xl tracking-tight text-white lg:text-ink">What should we call you?</p>
                 </BlurFade>
               </motion.div>
             )}
             {authStep === "password" && (
               <motion.div key="password-title" initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="w-full flex flex-col items-center text-center gap-4">
                 <BlurFade className="w-full">
-                  <p className="text-center font-serif font-light text-4xl sm:text-5xl tracking-tight text-ink">Create your password</p>
+                  <p className="text-center font-serif font-light text-4xl sm:text-5xl tracking-tight text-white lg:text-ink">Create your password</p>
                 </BlurFade>
                 <BlurFade delay={0.25}>
-                  <p className="text-sm text-muted">Must be at least 8 characters long.</p>
+                  <p className="text-sm text-white/80 lg:text-muted">Must be at least 8 characters long.</p>
                 </BlurFade>
               </motion.div>
             )}
             {authStep === "confirmPassword" && (
               <motion.div key="confirm-title" initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="w-full flex flex-col items-center text-center gap-4">
                 <BlurFade className="w-full">
-                  <p className="text-center font-serif font-light text-4xl sm:text-5xl tracking-tight text-ink">One last step</p>
+                  <p className="text-center font-serif font-light text-4xl sm:text-5xl tracking-tight text-white lg:text-ink">One last step</p>
                 </BlurFade>
                 <BlurFade delay={0.25}>
-                  <p className="text-sm text-muted">Confirm your password to continue</p>
+                  <p className="text-sm text-white/80 lg:text-muted">Confirm your password to continue</p>
                 </BlurFade>
               </motion.div>
             )}
@@ -364,7 +364,7 @@ export default function SignupPage() {
                       <AnimatePresence>
                         {authStep !== "email" && (
                           <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.3, delay: 0.4 }} className="absolute -top-6 left-4 z-10">
-                            <label className="text-xs text-muted font-semibold">Email</label>
+                            <label className="text-xs text-white/90 lg:text-muted font-semibold">Email</label>
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -372,7 +372,7 @@ export default function SignupPage() {
                         <div className="glass-input">
                           <span className="glass-input-text-area" />
                           <div className={cn("relative z-10 flex-shrink-0 flex items-center justify-center overflow-hidden transition-all duration-300 ease-in-out", email.length > 20 && authStep === "email" ? "w-0 px-0" : "w-10 pl-2")}>
-                            <Mail className="h-5 w-5 text-ink/70 flex-shrink-0" />
+                            <Mail className="h-5 w-5 text-white/80 lg:text-ink/70 flex-shrink-0" />
                           </div>
                           <input
                             type="email"
@@ -384,10 +384,10 @@ export default function SignupPage() {
                             onChange={(e) => setEmail(e.target.value)}
                             onKeyDown={handleKeyDown}
                             disabled={authStep !== "email"}
-                            className={cn("relative z-10 h-full w-0 flex-grow bg-transparent text-ink placeholder:text-ink/50 focus:outline-none transition-[padding-right] duration-300 ease-in-out delay-300", isEmailValid && authStep === "email" ? "pr-2" : "pr-0")}
+                            className={cn("relative z-10 h-full w-0 flex-grow bg-transparent text-white lg:text-ink placeholder:text-white/50 lg:placeholder:text-ink/50 focus:outline-none transition-[padding-right] duration-300 ease-in-out delay-300", isEmailValid && authStep === "email" ? "pr-2" : "pr-0")}
                           />
                           <div className={cn("relative z-10 flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out", isEmailValid && authStep === "email" ? "w-10 pr-1" : "w-0")}>
-                            <GlassButton type="button" onClick={handleProgressStep} size="icon" aria-label="Continue with email" contentClassName="text-ink/70 hover:text-ink">
+                            <GlassButton type="button" onClick={handleProgressStep} size="icon" aria-label="Continue with email" contentClassName="text-white/80 hover:text-white lg:text-ink/70 lg:hover:text-ink">
                               <ArrowRight className="w-5 h-5" />
                             </GlassButton>
                           </div>
@@ -420,7 +420,7 @@ export default function SignupPage() {
                           <AnimatePresence>
                             {name.length > 0 && (
                               <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.3 }} className="absolute -top-6 left-4 z-10">
-                                <label className="text-xs text-muted font-semibold">Name</label>
+                                <label className="text-xs text-white/90 lg:text-muted font-semibold">Name</label>
                               </motion.div>
                             )}
                           </AnimatePresence>
@@ -428,7 +428,7 @@ export default function SignupPage() {
                             <div className="glass-input">
                               <span className="glass-input-text-area" />
                               <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pl-2">
-                                <User className="h-5 w-5 text-ink/70 flex-shrink-0" />
+                                <User className="h-5 w-5 text-white/80 lg:text-ink/70 flex-shrink-0" />
                               </div>
                               <input
                                 ref={nameInputRef}
@@ -437,10 +437,10 @@ export default function SignupPage() {
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                className="relative z-10 h-full w-0 flex-grow bg-transparent text-ink placeholder:text-ink/50 focus:outline-none"
+                                className="relative z-10 h-full w-0 flex-grow bg-transparent text-white lg:text-ink placeholder:text-white/50 lg:placeholder:text-ink/50 focus:outline-none"
                               />
                               <div className={cn("relative z-10 flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out", isNameValid ? "w-10 pr-1" : "w-0")}>
-                                <GlassButton type="button" onClick={handleProgressStep} size="icon" aria-label="Continue with name" contentClassName="text-ink/70 hover:text-ink">
+                                <GlassButton type="button" onClick={handleProgressStep} size="icon" aria-label="Continue with name" contentClassName="text-white/80 hover:text-white lg:text-ink/70 lg:hover:text-ink">
                                   <ArrowRight className="w-5 h-5" />
                                 </GlassButton>
                               </div>
@@ -448,7 +448,7 @@ export default function SignupPage() {
                           </div>
                         </div>
                         <BlurFade inView delay={0.2}>
-                          <button type="button" onClick={handleGoBack} className="mt-4 flex items-center gap-2 text-sm text-ink/70 hover:text-ink transition-colors">
+                          <button type="button" onClick={handleGoBack} className="mt-4 flex items-center gap-2 text-sm text-white/80 hover:text-white lg:text-ink/70 lg:hover:text-ink transition-colors">
                             <ArrowLeft className="w-4 h-4" /> Go back
                           </button>
                         </BlurFade>
@@ -464,7 +464,7 @@ export default function SignupPage() {
                           <AnimatePresence>
                             {password.length > 0 && (
                               <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.3 }} className="absolute -top-6 left-4 z-10">
-                                <label className="text-xs text-muted font-semibold">Password</label>
+                                <label className="text-xs text-white/90 lg:text-muted font-semibold">Password</label>
                               </motion.div>
                             )}
                           </AnimatePresence>
@@ -473,11 +473,11 @@ export default function SignupPage() {
                               <span className="glass-input-text-area" />
                               <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pl-2">
                                 {isPasswordValid ? (
-                                  <button type="button" aria-label="Toggle password visibility" onClick={() => setShowPassword(!showPassword)} className="text-ink/70 hover:text-ink transition-colors p-2 rounded-full">
+                                  <button type="button" aria-label="Toggle password visibility" onClick={() => setShowPassword(!showPassword)} className="text-white/80 hover:text-white lg:text-ink/70 lg:hover:text-ink transition-colors p-2 rounded-full">
                                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                   </button>
                                 ) : (
-                                  <Lock className="h-5 w-5 text-ink/70 flex-shrink-0" />
+                                  <Lock className="h-5 w-5 text-white/80 lg:text-ink/70 flex-shrink-0" />
                                 )}
                               </div>
                               <input
@@ -487,10 +487,10 @@ export default function SignupPage() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                className="relative z-10 h-full w-0 flex-grow bg-transparent text-ink placeholder:text-ink/50 focus:outline-none"
+                                className="relative z-10 h-full w-0 flex-grow bg-transparent text-white lg:text-ink placeholder:text-white/50 lg:placeholder:text-ink/50 focus:outline-none"
                               />
                               <div className={cn("relative z-10 flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out", isPasswordValid ? "w-10 pr-1" : "w-0")}>
-                                <GlassButton type="button" onClick={handleProgressStep} size="icon" aria-label="Continue with password" contentClassName="text-ink/70 hover:text-ink">
+                                <GlassButton type="button" onClick={handleProgressStep} size="icon" aria-label="Continue with password" contentClassName="text-white/80 hover:text-white lg:text-ink/70 lg:hover:text-ink">
                                   <ArrowRight className="w-5 h-5" />
                                 </GlassButton>
                               </div>
@@ -498,7 +498,7 @@ export default function SignupPage() {
                           </div>
                         </div>
                         <BlurFade inView delay={0.2}>
-                          <button type="button" onClick={handleGoBack} className="mt-4 flex items-center gap-2 text-sm text-ink/70 hover:text-ink transition-colors">
+                          <button type="button" onClick={handleGoBack} className="mt-4 flex items-center gap-2 text-sm text-white/80 hover:text-white lg:text-ink/70 lg:hover:text-ink transition-colors">
                             <ArrowLeft className="w-4 h-4" /> Go back
                           </button>
                         </BlurFade>
@@ -517,7 +517,7 @@ export default function SignupPage() {
                     <AnimatePresence>
                       {confirmPassword.length > 0 && (
                         <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.3 }} className="absolute -top-6 left-4 z-10">
-                          <label className="text-xs text-muted font-semibold">Confirm password</label>
+                          <label className="text-xs text-white/90 lg:text-muted font-semibold">Confirm password</label>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -526,11 +526,11 @@ export default function SignupPage() {
                         <span className="glass-input-text-area" />
                         <div className="relative z-10 flex-shrink-0 flex items-center justify-center w-10 pl-2">
                           {isConfirmPasswordValid ? (
-                            <button type="button" aria-label="Toggle confirm password visibility" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="text-ink/70 hover:text-ink transition-colors p-2 rounded-full">
+                            <button type="button" aria-label="Toggle confirm password visibility" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="text-white/80 hover:text-white lg:text-ink/70 lg:hover:text-ink transition-colors p-2 rounded-full">
                               {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                             </button>
                           ) : (
-                            <Lock className="h-5 w-5 text-ink/70 flex-shrink-0" />
+                            <Lock className="h-5 w-5 text-white/80 lg:text-ink/70 flex-shrink-0" />
                           )}
                         </div>
                         <input
@@ -539,10 +539,10 @@ export default function SignupPage() {
                           placeholder="Confirm password"
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="relative z-10 h-full w-0 flex-grow bg-transparent text-ink placeholder:text-ink/50 focus:outline-none"
+                          className="relative z-10 h-full w-0 flex-grow bg-transparent text-white lg:text-ink placeholder:text-white/50 lg:placeholder:text-ink/50 focus:outline-none"
                         />
                         <div className={cn("relative z-10 flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out", isConfirmPasswordValid ? "w-10 pr-1" : "w-0")}>
-                          <GlassButton type="submit" size="icon" aria-label="Finish sign-up" contentClassName="text-ink/70 hover:text-ink">
+                          <GlassButton type="submit" size="icon" aria-label="Finish sign-up" contentClassName="text-white/80 hover:text-white lg:text-ink/70 lg:hover:text-ink">
                             <ArrowRight className="w-5 h-5" />
                           </GlassButton>
                         </div>
@@ -550,7 +550,7 @@ export default function SignupPage() {
                     </div>
                   </div>
                   <BlurFade inView delay={0.2}>
-                    <button type="button" onClick={handleGoBack} className="mt-4 flex items-center gap-2 text-sm text-ink/70 hover:text-ink transition-colors">
+                    <button type="button" onClick={handleGoBack} className="mt-4 flex items-center gap-2 text-sm text-white/80 hover:text-white lg:text-ink/70 lg:hover:text-ink transition-colors">
                       <ArrowLeft className="w-4 h-4" /> Go back
                     </button>
                   </BlurFade>
@@ -559,7 +559,7 @@ export default function SignupPage() {
             </AnimatePresence>
           </form>
 
-          <p className="text-center text-sm text-ink/60">
+          <p className="text-center text-sm text-white/80 lg:text-ink/60">
             Already have an account?{" "}
             <a href="/login" className="text-primary font-medium hover:text-primary-dark transition-colors">
               Log in
