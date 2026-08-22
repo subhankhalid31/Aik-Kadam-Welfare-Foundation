@@ -1156,14 +1156,29 @@ export function registerRoutes(app: Express) {
     uploadImage.array("images", 5),
     verifyIsRealImage,
     async (req, res) => {
-      const parsed = updateGalleryEventSchema.safeParse(req.body);
+      let existingImages: string[] | undefined;
+      if (typeof req.body.existingImages === "string") {
+        try {
+          existingImages = JSON.parse(req.body.existingImages);
+        } catch {
+          return res.status(400).json({ message: "Invalid existingImages" });
+        }
+      }
+      const parsed = updateGalleryEventSchema.safeParse({ ...req.body, existingImages });
       if (!parsed.success) {
         return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Invalid input" });
       }
+      const { existingImages: keptImages, ...rest } = parsed.data;
       const files = (req.files as Express.Multer.File[]) || [];
-      const patch: Record<string, unknown> = { ...parsed.data };
-      if (files.length > 0) {
-        patch.images = files.map((f) => uploadedFileUrl(f.filename));
+      const newlyUploaded = files.map((f) => uploadedFileUrl(f.filename));
+      // Same "presence, not length, decides" rule as the cases route — the
+      // photo manager always sends existingImages once touched, even down
+      // to zero kept photos, so that's what signals a real images update.
+      const patch: Record<string, unknown> = { ...rest };
+      if (keptImages !== undefined) {
+        patch.images = [...keptImages, ...newlyUploaded];
+      } else if (newlyUploaded.length) {
+        patch.images = newlyUploaded;
       }
       const updated = await storage.updateGalleryEvent(String(req.params.id), patch);
       res.json({ event: updated });
