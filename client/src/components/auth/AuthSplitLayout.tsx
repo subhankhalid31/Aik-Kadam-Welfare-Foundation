@@ -6,15 +6,15 @@ import mobileBackdrop from "@assets/hero/auth-mobile-backdrop.jpg";
 //
 // Replaces the old per-page CanvasRevealEffect particle field (removed —
 // it was a constantly-animating canvas running behind every one of these
-// pages, which was the actual source of the slowness). Desktop now gets a
-// static split layout instead: a looping video on the left with hardcoded
-// "step" cards over it, and the real form on the right. Mobile drops the
-// video (no room, and no reason to ship a video to a phone) for a single
-// still photo behind the form.
+// pages, which was the actual source of the slowness). Desktop gets a
+// split layout: the looping video on the left with hardcoded "step" cards
+// over it, and the real form on the right. Mobile plays that same video
+// full-bleed behind the form instead, falling back to a still photo if no
+// video has been added yet.
 //
-// DESKTOP VIDEO: drop an .mp4/.webm/.mov into
-// client/src/assets/auth-video/ and it plays automatically — see the
-// README in that folder. Nothing to wire up here.
+// VIDEO: drop an .mp4/.webm/.mov into client/src/assets/auth-video/ and it
+// plays automatically on both desktop and mobile — see the README in that
+// folder. Nothing to wire up here.
 // ─────────────────────────────────────────────────────────────────────────
 
 // Vite glob-imports whatever video file(s) live in that folder at build
@@ -55,11 +55,19 @@ export function AuthSplitLayout({
     // + a vertically-centered card taller than the viewport, the centering
     // pushed the top of the card above y=0 and it just vanished.
     <main className="relative min-h-screen overflow-x-hidden bg-background">
-      {/* Mobile-only photo backdrop — swapped in for the video panel, which
-          only renders at lg+. Darkened ~25% and softly blurred so the
-          glass inputs stay readable sitting directly on top of it. */}
+      {/* Mobile backdrop — same video as the desktop panel when one's been
+          dropped into client/src/assets/auth-video/, falling back to the
+          still photo if that folder's empty. Darkened ~25% and softly
+          blurred either way so the glass inputs stay readable sitting
+          directly on top of it. */}
       <div className="absolute inset-0 lg:hidden">
-        <img src={mobileBackdrop} alt="" aria-hidden="true" className="h-full w-full scale-105 object-cover blur-[3px]" />
+        {AUTH_VIDEO_SRC ? (
+          <video autoPlay loop muted playsInline poster={mobileBackdrop} className="h-full w-full scale-105 object-cover blur-[3px]">
+            <source src={AUTH_VIDEO_SRC} />
+          </video>
+        ) : (
+          <img src={mobileBackdrop} alt="" aria-hidden="true" className="h-full w-full scale-105 object-cover blur-[3px]" />
+        )}
         <div className="absolute inset-0 bg-ink/25" />
         <div className="absolute inset-0 bg-gradient-to-b from-ink/10 via-transparent to-ink/40" />
       </div>

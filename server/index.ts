@@ -20,10 +20,41 @@ const app = express();
 app.set("trust proxy", 1);
 app.use(
   helmet({
-    // Disabled for now — the app doesn't yet declare its own script/style
-    // sources, and a default CSP would break the Vite dev client and
-    // inline styles. Worth revisiting with a tailored policy before launch.
-    contentSecurityPolicy: false,
+    // A real, tailored policy in production rather than the previous
+    // blanket `false` — scoped to exactly what this app actually loads:
+    // same-origin scripts (the app has no inline <script> tags or
+    // dangerouslySetInnerHTML anywhere, so script-src doesn't need
+    // 'unsafe-inline'/'unsafe-eval'), Google Identity Services (the
+    // "Continue with Google" button — renders in an iframe and makes its
+    // own requests, hence frame-src and connect-src both including it),
+    // and Google Fonts. style-src needs 'unsafe-inline' because inline
+    // `style={{...}}` (progress bars, framer-motion) compiles to real
+    // style="" attributes, which CSP treats the same as a <style> tag
+    // either way — there's no inline JS to gate here, just CSS values.
+    //
+    // Left off in development: Vite's dev client injects its own inline
+    // HMR bootstrap script and relies on eval-based sourcemaps, neither
+    // of which this policy allows — this would break local dev (hot
+    // reload, error overlay) without actually protecting anything, since
+    // nobody but the developer's own machine ever talks to that server.
+    contentSecurityPolicy:
+      process.env.NODE_ENV === "production"
+        ? {
+            directives: {
+              defaultSrc: ["'self'"],
+              scriptSrc: ["'self'", "https://accounts.google.com"],
+              styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+              fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+              imgSrc: ["'self'", "data:", "blob:"],
+              connectSrc: ["'self'", "https://accounts.google.com"],
+              frameSrc: ["https://accounts.google.com"],
+              objectSrc: ["'none'"],
+              baseUri: ["'self'"],
+              formAction: ["'self'"],
+              frameAncestors: ["'self'"],
+            },
+          }
+        : false,
   }),
 );
 // Must be registered before express.json(): webhook signature verification
