@@ -10,6 +10,13 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     req.session.userId = undefined;
     return res.status(401).json({ message: "Sign in required" });
   }
+  // A ban applied mid-session shouldn't wait for the session to expire on
+  // its own — kill it here so the very next authenticated request a banned
+  // user makes gets cut off, not just their next login attempt.
+  if (user.isBanned) {
+    req.session.destroy(() => {});
+    return res.status(403).json({ message: "This account has been suspended by the platform. If you believe this is a mistake, please contact us." });
+  }
   (req as any).user = user;
   next();
 }

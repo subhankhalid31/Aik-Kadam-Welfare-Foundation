@@ -23,16 +23,21 @@ export function ArrowCta({
   sheen = false,
   sheenMode = "hover",
   animateArrow = false,
+  className = "",
 }: {
   href: string;
   icon?: LucideIcon;
   children: React.ReactNode;
-  variant?: "solid" | "outline" | "ink";
+  variant?: "solid" | "outline" | "ink" | "ivory";
   shape?: "pill" | "rect" | "square";
   size?: "sm" | "md";
   sheen?: boolean;
   sheenMode?: "hover" | "continuous";
   animateArrow?: boolean;
+  /** Appended after the base classes, so e.g. a custom `pl-*`/`pr-*` here
+   *  overrides the size preset's padding (Tailwind resolves same-specificity
+   *  conflicts by source order, and this always renders last). */
+  className?: string;
 }) {
   const styles =
     variant === "solid"
@@ -49,7 +54,7 @@ export function ArrowCta({
   return (
     <Link
       href={href}
-      className={`group relative inline-flex items-center overflow-hidden font-semibold transition-colors duration-300 ${shapeClass} ${sizeClass} ${styles} ${sheen && sheenMode === "continuous" ? "btn-sheen" : ""}`}
+      className={`group relative inline-flex items-center overflow-hidden font-semibold transition-colors duration-300 ${shapeClass} ${sizeClass} ${styles} ${sheen && sheenMode === "continuous" ? "btn-sheen" : ""} ${className}`}
     >
       {sheen && sheenMode === "hover" && (
         <span
