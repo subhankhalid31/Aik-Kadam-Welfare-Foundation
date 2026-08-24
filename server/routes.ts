@@ -64,6 +64,33 @@ const signupLimiter = rateLimit({
   message: { message: "Too many signup attempts from this network. Please try again later." },
 });
 
+// verify-otp and resend-otp each already have their own defense (per-code
+// attempt cap on verify, a 45s per-email cooldown on resend — see below),
+// but neither of those stops one IP from hammering the endpoint itself
+// across many different emails: resend-otp in particular is otherwise a
+// free "send an email to any address on demand" primitive, and worth
+// throttling even though the target-specific protections already exist.
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many attempts. Please wait a few minutes and try again." },
+});
+
+// The contact and partner forms are the only two write endpoints in the
+// whole app with no auth at all — anyone can call them. Each successful
+// submission also triggers an outbound email via Resend, so an unthrottled
+// version of these is a free way to spam the admin's inbox (and burn
+// through the Resend account's sending quota) with a trivial script.
+const publicFormLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many submissions from this network. Please wait a while and try again." },
+});
+
 export function registerRoutes(app: Express) {
   // ─── Auth ─────────────────────────────────────────────────────────────
 
@@ -93,7 +120,7 @@ export function registerRoutes(app: Express) {
     res.status(201).json({ message: "Account created. Check your email for a verification code." });
   });
 
-  app.post("/api/auth/verify-otp", async (req, res) => {
+  app.post("/api/auth/verify-otp", otpLimiter, async (req, res) => {
     const parsed = verifyOtpSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: "Invalid input" });
     const { email, code, purpose } = parsed.data;
@@ -121,7 +148,7 @@ export function registerRoutes(app: Express) {
     res.json({ user: toPublicUser(user) });
   });
 
-  app.post("/api/auth/resend-otp", async (req, res) => {
+  app.post("/api/auth/resend-otp", otpLimiter, async (req, res) => {
     const parsed = resendOtpSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: "Invalid input" });
     const { email, purpose } = parsed.data;
@@ -500,9 +527,34 @@ export function registerRoutes(app: Express) {
 
   app.get("/api/cases", async (req, res) => {
     const status = (req.query.status as string) || "ongoing";
+    if (!["pending_review", "ongoing", "completed", "rejected"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+    const requester = req.session.userId ? await storage.getUserById(req.session.userId) : undefined;
+    const isAdmin = requester?.role === "admin";
+    // pending_review and rejected are internal review queues — the admin
+    // panel is the only legitimate caller for those, and it's always
+    // authenticated. Without this check, ?status=pending_review or
+    // ?status=rejected was fetchable by anyone, admin or not.
+    if ((status === "pending_review" || status === "rejected") && !isAdmin) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
     const list = await storage.listCasesByStatus(status as any);
     const donorCounts = await storage.countDonorsForCases(list.map((c) => c.id));
-    res.json({ cases: list.map((c) => ({ ...c, donorCount: donorCounts[c.id] ?? 0 })) });
+    // The admin panel reuses this same endpoint for its Ongoing/Completed
+    // tabs (with an admin session cookie), and its edit forms need
+    // contactPhone — but a plain SELECT * was handing that, plus the
+    // admin-only hiddenReason/rejectionReason notes and the raw
+    // submittedById FK, to every anonymous visitor too. Only admins get
+    // the unredacted row now.
+    const cases = list.map((c) => {
+      const donorCount = donorCounts[c.id] ?? 0;
+      if (isAdmin) return { ...c, donorCount };
+      const { contactPhone, hiddenReason, rejectionReason, submittedById, ...pub } = c;
+      return { ...pub, donorCount };
+    });
+    res.json({ cases });
   });
 
   app.get("/api/cases/:id", async (req, res) => {
@@ -510,7 +562,15 @@ export function registerRoutes(app: Express) {
     if (!c) return res.status(404).json({ message: "Case not found" });
 
     const requester = req.session.userId ? await storage.getUserById(req.session.userId) : undefined;
-    if (c.isHidden && requester?.role !== "admin") {
+    const isAdmin = requester?.role === "admin";
+    const isOwner = requester?.id === c.submittedById;
+    if (c.isHidden && !isAdmin) {
+      return res.status(404).json({ message: "Case not found" });
+    }
+    // pending_review/rejected cases are only visible to an admin or the
+    // person who submitted them (e.g. so a donor can check on a case they
+    // just posted) — not to the general public, even with a direct link.
+    if ((c.status === "pending_review" || c.status === "rejected") && !isAdmin && !isOwner) {
       return res.status(404).json({ message: "Case not found" });
     }
 
@@ -530,8 +590,15 @@ export function registerRoutes(app: Express) {
       ? { name: submitter.role === "admin" ? "Aik Kadam" : submitter.name, isAdmin: submitter.role === "admin" }
       : { name: "Aik Kadam", isAdmin: true };
 
+    // Same redaction as the list endpoint above — contact phone and the
+    // admin's internal hide/reject notes aren't for public eyes, only the
+    // admin (or, for contactPhone specifically, the submitter themselves —
+    // it's their own number).
+    const { contactPhone, hiddenReason, rejectionReason, submittedById, ...pub } = c;
+    const caseData = isAdmin ? { ...c, donorCount, volunteerCount: volunteers.length, submittedBy } : { ...pub, ...(isOwner ? { contactPhone } : {}), donorCount, volunteerCount: volunteers.length, submittedBy };
+
     res.json({
-      case: { ...c, donorCount, volunteerCount: volunteers.length, submittedBy },
+      case: caseData,
       isAssigned,
       pendingRequestType,
     });
@@ -640,7 +707,7 @@ export function registerRoutes(app: Express) {
 
   // ─── Contact form ─────────────────────────────────────────────────────
 
-  app.post("/api/contact", async (req, res) => {
+  app.post("/api/contact", publicFormLimiter, async (req, res) => {
     const { name, email, message } = req.body;
     if (!name || !email || !message) {
       return res.status(400).json({ message: "Name, email, and message are required" });
@@ -1383,7 +1450,7 @@ export function registerRoutes(app: Express) {
 
   // ─── Partner with us ──────────────────────────────────────────────────
 
-  app.post("/api/partner", async (req, res) => {
+  app.post("/api/partner", publicFormLimiter, async (req, res) => {
     const { organization, name, email, message } = req.body;
     if (!organization || !name || !email || !message) {
       return res.status(400).json({ message: "Organization, name, email, and message are required" });
@@ -1514,7 +1581,7 @@ export function registerInboundWebhook(app: Express) {
       return res.status(400).json({ message: "Missing signature headers" });
     }
 
-    let event: { type: string; data: { email_id: string; to: string[] } };
+    let event: Awaited<ReturnType<typeof verifyInboundWebhook>>;
     try {
       event = verifyInboundWebhook(payload, { id: svixId, timestamp: svixTimestamp, signature: svixSignature });
     } catch (err) {
@@ -1522,6 +1589,12 @@ export function registerInboundWebhook(app: Express) {
       return res.status(401).json({ message: "Invalid signature" });
     }
 
+    // Narrowing on the literal here is what makes `event.data.to` /
+    // `event.data.email_id` below type-check — verifyInboundWebhook's
+    // return type covers every Resend webhook event kind (contact
+    // created/updated, etc.), most of which have a differently-shaped
+    // `data`. This check is both the runtime filter (we only care about
+    // inbound mail) and the compile-time discriminant.
     if (event.type !== "email.received") return res.json({ received: true });
 
     // Which conversation is this? We encoded it in the address we set as

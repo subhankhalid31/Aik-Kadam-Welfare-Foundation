@@ -815,19 +815,35 @@ export const storage = {
     if (!donation) throw new Error("Donation not found");
     if (donation.status === "confirmed") return donation; // already confirmed — avoid double-counting the amount
 
+    // Gate the transition itself on `status = 'pending'` (not just the
+    // earlier read) and check how many rows it actually touched — that's
+    // what makes this safe against two concurrent confirm calls for the
+    // same donation (a double-click, two admin tabs, etc.) racing each
+    // other. Without it, both requests can pass the read-time check above
+    // before either write lands, and each would separately credit the
+    // case's amountCollected — double-counting the same donation.
     const [updated] = await db
       .update(donations)
       .set({ status: "confirmed", confirmedAt: new Date(), rejectionReason: null })
-      .where(eq(donations.id, donationId))
+      .where(and(eq(donations.id, donationId), eq(donations.status, "pending")))
       .returning();
-
-    const c = await this.getCaseById(donation.caseId);
-    if (c) {
-      await db
-        .update(cases)
-        .set({ amountCollected: c.amountCollected + donation.amount })
-        .where(eq(cases.id, c.id));
+    if (!updated) {
+      // Someone else already confirmed (or rejected) it between our read
+      // and write — return the current row rather than silently no-op'ing
+      // or throwing, so the caller still gets something sensible back.
+      const current = await this.getDonationById(donationId);
+      if (!current) throw new Error("Donation not found");
+      return current;
     }
+
+    // Atomic increment (amountCollected = amountCollected + x in the same
+    // statement) rather than read-then-write, for the same reason as
+    // above — two confirms landing at once would otherwise both compute
+    // their new total from the same stale starting value.
+    await db
+      .update(cases)
+      .set({ amountCollected: sql`${cases.amountCollected} + ${donation.amount}` })
+      .where(eq(cases.id, donation.caseId));
 
     if (donation.recurringDonationId) {
       await db
@@ -840,11 +856,35 @@ export const storage = {
   },
 
   async rejectDonation(donationId: string, reason?: string): Promise<Donation> {
+    const donation = await this.getDonationById(donationId);
+    if (!donation) throw new Error("Donation not found");
+
+    // Same atomic-gate pattern as confirmDonation/revertDonationToPending.
+    // Without checking the FROM state here too, rejecting a donation that
+    // was already "confirmed" would flip it to "rejected" without ever
+    // decrementing amountCollected — permanently inflating the case's
+    // total by money that's no longer actually counted as verified. The
+    // current admin UI only ever calls reject on pending rows, but the
+    // API shouldn't depend on that staying true.
     const [updated] = await db
       .update(donations)
       .set({ status: "rejected", rejectionReason: reason || null })
-      .where(eq(donations.id, donationId))
+      .where(and(eq(donations.id, donationId), sql`${donations.status} != 'rejected'`))
       .returning();
+
+    if (!updated) {
+      const current = await this.getDonationById(donationId);
+      if (!current) throw new Error("Donation not found");
+      return current;
+    }
+
+    if (donation.status === "confirmed") {
+      await db
+        .update(cases)
+        .set({ amountCollected: sql`GREATEST(0, ${cases.amountCollected} - ${donation.amount})` })
+        .where(eq(cases.id, donation.caseId));
+    }
+
     return updated;
   },
 
@@ -941,21 +981,30 @@ export const storage = {
     const donation = await this.getDonationById(donationId);
     if (!donation) throw new Error("Donation not found");
 
-    if (donation.status === "confirmed") {
-      const c = await this.getCaseById(donation.caseId);
-      if (c) {
-        await db
-          .update(cases)
-          .set({ amountCollected: Math.max(0, c.amountCollected - donation.amount) })
-          .where(eq(cases.id, c.id));
-      }
-    }
-
+    // Same atomic-gate pattern as confirmDonation: only decrement, and
+    // only transition the row, if it's still actually "confirmed" at the
+    // moment this UPDATE runs — not just at the read above — so two
+    // concurrent reverts (or a revert racing a confirm) can't each act on
+    // a stale in-memory copy of the donation's status.
     const [updated] = await db
       .update(donations)
       .set({ status: "pending", rejectionReason: null, confirmedAt: null })
-      .where(eq(donations.id, donationId))
+      .where(and(eq(donations.id, donationId), eq(donations.status, "confirmed")))
       .returning();
+
+    if (!updated) {
+      // Wasn't in "confirmed" state (already pending/rejected, or someone
+      // else just reverted it) — nothing to undo financially either.
+      const current = await this.getDonationById(donationId);
+      if (!current) throw new Error("Donation not found");
+      return current;
+    }
+
+    await db
+      .update(cases)
+      .set({ amountCollected: sql`GREATEST(0, ${cases.amountCollected} - ${donation.amount})` })
+      .where(eq(cases.id, donation.caseId));
+
     return updated;
   },
 
