@@ -32,6 +32,7 @@ import {
   inboxReplySchema,
   inboxComposeSchema,
   toPublicUser,
+  PLATFORM_FEE_RATE,
 } from "@shared/schema";
 
 const RESEND_COOLDOWN_MS = 45_000;
@@ -646,6 +647,7 @@ export function registerRoutes(app: Express) {
     const parsed = insertDonationSchema.safeParse({
       caseId: req.body.caseId,
       amount: Number(req.body.amount),
+      tipAmount: req.body.tipAmount !== undefined && req.body.tipAmount !== "" ? Number(req.body.tipAmount) : undefined,
       method: req.body.method,
       senderAccount: req.body.senderAccount,
       referenceNote: req.body.referenceNote || undefined,
@@ -1076,7 +1078,7 @@ export function registerRoutes(app: Express) {
     const to = req.query.to as string | undefined;
     const rows = await storage.listDonationsFiltered({ status: status as any, search, from, to });
 
-    const header = ["Date", "Donor Name", "Donor Email", "Case", "Amount (PKR)", "Method", "Sender Account", "Status", "Reference", "Rejection Reason"];
+    const header = ["Date", "Donor Name", "Donor Email", "Case", "Amount (PKR)", "Tip (PKR)", "Platform Fee (PKR)", "Net to Case (PKR)", "Method", "Sender Account", "Status", "Reference", "Rejection Reason"];
     const escapeCsv = (v: string) => `"${(v ?? "").replace(/"/g, '""')}"`;
     const lines = [
       header.join(","),
@@ -1087,6 +1089,9 @@ export function registerRoutes(app: Express) {
           r.donorEmail,
           r.caseTitle,
           String(r.donation.amount),
+          String(r.donation.tipAmount ?? 0),
+          r.donation.platformFeeAmount != null ? String(r.donation.platformFeeAmount) : "",
+          r.donation.netCaseAmount != null ? String(r.donation.netCaseAmount) : "",
           r.donation.method,
           r.donation.senderAccount,
           r.donation.status,
@@ -1101,6 +1106,47 @@ export function registerRoutes(app: Express) {
     res.setHeader("Content-Type", "text/csv");
     res.setHeader("Content-Disposition", `attachment; filename="donations-${status}-${Date.now()}.csv"`);
     res.send(lines.join("\n"));
+  });
+
+  // ─── Admin: Donations grouped by case ("By Case" view) ─────────────────
+  // Registered here, ahead of nothing that would shadow it (":id" routes
+  // above are DELETE/POST on a bare id, never GET, so there's no route-
+  // ordering ambiguity with "cases" being mistaken for an :id param).
+
+  app.get("/api/admin/donations/cases", requireAuth, requireRole("admin"), async (req, res) => {
+    const search = (req.query.search as string) || undefined;
+    const rows = await storage.getCasesWithDonationTotals(search);
+    res.json({ cases: rows });
+  });
+
+  app.get("/api/admin/donations/cases/:caseId", requireAuth, requireRole("admin"), async (req, res) => {
+    const detail = await storage.getCaseDonationDetail(String(req.params.caseId));
+    if (!detail) return res.status(404).json({ message: "Case not found" });
+
+    // Total collection is what donors have actually *sent and been
+    // confirmed for* — pending/rejected rows aren't real money yet, so
+    // they're listed for context but never counted in these totals.
+    const confirmedDonations = detail.donations.filter((d) => d.donation.status === "confirmed");
+    const totalCollected = confirmedDonations.reduce((sum, d) => sum + d.donation.amount, 0);
+    const platformFee = confirmedDonations.reduce((sum, d) => sum + (d.donation.platformFeeAmount ?? Math.round(d.donation.amount * PLATFORM_FEE_RATE)), 0);
+    const netCaseAmount = confirmedDonations.reduce((sum, d) => sum + (d.donation.netCaseAmount ?? d.donation.amount - Math.round(d.donation.amount * PLATFORM_FEE_RATE)), 0);
+    // Tips never touch the case's own total/progress bar — they're the
+    // donor voluntarily supporting the platform itself — so they're
+    // summed and reported completely separately from the figures above.
+    const totalTips = confirmedDonations.reduce((sum, d) => sum + (d.donation.tipAmount ?? 0), 0);
+
+    res.json({
+      case: detail.case,
+      donations: detail.donations.map((d) => ({ ...d.donation, donorName: d.donorName, donorEmail: d.donorEmail })),
+      summary: {
+        totalCollected,
+        platformFee,
+        platformFeeRate: PLATFORM_FEE_RATE,
+        netCaseAmount,
+        confirmedCount: confirmedDonations.length,
+        totalTips,
+      },
+    });
   });
 
   app.post("/api/admin/donations/:id/confirm", requireAuth, requireRole("admin"), async (req, res) => {

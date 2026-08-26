@@ -10,6 +10,9 @@ import {
   Check, X, ShieldAlert, Pencil, Wallet, Users, Briefcase, Clock4, CircleCheckBig, Send,
   Undo2, Download, Search, Plus, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, EyeOff, Eye,
 } from "lucide-react";
+import { PLATFORM_FEE_RATE } from "@shared/schema";
+
+const PLATFORM_FEE_PERCENT = Math.round(PLATFORM_FEE_RATE * 100);
 
 function ExportButton({ baseUrl }: { baseUrl: string }) {
   const [from, setFrom] = useState("");
@@ -77,6 +80,9 @@ type DonationRow = {
   donorName: string;
   donorEmail: string;
   amount: number;
+  tipAmount: number;
+  platformFeeAmount: number | null;
+  netCaseAmount: number | null;
   method: string;
   senderAccount: string;
   receiptImage: string;
@@ -1870,8 +1876,275 @@ function HiddenCasesPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) 
 // ─── Donations panel: filter by status, search, export CSV ───
 
 type DonationStatusFilter = "pending" | "confirmed" | "rejected" | "all";
+type DonationsViewMode = "byCase" | "allDonations";
 
 function DonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
+  // "By Case" — cases with their running totals, searchable, drill in to
+  // see every donation (and the platform-fee breakdown) for one case — is
+  // the default landing view. "All Donations" is the original flat queue
+  // sorted by status, still here for reviewing/confirming new receipts.
+  const [viewMode, setViewMode] = useState<DonationsViewMode>("byCase");
+
+  return (
+    <div className="mt-5">
+      <div className="inline-flex rounded-full border border-border bg-white p-1">
+        {([
+          { key: "byCase", label: "By Case" },
+          { key: "allDonations", label: "All Donations" },
+        ] as { key: DonationsViewMode; label: string }[]).map((m) => (
+          <button
+            key={m.key}
+            onClick={() => setViewMode(m.key)}
+            className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+              viewMode === m.key ? "bg-primary text-background" : "text-ink/70 hover:bg-background"
+            }`}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+
+      {viewMode === "byCase" ? <CaseDonationsPanel /> : <AllDonationsPanel dialog={dialog} />}
+    </div>
+  );
+}
+
+// ─── "By Case" view: searchable list of cases with running totals, drill
+// into one to see every donation against it plus the fee breakdown ───
+
+type CaseDonationSummaryRow = {
+  id: string;
+  title: string;
+  location: string;
+  category: string | null;
+  status: "pending_review" | "ongoing" | "completed" | "rejected";
+  imageUrl: string | null;
+  amountNeeded: number;
+  amountCollected: number;
+  donationCount: number;
+  createdAt: string;
+};
+
+const CASE_STATUS_LABELS: Record<CaseDonationSummaryRow["status"], string> = {
+  pending_review: "Pending Review",
+  ongoing: "Ongoing",
+  completed: "Completed",
+  rejected: "Rejected",
+};
+
+const CASE_STATUS_STYLES: Record<CaseDonationSummaryRow["status"], string> = {
+  pending_review: "bg-amber-100 text-amber-700",
+  ongoing: "bg-primary/10 text-primary",
+  completed: "bg-success/10 text-success",
+  rejected: "bg-danger/10 text-danger",
+};
+
+function CaseDonationsPanel() {
+  const [search, setSearch] = useState("");
+  const [cases, setCases] = useState<CaseDonationSummaryRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [openCaseId, setOpenCaseId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    const data = await api.get<{ cases: CaseDonationSummaryRow[] }>(`/api/admin/donations/cases?${params}`);
+    setCases(data.cases);
+    setLoading(false);
+  }, [search]);
+
+  useEffect(() => {
+    const timer = setTimeout(load, 300);
+    return () => clearTimeout(timer);
+  }, [load]);
+
+  return (
+    <div className="mt-4">
+      <div className="relative">
+        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search cases by title, city, or category..."
+          className="w-full rounded-lg border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {loading ? (
+          <p className="col-span-full py-6 text-center text-sm text-muted">Loading...</p>
+        ) : cases.length === 0 ? (
+          <p className="col-span-full py-6 text-center text-sm text-muted">No cases match your search.</p>
+        ) : (
+          cases.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setOpenCaseId(c.id)}
+              className="glass-surface glass-surface-outline flex flex-col rounded-xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
+            >
+              <div className="flex items-start gap-3">
+                {c.imageUrl && <img src={c.imageUrl} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />}
+                <div className="min-w-0 flex-1">
+                  <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${CASE_STATUS_STYLES[c.status]}`}>
+                    {CASE_STATUS_LABELS[c.status]}
+                  </span>
+                  <p className="mt-1 truncate font-display text-sm font-semibold text-ink">{c.title}</p>
+                  <p className="truncate text-xs text-muted">{c.location}</p>
+                </div>
+              </div>
+
+              <div className="mt-3.5 flex items-end justify-between">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted">Collected so far</p>
+                  <p className="font-display text-lg font-semibold text-primary">PKR {c.amountCollected.toLocaleString()}</p>
+                </div>
+                <p className="text-xs text-muted">{c.donationCount} confirmed donation{c.donationCount === 1 ? "" : "s"}</p>
+              </div>
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-background">
+                <div
+                  className="h-full rounded-full bg-primary"
+                  style={{ width: `${Math.min(100, c.amountNeeded > 0 ? (c.amountCollected / c.amountNeeded) * 100 : 0)}%` }}
+                />
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+
+      {openCaseId && <CaseDonationDetailModal caseId={openCaseId} onClose={() => setOpenCaseId(null)} />}
+    </div>
+  );
+}
+
+type CaseDonationDetail = {
+  case: CaseDonationSummaryRow & { description?: string };
+  donations: DonationRow[];
+  summary: {
+    totalCollected: number;
+    platformFee: number;
+    platformFeeRate: number;
+    netCaseAmount: number;
+    confirmedCount: number;
+    totalTips?: number;
+  };
+};
+
+function CaseDonationDetailModal({ caseId, onClose }: { caseId: string; onClose: () => void }) {
+  const [detail, setDetail] = useState<CaseDonationDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    api.get<CaseDonationDetail>(`/api/admin/donations/cases/${caseId}`).then((data) => {
+      if (!cancelled) {
+        setDetail(data);
+        setLoading(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [caseId]);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-ink/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative flex max-h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl animate-in fade-in zoom-in-95 duration-150">
+        <button onClick={onClose} className="absolute top-4 right-4 z-10 h-8 w-8 rounded-full bg-white/90 hover:bg-background flex items-center justify-center">
+          <X size={16} />
+        </button>
+
+        {loading || !detail ? (
+          <div className="p-10 text-center text-sm text-muted">Loading case donations...</div>
+        ) : (
+          <div className="scrollbar-hover-reveal overflow-y-auto p-6 sm:p-8">
+            <span className="text-xs font-semibold uppercase tracking-wide text-primary">{detail.case.category ?? "Case"}</span>
+            <h2 className="mt-1 font-display text-2xl text-ink pr-8">{detail.case.title}</h2>
+            <p className="mt-1 text-sm text-muted">{detail.case.location}</p>
+
+            {/* Money summary: gross confirmed total → platform fee → net
+                case amount, plus tips collected as a separate line since
+                tips never get the fee applied and never count toward the
+                case's own goal. */}
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl bg-background p-4">
+                <p className="text-xs text-muted">Total Collected</p>
+                <p className="mt-1 font-display text-xl font-semibold text-ink">PKR {detail.summary.totalCollected.toLocaleString()}</p>
+                <p className="mt-0.5 text-[11px] text-muted">{detail.summary.confirmedCount} confirmed donation{detail.summary.confirmedCount === 1 ? "" : "s"}</p>
+              </div>
+              <div className="rounded-xl bg-background p-4">
+                <p className="text-xs text-muted">Platform Fee ({Math.round(detail.summary.platformFeeRate * 100)}%)</p>
+                <p className="mt-1 font-display text-xl font-semibold text-danger">− PKR {detail.summary.platformFee.toLocaleString()}</p>
+                <p className="mt-0.5 text-[11px] text-muted">Deducted to keep the platform running</p>
+              </div>
+              <div className="rounded-xl bg-primary/10 p-4">
+                <p className="text-xs text-primary/80">Net Case Amount</p>
+                <p className="mt-1 font-display text-xl font-semibold text-primary">PKR {detail.summary.netCaseAmount.toLocaleString()}</p>
+                <p className="mt-0.5 text-[11px] text-primary/70">What actually reaches this case</p>
+              </div>
+            </div>
+
+            {typeof detail.summary.totalTips === "number" && detail.summary.totalTips > 0 && (
+              <div className="mt-3 rounded-xl border border-dashed border-border p-4">
+                <p className="text-xs text-muted">Tips Collected (supports the platform, separate from the case goal)</p>
+                <p className="mt-1 font-display text-lg font-semibold text-ink">PKR {detail.summary.totalTips.toLocaleString()}</p>
+              </div>
+            )}
+
+            <h3 className="mt-7 font-display text-base font-semibold text-ink">All donations for this case</h3>
+            <div className="mt-3 overflow-x-auto rounded-lg border border-border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-background/60 text-left text-xs font-semibold text-muted uppercase tracking-wide">
+                    <th className="px-3.5 py-2.5">Donor</th>
+                    <th className="px-3.5 py-2.5">Amount</th>
+                    <th className="px-3.5 py-2.5">Method</th>
+                    <th className="px-3.5 py-2.5">Status</th>
+                    <th className="px-3.5 py-2.5">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {detail.donations.length === 0 ? (
+                    <tr><td colSpan={5} className="px-3.5 py-6 text-center text-muted">No donations submitted for this case yet.</td></tr>
+                  ) : (
+                    detail.donations.map((d) => (
+                      <tr key={d.id}>
+                        <td className="px-3.5 py-3 align-top">
+                          <div className="font-medium text-ink">{d.donorName}</div>
+                          <div className="text-xs text-muted">{d.donorEmail}</div>
+                        </td>
+                        <td className="px-3.5 py-3 align-top text-ink">PKR {d.amount.toLocaleString()}</td>
+                        <td className="px-3.5 py-3 align-top text-xs capitalize text-muted">{d.method.replace("_", " ")}</td>
+                        <td className="px-3.5 py-3 align-top">
+                          <span
+                            className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize ${
+                              d.status === "confirmed"
+                                ? "bg-success/10 text-success"
+                                : d.status === "rejected"
+                                  ? "bg-danger/10 text-danger"
+                                  : "bg-amber-100 text-amber-700"
+                            }`}
+                          >
+                            {d.status}
+                          </span>
+                        </td>
+                        <td className="px-3.5 py-3 align-top text-xs text-muted">{new Date(d.createdAt).toLocaleDateString()}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AllDonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
   const [statusFilter, setStatusFilter] = useState<DonationStatusFilter>("pending");
   const [search, setSearch] = useState("");
   const [donations, setDonations] = useState<DonationRow[]>([]);
@@ -1919,7 +2192,7 @@ function DonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
 
   async function bulkConfirm() {
     if (selected.size === 0) return;
-    if (!(await dialog.confirm(`Confirm ${selected.size} donation(s)? This adds each to its case's collected total.`))) return;
+    if (!(await dialog.confirm(`Confirm ${selected.size} donation(s)? This adds each to its case's collected total after the ${PLATFORM_FEE_PERCENT}% platform fee.`))) return;
     setBulkBusy(true);
     try {
       await Promise.all([...selected].map((id) => api.post(`/api/admin/donations/${id}/confirm`)));
@@ -2031,6 +2304,10 @@ function DonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
                   <td className="px-3.5 py-3 align-top">
                     <div className="font-display text-ink">PKR {d.amount.toLocaleString()}, {d.caseTitle}</div>
                     <div className="mt-0.5 text-xs text-muted">{d.donorName} ({d.donorEmail}) &middot; {d.method.replace("_", " ")}</div>
+                    {d.tipAmount > 0 && <div className="text-xs text-primary">+ PKR {d.tipAmount.toLocaleString()} tip</div>}
+                    {d.status === "confirmed" && d.platformFeeAmount != null && (
+                      <div className="text-xs text-muted">Fee −PKR {d.platformFeeAmount.toLocaleString()} &middot; Net PKR {(d.netCaseAmount ?? 0).toLocaleString()} to case</div>
+                    )}
                     {d.referenceNote && <div className="text-xs text-muted">Ref: {d.referenceNote}</div>}
                     {d.status === "rejected" && d.rejectionReason && <div className="mt-1 text-xs text-danger">Rejected: {d.rejectionReason}</div>}
                   </td>
@@ -2043,7 +2320,7 @@ function DonationsPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
                           <button
                             disabled={busy === d.id}
                             onClick={async () => {
-                              if (!(await dialog.confirm(`Confirm this PKR ${d.amount.toLocaleString()} donation? This adds it to the case's collected total.`))) return;
+                              if (!(await dialog.confirm(`Confirm this PKR ${d.amount.toLocaleString()} donation? PKR ${Math.round(d.amount * (1 - PLATFORM_FEE_RATE)).toLocaleString()} (after the ${PLATFORM_FEE_PERCENT}% platform fee) will be added to the case's collected total.`))) return;
                               act(d.id, () => api.post(`/api/admin/donations/${d.id}/confirm`));
                             }}
                             className="glass-surface h-8 w-8 rounded-lg bg-success text-white flex items-center justify-center hover:bg-success-dark disabled:opacity-50"

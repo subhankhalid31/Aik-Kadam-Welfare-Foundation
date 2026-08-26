@@ -6,8 +6,11 @@ import { GlassButton } from "@/components/ui/GlassButton";
 import { api, ApiError } from "@/lib/api";
 import { compressImage } from "@/lib/compress-image";
 import { useAuth } from "@/lib/auth-context";
-import { CheckCircle2, LogIn, Copy } from "lucide-react";
+import { CheckCircle2, LogIn, Copy, ShieldCheck } from "lucide-react";
 import { JazzCashLogo, EasypaisaLogo, HblLogo } from "@/components/ui/PaymentLogos";
+import { PLATFORM_FEE_RATE } from "@shared/schema";
+
+const PLATFORM_FEE_PERCENT = Math.round(PLATFORM_FEE_RATE * 100);
 
 type ApiCase = { id: string; title: string; amountNeeded: number; amountCollected: number };
 
@@ -30,6 +33,8 @@ export default function DonatePage() {
   const [caseId, setCaseId] = useState(preselectedCaseId);
   const [frequency, setFrequency] = useState<"one_time" | "monthly">("one_time");
   const [amount, setAmount] = useState("");
+  const [tipEnabled, setTipEnabled] = useState(false);
+  const [tipAmount, setTipAmount] = useState("");
   const [method, setMethod] = useState<keyof typeof PAYMENT_DETAILS>("bank_transfer");
   const [senderAccount, setSenderAccount] = useState("");
   const [referenceNote, setReferenceNote] = useState("");
@@ -84,6 +89,7 @@ export default function DonatePage() {
       const formData = new FormData();
       formData.append("caseId", caseId);
       formData.append("amount", amount);
+      if (tipEnabled && tipAmount) formData.append("tipAmount", tipAmount);
       formData.append("method", method);
       formData.append("senderAccount", senderAccount);
       if (referenceNote) formData.append("referenceNote", referenceNote);
@@ -236,6 +242,58 @@ export default function DonatePage() {
 
             <FormField label="Amount (Rs.)">
               <input required type="number" min="1" value={amount} onChange={(e) => setAmount(e.target.value)} onWheel={(e) => e.currentTarget.blur()} className={inputClass} placeholder="0" />
+            </FormField>
+
+            {/* Fee transparency note — explains, in plain words a donor can
+                trust, why the case only shows ~97% of what they sent rather
+                than the full amount, instead of leaving that gap unexplained. */}
+            <div className="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+              <ShieldCheck size={16} className="mt-0.5 shrink-0 text-primary" />
+              <p className="text-xs leading-relaxed text-ink/75">
+                A small {PLATFORM_FEE_PERCENT}% platform fee is kept from every donation to cover payment verification,
+                secure hosting, and the team that keeps cases moving, so the platform can keep running and
+                every future donation keeps reaching the people who need it. The rest goes straight to this case.
+              </p>
+            </div>
+
+            <FormField label="Add a tip to support the platform (optional)">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setTipEnabled(false); setTipAmount(""); }}
+                  className={`flex-1 rounded-full border px-4 py-2.5 text-sm font-semibold transition-colors ${
+                    !tipEnabled ? "bg-primary text-background border-primary" : "bg-white text-ink border-border hover:bg-background"
+                  }`}
+                >
+                  No thanks
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTipEnabled(true)}
+                  className={`flex-1 rounded-full border px-4 py-2.5 text-sm font-semibold transition-colors ${
+                    tipEnabled ? "bg-primary text-background border-primary" : "bg-white text-ink border-border hover:bg-background"
+                  }`}
+                >
+                  Yes, add a tip
+                </button>
+              </div>
+              {tipEnabled && (
+                <div className="mt-3">
+                  <input
+                    type="number"
+                    min="1"
+                    value={tipAmount}
+                    onChange={(e) => setTipAmount(e.target.value)}
+                    onWheel={(e) => e.currentTarget.blur()}
+                    className={inputClass}
+                    placeholder="Tip amount (Rs.)"
+                  />
+                  <p className="mt-1.5 text-xs text-muted leading-relaxed">
+                    This goes entirely to keeping Aik Kadam running, on top of your donation above, not
+                    deducted from it. Include it in the same payment you send, then enter it here.
+                  </p>
+                </div>
+              )}
             </FormField>
 
             <FormField label="Payment method">

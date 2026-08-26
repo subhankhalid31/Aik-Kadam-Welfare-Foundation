@@ -306,6 +306,14 @@ export const successStories = pgTable("success_stories", {
 
 export type SuccessStory = typeof successStories.$inferSelect;
 
+// ─── Platform fee ──────────────────────────────────────────────────────────
+// The cut kept from every confirmed donation to cover payment verification,
+// hosting, and the volunteers/staff who keep cases moving — the rest goes
+// straight to the case. One constant, used on both the server (to actually
+// compute what gets added to a case's total) and the client (to show the
+// same number to donors and admins), so the two can never drift apart.
+export const PLATFORM_FEE_RATE = 0.03;
+
 // ─── Donations (manual-confirm: user submits, admin verifies receipt) ────
 
 export const donations = pgTable("donations", {
@@ -316,12 +324,26 @@ export const donations = pgTable("donations", {
   // lets a donor's monthly submissions roll up under one commitment.
   recurringDonationId: varchar("recurring_donation_id").references(() => recurringDonations.id),
   amount: integer("amount").notNull(),
+  // Optional extra "support the platform" contribution the donor adds on
+  // top of `amount` — goes entirely to the platform, never to the case,
+  // and never has the platform fee taken off it (it *is* already a gift
+  // to the platform). Kept as its own column, not folded into `amount`,
+  // so the case's own progress bar is never affected by it.
+  tipAmount: integer("tip_amount").notNull().default(0),
   method: donationMethodEnum("method").notNull(),
   senderAccount: text("sender_account").notNull(),
   receiptImage: text("receipt_image").notNull(),
   referenceNote: text("reference_note"),
   status: donationStatusEnum("status").notNull().default("pending"),
   rejectionReason: text("rejection_reason"),
+  // Both set once, at the moment an admin confirms this donation — not
+  // recomputed later — so the record stays an accurate receipt of what
+  // actually happened even if PLATFORM_FEE_RATE is ever changed going
+  // forward. `platformFeeAmount` is `amount * PLATFORM_FEE_RATE`
+  // (rounded); `netCaseAmount` is what actually got added to the case's
+  // collected total (`amount - platformFeeAmount`).
+  platformFeeAmount: integer("platform_fee_amount"),
+  netCaseAmount: integer("net_case_amount"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   confirmedAt: timestamp("confirmed_at"),
 });
@@ -331,6 +353,10 @@ export type Donation = typeof donations.$inferSelect;
 export const insertDonationSchema = z.object({
   caseId: z.string().min(1),
   amount: z.coerce.number().int().positive(),
+  // Optional tip, defaults to 0 when the donor doesn't check the box.
+  // Capped generously just to block obvious fat-finger/garbage input, not
+  // to limit genuine generosity.
+  tipAmount: z.coerce.number().int().min(0).max(10_000_000).optional().default(0),
   method: z.enum(["bank_transfer", "jazzcash", "easypaisa", "cash"]),
   senderAccount: z.string().min(4, "Enter the account/phone number the payment was sent from"),
   referenceNote: z.string().optional(),
