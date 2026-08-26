@@ -6,7 +6,7 @@ import { Link } from "wouter";
 // (world map + masked photo + brush strokes, already combined), used
 // full-bleed and at full resolution. Swap this file for a final branded
 // version whenever it's ready; nothing else here needs to change.
-import heroVisual from "@assets/hero-visual-placeholder.png";
+import heroVisual from "@assets/hero-visual-placeholder.webp";
 
 const container = {
   hidden: {},

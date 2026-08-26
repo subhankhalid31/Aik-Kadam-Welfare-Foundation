@@ -6,7 +6,7 @@ import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useDialog } from "@/lib/dialog-context";
 import { compressImages } from "@/lib/compress-image";
-import postCaseHero from "@assets/hero/postcase-hands.png";
+import postCaseHero from "@assets/hero/postcase-hands.webp";
 
 const CASE_CATEGORIES = ["Medical", "Food Drive", "Education", "Shelter", "Emergency Relief", "Other"];
 

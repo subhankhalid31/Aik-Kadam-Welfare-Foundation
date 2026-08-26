@@ -47,20 +47,34 @@ export function AuthSplitLayout({
     // `transparentHero navTheme="light"` on the page's PageLayout call makes
     // the nav render with no background of its own and white text/logo, so
     // this main needs to run full-bleed behind it (no top spacer) — same
-    // pattern as volunteer-register.tsx's HeroShell. `min-h-screen` (not the
-    // old `calc(100vh-4rem)`) since there's no nav height to subtract
-    // anymore, and `overflow-x-hidden` instead of `overflow-hidden` so tall
-    // content can grow/scroll normally instead of having its top clipped
-    // off — that was the "screen box going out" bug: with `overflow-hidden`
-    // + a vertically-centered card taller than the viewport, the centering
-    // pushed the top of the card above y=0 and it just vanished.
-    <main className="relative min-h-screen overflow-x-hidden bg-background">
+    // pattern as volunteer-register.tsx's HeroShell. `min-h-dvh` (dynamic
+    // viewport height, not the old plain `100vh`) is what actually fixes
+    // the "gap above the footer" / scroll-jump bug on mobile: `100vh`
+    // includes the space the browser's address bar covers even while
+    // it's visible, so as that bar shows/hides during a scroll gesture,
+    // a plain-`vh` box doesn't match the real visible viewport and a
+    // sliver of the page underneath peeks through right at the
+    // boundary. `dvh` tracks the actual visible height instead, so
+    // there's nothing to peek through in the first place.
+    // `overflow-x-hidden` (not `overflow-hidden`) so tall content can
+    // grow/scroll normally instead of having its top clipped off — that
+    // was the earlier "screen box going out" bug: with `overflow-hidden`
+    // + a vertically-centered card taller than the viewport, the
+    // centering pushed the top of the card above y=0 and it just
+    // vanished.
+    <main className="relative min-h-dvh overflow-x-hidden bg-background">
       {/* Mobile backdrop — same video as the desktop panel when one's been
           dropped into client/src/assets/auth-video/, falling back to the
           still photo if that folder's empty. Darkened ~25% and softly
           blurred either way so the glass inputs stay readable sitting
-          directly on top of it. */}
-      <div className="absolute inset-0 lg:hidden">
+          directly on top of it.
+          `pointer-events-none` is the fix for "scrolling only drags the
+          background instead of the page" — this div (and the <video> in
+          particular) is purely decorative, but without this a touch-drag
+          that starts on top of the video could get captured by the video
+          element itself on some mobile browsers instead of scrolling the
+          page underneath it. */}
+      <div className="absolute inset-0 pointer-events-none lg:hidden">
         {AUTH_VIDEO_SRC ? (
           <video autoPlay loop muted playsInline poster={mobileBackdrop} className="h-full w-full scale-105 object-cover blur-[3px]">
             <source src={AUTH_VIDEO_SRC} />
@@ -80,7 +94,7 @@ export function AuthSplitLayout({
           backdrop). Pointer-events-none so it never blocks clicks. */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-32 bg-gradient-to-b from-black/45 to-transparent lg:h-40" />
 
-      <div className="relative z-10 grid min-h-screen lg:grid-cols-[1.35fr_1fr]">
+      <div className="relative z-10 grid min-h-dvh lg:grid-cols-[1.35fr_1fr]">
         {/* ── Left: video panel + hardcoded step cards (desktop only) ── */}
         <div className="relative hidden overflow-hidden lg:block">
           {AUTH_VIDEO_SRC ? (

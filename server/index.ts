@@ -4,10 +4,10 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import helmet from "helmet";
 import { createServer } from "http";
-import path from "path";
 import { pool } from "./db";
 import { registerRoutes, registerInboundWebhook } from "./routes";
 import { setupVite, serveStatic } from "./vite";
+import { PUBLIC_UPLOAD_DIR } from "./lib/upload";
 
 if (process.env.NODE_ENV === "production" && !process.env.SESSION_SECRET) {
   console.error(
@@ -62,7 +62,13 @@ app.use(
 // JSON-parsed object (which can differ byte-for-byte and fail verification).
 registerInboundWebhook(app);
 app.use(express.json());
-app.use("/uploads", express.static(path.resolve(import.meta.dirname, "..", "uploads")));
+// Reuses the exact same resolved directory upload.ts writes to (see
+// UPLOAD_DIR there) — these two used to be two independently-hardcoded
+// paths that happened to agree only because neither was configurable.
+// Now that the write location can move (to a persistent disk in
+// production), the read location has to move with it or this would
+// serve 404s for every photo instead of just losing them on restart.
+app.use("/uploads", express.static(PUBLIC_UPLOAD_DIR));
 
 const PgSession = connectPgSimple(session);
 
