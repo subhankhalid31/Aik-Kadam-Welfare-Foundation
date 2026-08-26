@@ -76,11 +76,11 @@ export function AuthSplitLayout({
           page underneath it. */}
       <div className="fixed inset-0 pointer-events-none lg:hidden">
         {AUTH_VIDEO_SRC ? (
-          <video autoPlay loop muted playsInline poster={mobileBackdrop} className="h-full w-full scale-105 object-cover blur-[3px]">
+          <video autoPlay loop muted playsInline poster={mobileBackdrop} className="h-full w-full object-cover">
             <source src={AUTH_VIDEO_SRC} />
           </video>
         ) : (
-          <img src={mobileBackdrop} alt="" aria-hidden="true" className="h-full w-full scale-105 object-cover blur-[3px]" />
+          <img src={mobileBackdrop} alt="" aria-hidden="true" className="h-full w-full object-cover" />
         )}
         <div className="absolute inset-0 bg-ink/25" />
         <div className="absolute inset-0 bg-gradient-to-b from-ink/10 via-transparent to-ink/40" />
