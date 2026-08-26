@@ -74,7 +74,7 @@ export function AuthSplitLayout({
           that starts on top of the video could get captured by the video
           element itself on some mobile browsers instead of scrolling the
           page underneath it. */}
-      <div className="absolute inset-0 pointer-events-none lg:hidden">
+      <div className="fixed inset-0 pointer-events-none lg:hidden">
         {AUTH_VIDEO_SRC ? (
           <video autoPlay loop muted playsInline poster={mobileBackdrop} className="h-full w-full scale-105 object-cover blur-[3px]">
             <source src={AUTH_VIDEO_SRC} />
@@ -92,7 +92,7 @@ export function AuthSplitLayout({
           the plain light form column with no contrast at the top of the
           page (before the user scrolls and the nav picks up its own
           backdrop). Pointer-events-none so it never blocks clicks. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-32 bg-gradient-to-b from-black/45 to-transparent lg:h-40" />
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-20 h-32 bg-gradient-to-b from-black/45 to-transparent lg:absolute lg:h-40" />
 
       <div className="relative z-10 grid min-h-dvh lg:grid-cols-[1.35fr_1fr]">
         {/* ── Left: video panel + hardcoded step cards (desktop only) ── */}
