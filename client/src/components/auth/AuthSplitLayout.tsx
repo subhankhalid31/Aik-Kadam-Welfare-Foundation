@@ -76,13 +76,27 @@ export function AuthSplitLayout({
           page underneath it. */}
       <div className="fixed inset-0 pointer-events-none lg:hidden">
         {AUTH_VIDEO_SRC ? (
-          <video autoPlay loop muted playsInline poster={mobileBackdrop} className="absolute inset-0 h-full w-full object-cover">
+          <video 
+            autoPlay 
+            loop 
+            muted 
+            playsInline 
+            poster={mobileBackdrop} 
+            className="absolute inset-0 h-[100dvh] w-screen object-cover"
+            style={{ width: '100vw', height: '100dvh', objectFit: 'cover' }}
+          >
             <source src={AUTH_VIDEO_SRC} />
           </video>
         ) : (
           <div 
-            className="absolute inset-0 h-full w-full bg-cover bg-center"
-            style={{ backgroundImage: `url(${mobileBackdrop})` }}
+            className="absolute inset-0 h-[100dvh] w-screen bg-cover bg-center"
+            style={{ 
+              backgroundImage: `url(${mobileBackdrop})`,
+              backgroundAttachment: 'fixed',
+              backgroundSize: 'cover',
+              width: '100vw',
+              height: '100dvh'
+            }}
           />
         )}
         <div className="absolute inset-0 bg-ink/25" />
