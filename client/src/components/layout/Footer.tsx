@@ -76,8 +76,8 @@ export function Footer() {
 
       {/* Beige panel with a subtle fluted-glass shader texture */}
       <div className="relative w-full [--color-primary:#7CB342] bg-[var(--color-primary)] z-10 min-h-[260px] sm:min-h-[320px] md:min-h-[400px]">
-        {/* Background shader */}
-        <div className="absolute inset-0 z-0 pointer-events-none">
+        {/* Background shader - disabled on mobile to prevent re-render lag */}
+        <div className="absolute inset-0 z-0 pointer-events-none hidden md:block">
           <FlutedGlass
             size={0.89}
             shape="lines"
