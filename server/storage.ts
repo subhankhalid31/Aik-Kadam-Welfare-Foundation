@@ -25,6 +25,7 @@ import {
   type CaseVolunteerRequest,
   type InboxMessage,
   type InboxThreadMessage,
+  PLATFORM_FEE_RATE,
 } from "@shared/schema";
 
 // Emails are matched case-insensitively everywhere and always stored
@@ -702,7 +703,7 @@ export const storage = {
   // ─── Donations (manual-confirm) ──────────────────────────────────────────
   async createDonation(
     userId: string,
-    data: { caseId: string; amount: number; method: string; senderAccount: string; receiptImage: string; referenceNote?: string; recurringDonationId?: string },
+    data: { caseId: string; amount: number; tipAmount?: number; method: string; senderAccount: string; receiptImage: string; referenceNote?: string; recurringDonationId?: string },
   ): Promise<Donation> {
     const [donation] = await db
       .insert(donations)
@@ -711,6 +712,7 @@ export const storage = {
         caseId: data.caseId,
         recurringDonationId: data.recurringDonationId,
         amount: data.amount,
+        tipAmount: data.tipAmount ?? 0,
         method: data.method as any,
         senderAccount: data.senderAccount,
         receiptImage: data.receiptImage,
@@ -794,6 +796,63 @@ export const storage = {
     return query;
   },
 
+  // Powers the admin "By Case" donations view: every case (searchable by
+  // title/location/city/category) with how much it's collected so far and
+  // how many confirmed donations back that number, so an admin can scan
+  // for a case without opening each one.
+  async getCasesWithDonationTotals(search?: string) {
+    const conditions = [];
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      conditions.push(
+        or(
+          ilike(cases.title, term),
+          ilike(cases.location, term),
+          ilike(cases.city, term),
+          ilike(cases.category, term),
+        ),
+      );
+    }
+
+    const query = db
+      .select({
+        id: cases.id,
+        title: cases.title,
+        location: cases.location,
+        category: cases.category,
+        status: cases.status,
+        imageUrl: cases.imageUrl,
+        amountNeeded: cases.amountNeeded,
+        amountCollected: cases.amountCollected,
+        createdAt: cases.createdAt,
+        donationCount: sql<number>`(select count(*)::int from ${donations} where ${donations.caseId} = ${cases.id} and ${donations.status} = 'confirmed')`,
+      })
+      .from(cases)
+      .orderBy(desc(cases.amountCollected));
+
+    if (conditions.length > 0) {
+      return query.where(and(...conditions));
+    }
+    return query;
+  },
+
+  // Powers the admin case-detail drill-in: the case itself plus every
+  // donation ever submitted against it (any status, newest first), so the
+  // admin can see the full history — not just what's currently confirmed.
+  async getCaseDonationDetail(caseId: string) {
+    const caseRow = await this.getCaseById(caseId);
+    if (!caseRow) return undefined;
+
+    const rows = await db
+      .select({ donation: donations, donorName: users.name, donorEmail: users.email })
+      .from(donations)
+      .innerJoin(users, eq(donations.userId, users.id))
+      .where(eq(donations.caseId, caseId))
+      .orderBy(desc(donations.createdAt));
+
+    return { case: caseRow, donations: rows };
+  },
+
   async deleteDonation(id: string): Promise<void> {
     await db.delete(donations).where(eq(donations.id, id));
   },
@@ -815,6 +874,16 @@ export const storage = {
     if (!donation) throw new Error("Donation not found");
     if (donation.status === "confirmed") return donation; // already confirmed — avoid double-counting the amount
 
+    // Platform fee is computed and locked in right here, once, off the
+    // donation's own `amount` — never off the tip (the tip is already a
+    // gift to the platform, not something the platform takes a cut of).
+    // Storing the fee/net split on the row itself (rather than
+    // recomputing PLATFORM_FEE_RATE * amount whenever it's displayed)
+    // means this donation's numbers stay correct forever even if the fee
+    // rate is changed for future donations later.
+    const platformFeeAmount = Math.round(donation.amount * PLATFORM_FEE_RATE);
+    const netCaseAmount = donation.amount - platformFeeAmount;
+
     // Gate the transition itself on `status = 'pending'` (not just the
     // earlier read) and check how many rows it actually touched — that's
     // what makes this safe against two concurrent confirm calls for the
@@ -824,7 +893,7 @@ export const storage = {
     // case's amountCollected — double-counting the same donation.
     const [updated] = await db
       .update(donations)
-      .set({ status: "confirmed", confirmedAt: new Date(), rejectionReason: null })
+      .set({ status: "confirmed", confirmedAt: new Date(), rejectionReason: null, platformFeeAmount, netCaseAmount })
       .where(and(eq(donations.id, donationId), eq(donations.status, "pending")))
       .returning();
     if (!updated) {
@@ -836,13 +905,16 @@ export const storage = {
       return current;
     }
 
-    // Atomic increment (amountCollected = amountCollected + x in the same
+    // Only the net amount (after the platform fee) lands on the case's
+    // collected total and progress bar — the tip never does, it's tracked
+    // separately as platform support (see getCaseDonationDetail). Atomic
+    // increment (amountCollected = amountCollected + x in the same
     // statement) rather than read-then-write, for the same reason as
     // above — two confirms landing at once would otherwise both compute
     // their new total from the same stale starting value.
     await db
       .update(cases)
-      .set({ amountCollected: sql`${cases.amountCollected} + ${donation.amount}` })
+      .set({ amountCollected: sql`${cases.amountCollected} + ${netCaseAmount}` })
       .where(eq(cases.id, donation.caseId));
 
     if (donation.recurringDonationId) {
@@ -879,9 +951,12 @@ export const storage = {
     }
 
     if (donation.status === "confirmed") {
+      // Reverse exactly what confirmDonation credited — the stored
+      // netCaseAmount, not the raw amount, since that (minus the fee) is
+      // what actually landed on the case's total in the first place.
       await db
         .update(cases)
-        .set({ amountCollected: sql`GREATEST(0, ${cases.amountCollected} - ${donation.amount})` })
+        .set({ amountCollected: sql`GREATEST(0, ${cases.amountCollected} - ${donation.netCaseAmount ?? donation.amount})` })
         .where(eq(cases.id, donation.caseId));
     }
 
@@ -1002,7 +1077,7 @@ export const storage = {
 
     await db
       .update(cases)
-      .set({ amountCollected: sql`GREATEST(0, ${cases.amountCollected} - ${donation.amount})` })
+      .set({ amountCollected: sql`GREATEST(0, ${cases.amountCollected} - ${donation.netCaseAmount ?? donation.amount})` })
       .where(eq(cases.id, donation.caseId));
 
     return updated;

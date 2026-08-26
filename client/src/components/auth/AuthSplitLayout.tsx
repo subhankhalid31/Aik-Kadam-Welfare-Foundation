@@ -1,5 +1,13 @@
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import mobileBackdrop from "@assets/hero/auth-mobile-backdrop.jpg";
+import { cn } from "@/lib/utils";
+// `auth-mobile-backdrop.jpg` referenced here previously didn't exist in
+// the repo at all, so the "image while the video loads" fallback was
+// silently broken — visitors just saw a blank/black box until the video
+// decoded its first frame. Using the same hands photo the rest of the
+// site already ships (attached_assets/gallery) as the poster fixes that,
+// and it doubles as the true "no video present" fallback too.
+import authBackdrop from "@assets/hero/postcase-hands.webp";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared visual frame for login / signup / forgot-password.
@@ -15,6 +23,11 @@ import mobileBackdrop from "@assets/hero/auth-mobile-backdrop.jpg";
 // VIDEO: drop an .mp4/.webm/.mov into client/src/assets/auth-video/ and it
 // plays automatically on both desktop and mobile — see the README in that
 // folder. Nothing to wire up here.
+//
+// Both the mobile backdrop and the desktop panel render through
+// <AutoBackgroundVideo> below — see that component for how the
+// "image-then-video, never a play button, never a zoom on scroll" fix
+// actually works.
 // ─────────────────────────────────────────────────────────────────────────
 
 // Vite glob-imports whatever video file(s) live in that folder at build
@@ -28,6 +41,99 @@ const AUTH_VIDEO_SRC = Object.keys(videoModules)
 export interface AuthStep {
   title: string;
   description: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Silent, controls-free, autoplaying video with a photo underneath.
+//
+// Fixes, in order:
+//
+// 1. "Play button visible on the video" — browsers only allow a muted
+//    video to autoplay. Setting `muted` as a JSX attribute doesn't
+//    reliably mark the underlying DOM element muted before the browser
+//    evaluates the `autoplay` attribute, so autoplay can get silently
+//    blocked — and when that happens the browser shows its own big play
+//    button instead. We never render native `controls`, and we also set
+//    `video.muted`/`video.defaultMuted` directly on the DOM node and call
+//    `.play()` ourselves, so autoplay reliably succeeds and no play
+//    button can appear. If a browser still refuses (very rare), we just
+//    keep showing the still photo — never a broken player.
+// 2. "Image until the video has loaded, then the video" — the photo is
+//    always rendered first and stays fully visible until the video
+//    actually has a frame ready (`onLoadedData`), then the two
+//    cross-fade. No blank/black flash while the video downloads.
+// 3. "Zoom in when you scroll" — this was the mobile backdrop being sized
+//    with the `dvh` unit while `position: fixed`. `dvh` tracks the
+//    *live* visible viewport, which grows the moment the browser's
+//    address bar collapses as you start scrolling — so a `fixed` +
+//    `object-cover` video sized in `dvh` visibly grows to keep covering
+//    the newly-larger box, which reads exactly like a zoom-in. This
+//    component itself doesn't set any viewport height unit — it just
+//    fills whatever fixed-size box its parent gives it — so the parent
+//    is what controls that now (see the `h-[100svh]` wrapper below).
+// ─────────────────────────────────────────────────────────────────────────
+function AutoBackgroundVideo({
+  src,
+  poster,
+  className,
+}: {
+  src?: string;
+  poster: string;
+  className?: string;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setReady(false);
+    const video = videoRef.current;
+    if (!video || !src) return;
+    video.muted = true;
+    video.defaultMuted = true;
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {
+        // Autoplay blocked outright (uncommon) — the poster photo below
+        // just stays put instead of showing a broken/paused player.
+      });
+    }
+  }, [src]);
+
+  return (
+    <div className={cn("absolute inset-0 overflow-hidden", className)}>
+      <img
+        src={poster}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+        className={cn(
+          "absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-out",
+          ready ? "opacity-0" : "opacity-100"
+        )}
+      />
+      {src && (
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          poster={poster}
+          disablePictureInPicture
+          disableRemotePlayback
+          onLoadedData={() => setReady(true)}
+          onCanPlay={() => setReady(true)}
+          className={cn(
+            "absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-out",
+            ready ? "opacity-100" : "opacity-0"
+          )}
+        >
+          <source src={src} />
+        </video>
+      )}
+    </div>
+  );
 }
 
 export function AuthSplitLayout({
@@ -74,31 +180,18 @@ export function AuthSplitLayout({
           that starts on top of the video could get captured by the video
           element itself on some mobile browsers instead of scrolling the
           page underneath it. */}
-      <div className="fixed inset-0 pointer-events-none lg:hidden">
-        {AUTH_VIDEO_SRC ? (
-          <video 
-            autoPlay 
-            loop 
-            muted 
-            playsInline 
-            poster={mobileBackdrop} 
-            className="absolute inset-0 h-[100dvh] w-screen object-cover"
-            style={{ width: '100vw', height: '100dvh', objectFit: 'cover' }}
-          >
-            <source src={AUTH_VIDEO_SRC} />
-          </video>
-        ) : (
-          <div 
-            className="absolute inset-0 h-[100dvh] w-screen bg-cover bg-center"
-            style={{ 
-              backgroundImage: `url(${mobileBackdrop})`,
-              backgroundAttachment: 'fixed',
-              backgroundSize: 'cover',
-              width: '100vw',
-              height: '100dvh'
-            }}
-          />
-        )}
+      {/* `top-0 left-0` + an explicit `h-[100svh]` — NOT `inset-0` sized
+          with `dvh` like before — is what actually stops the zoom-on-
+          scroll. `svh` is the *smallest* possible viewport height (i.e.
+          it already assumes the address bar is fully visible), so unlike
+          `dvh` it never changes while you scroll, so this box's size —
+          and therefore the video's object-cover framing inside it —
+          never visibly jumps/grows either. Worst case on a browser that
+          hides its address bar is a few invisible pixels of this backdrop
+          extending past the bottom of the screen, which is unnoticeable
+          on a full-bleed decorative background. */}
+      <div className="fixed top-0 left-0 h-[100svh] w-screen pointer-events-none lg:hidden">
+        <AutoBackgroundVideo src={AUTH_VIDEO_SRC} poster={authBackdrop} />
         <div className="absolute inset-0 bg-ink/25" />
         <div className="absolute inset-0 bg-gradient-to-b from-ink/10 via-transparent to-ink/40" />
       </div>
@@ -114,15 +207,7 @@ export function AuthSplitLayout({
       <div className="relative z-10 grid min-h-dvh lg:grid-cols-[1.35fr_1fr]">
         {/* ── Left: video panel + hardcoded step cards (desktop only) ── */}
         <div className="relative hidden overflow-hidden lg:block">
-          {AUTH_VIDEO_SRC ? (
-            <video autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover">
-              <source src={AUTH_VIDEO_SRC} />
-            </video>
-          ) : (
-            // Falls back to a plain brand gradient — no particles, no
-            // animation loop — if no video has been dropped in yet.
-            <div className="absolute inset-0 bg-gradient-to-br from-primary-dark via-primary to-brand-green" />
-          )}
+          <AutoBackgroundVideo src={AUTH_VIDEO_SRC} poster={authBackdrop} />
           <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/25 to-ink/45" />
 
           {/* pt-32/pt-36 clears the transparent nav sitting on top of this

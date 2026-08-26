@@ -8,6 +8,7 @@ type DonationRow = {
   id: string;
   caseTitle: string;
   amount: number;
+  tipAmount: number;
   method: string;
   receiptImage: string;
   status: "pending" | "confirmed" | "rejected";
@@ -204,6 +205,9 @@ export default function MyDonationsPage() {
                       <p className="text-sm text-muted">
                         PKR {d.amount.toLocaleString()} &middot; {d.method.replace("_", " ")} &middot; {new Date(d.createdAt).toLocaleDateString()}
                       </p>
+                      {d.tipAmount > 0 && (
+                        <p className="mt-0.5 text-xs text-primary">+ PKR {d.tipAmount.toLocaleString()} tip to support the platform</p>
+                      )}
                       {d.status === "rejected" && d.rejectionReason && (
                         <p className="mt-1 text-sm text-red-600">Reason: {d.rejectionReason}</p>
                       )}
