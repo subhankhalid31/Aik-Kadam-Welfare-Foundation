@@ -2,7 +2,7 @@ import { build } from "esbuild";
 import { execSync } from "child_process";
 
 console.log("Building client...");
-execSync("npx vite build", { stdio: "inherit" });
+execSync("vite build", { stdio: "inherit" });
 
 console.log("Building server...");
 await build({

@@ -4,12 +4,30 @@ import fs from "fs";
 import crypto from "crypto";
 import convertHeic from "heic-convert";
 
-const PUBLIC_UPLOAD_DIR = path.resolve(import.meta.dirname, "..", "..", "uploads");
+// Render (and most PaaS hosts — Railway, Heroku, Fly, etc.) run web
+// services on an EPHEMERAL filesystem by default: anything written to
+// disk at runtime — which is exactly what these uploaded case/gallery
+// photos and receipts are — gets wiped on every redeploy, restart, or
+// scaling event. The app itself and the database survive that fine, but
+// any photo uploaded since the last deploy silently disappears the next
+// time the service restarts, even though the database still has a
+// perfectly valid-looking URL pointing at it. That's the "new case
+// photos aren't showing after publishing" bug.
+//
+// UPLOAD_DIR lets these paths point at somewhere that actually persists
+// across restarts instead — e.g. a Render Disk mounted at /var/data, set
+// via UPLOAD_DIR=/var/data. Defaults to the previous relative-to-the-app
+// behavior when unset, so local development needs no changes at all.
+// See .env.example for the full explanation and setup steps.
+const UPLOAD_ROOT = process.env.UPLOAD_DIR ? path.resolve(process.env.UPLOAD_DIR) : path.resolve(import.meta.dirname, "..", "..");
+const PUBLIC_UPLOAD_DIR = path.join(UPLOAD_ROOT, "uploads");
 // Kept outside the publicly-static-served uploads/ directory on purpose —
 // donation receipts contain donors' financial/contact info and should only
 // ever be reachable through the authenticated /api/receipts/:filename route
 // (see routes.ts), never by guessing/sharing a plain URL.
-const PRIVATE_UPLOAD_DIR = path.resolve(import.meta.dirname, "..", "..", "private-uploads", "receipts");
+const PRIVATE_UPLOAD_DIR = path.join(UPLOAD_ROOT, "private-uploads", "receipts");
+export { PUBLIC_UPLOAD_DIR };
+
 fs.mkdirSync(PUBLIC_UPLOAD_DIR, { recursive: true });
 fs.mkdirSync(PRIVATE_UPLOAD_DIR, { recursive: true });
 
