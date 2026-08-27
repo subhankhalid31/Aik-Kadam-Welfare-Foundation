@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   User, LayoutDashboard, ChevronDown, ChevronRight, Heart, HelpCircle, LogOut, LogIn, Star,
   Briefcase, Image as ImageIcon, Map, Users, Handshake, ShieldCheck, Search,
-  Compass, HeartHandshake,
+  Compass, HeartHandshake, Newspaper,
 } from "lucide-react";
 import { Logo } from "./Logo";
 import { ArrowCta } from "@/components/ui/ArrowCta";
@@ -21,6 +21,16 @@ const PROJECT_LINKS = [
 ];
 
 const PROJECTS_HEADER = { icon: Compass, title: "Explore our projects" };
+
+// "Success Stories" used to be its own single nav link — now grouped with
+// the new Blog under one "Stories" dropdown instead of the navbar growing
+// a 5th top-level item.
+const STORIES_LINKS = [
+  { label: "Blog", desc: "Updates, notes from the field, and more", href: "/blog", icon: Newspaper },
+  { label: "Success Stories", desc: "Real people, real change", href: "/success-stories", icon: Star },
+];
+
+const STORIES_HEADER = { icon: Star, title: "Stories & updates" };
 
 const GET_INVOLVED_LINKS = [
   { label: "Volunteers", desc: "Meet our volunteer community", href: "/volunteers", icon: Users },
@@ -91,6 +101,7 @@ export function Navbar() {
   const [mobileTab, setMobileTab] = useState<SearchTab>("Cases");
   const { filteredCases, filteredVolunteers, filteredStories } = useGlobalSearch(mobileQuery);
   const [mobileProjectsOpen, setMobileProjectsOpen] = useState(false);
+  const [mobileStoriesOpen, setMobileStoriesOpen] = useState(false);
   const [mobileInvolvedOpen, setMobileInvolvedOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { user, logout } = useAuth();
@@ -175,7 +186,7 @@ export function Navbar() {
           <div className="flex items-center gap-9">
             <Link href="/about" className={`text-sm font-medium transition-colors ${linkColor}`}>About</Link>
             <NavDropdown label="Projects" items={PROJECT_LINKS} header={PROJECTS_HEADER} triggerClassName={linkColor} />
-            <Link href="/success-stories" className={`text-sm font-medium transition-colors ${linkColor}`}>Success Stories</Link>
+            <NavDropdown label="Stories" items={STORIES_LINKS} header={STORIES_HEADER} triggerClassName={linkColor} />
             <NavDropdown label="Get Involved" items={GET_INVOLVED_LINKS} header={GET_INVOLVED_HEADER} triggerClassName={linkColor} />
           </div>
         </div>
@@ -326,7 +337,33 @@ export function Navbar() {
                   </AnimatePresence>
                 </motion.div>
 
-                <MobileNavRow href="/success-stories" icon={Star} onClick={closeMobileMenu}>Success Stories</MobileNavRow>
+                <motion.div variants={menuItemVariants}>
+                  <button
+                    onClick={() => setMobileStoriesOpen((v) => !v)}
+                    className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink/85 hover:bg-brand-green/8 transition-colors"
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/60">
+                      <Star size={15} />
+                    </span>
+                    <span className="flex-1 text-left">Stories</span>
+                    <ChevronDown size={15} className={`transition-transform ${mobileStoriesOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  <AnimatePresence>
+                    {mobileStoriesOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden pl-11"
+                      >
+                        {STORIES_LINKS.map((l) => (
+                          <Link key={l.href} href={l.href} onClick={closeMobileMenu} className="block py-2 text-sm text-ink/65 hover:text-brand-green transition-colors">{l.label}</Link>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
 
                 <motion.div variants={menuItemVariants}>
                   <button
