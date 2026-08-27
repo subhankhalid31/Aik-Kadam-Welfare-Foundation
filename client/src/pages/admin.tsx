@@ -747,6 +747,13 @@ export default function AdminPage() {
         </div>
       )}
 
+      {tab === "blogs" && (
+        <div>
+          <h1 className="font-display text-2xl text-ink">Blog</h1>
+          <BlogsManagementPanel dialog={dialog} />
+        </div>
+      )}
+
       {tab === "namechange" && (
         <div>
           <h2 className="font-display text-lg text-ink">Name Change Requests</h2>
@@ -2033,6 +2040,7 @@ type CaseDonationDetail = {
 function CaseDonationDetailModal({ caseId, onClose }: { caseId: string; onClose: () => void }) {
   const [detail, setDetail] = useState<CaseDonationDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -2040,6 +2048,7 @@ function CaseDonationDetailModal({ caseId, onClose }: { caseId: string; onClose:
     api.get<CaseDonationDetail>(`/api/admin/donations/cases/${caseId}`).then((data) => {
       if (!cancelled) {
         setDetail(data);
+        setSelected(new Set());
         setLoading(false);
       }
     });
@@ -2047,6 +2056,25 @@ function CaseDonationDetailModal({ caseId, onClose }: { caseId: string; onClose:
       cancelled = true;
     };
   }, [caseId]);
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    if (!detail) return;
+    setSelected((prev) => (prev.size === detail.donations.length ? new Set() : new Set(detail.donations.map((d) => d.id))));
+  }
+
+  function exportCsv(onlySelected: boolean) {
+    const params = onlySelected && selected.size > 0 ? `?ids=${Array.from(selected).join(",")}` : "";
+    window.open(`/api/admin/donations/cases/${caseId}/export${params}`, "_blank");
+  }
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -2086,18 +2114,48 @@ function CaseDonationDetailModal({ caseId, onClose }: { caseId: string; onClose:
               </div>
             </div>
 
-            {typeof detail.summary.totalTips === "number" && detail.summary.totalTips > 0 && (
-              <div className="mt-3 rounded-xl border border-dashed border-border p-4">
-                <p className="text-xs text-muted">Tips Collected (supports the platform, separate from the case goal)</p>
-                <p className="mt-1 font-display text-lg font-semibold text-ink">PKR {detail.summary.totalTips.toLocaleString()}</p>
-              </div>
-            )}
+            {/* Tips block sits directly below the money summary, matching
+                the same layout as the overview pane's own "Total Tips
+                Collected" card, just scoped to this one case. */}
+            <div className="mt-3 rounded-xl border border-dashed border-border p-4">
+              <p className="text-xs text-muted">Tips Collected (supports the platform, separate from this case's goal)</p>
+              <p className="mt-1 font-display text-lg font-semibold text-ink">PKR {(detail.summary.totalTips ?? 0).toLocaleString()}</p>
+            </div>
 
-            <h3 className="mt-7 font-display text-base font-semibold text-ink">All donations for this case</h3>
+            <div className="mt-7 flex flex-wrap items-center justify-between gap-3">
+              <h3 className="font-display text-base font-semibold text-ink">All donations for this case</h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => exportCsv(true)}
+                  disabled={selected.size === 0}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-1.5 text-xs font-semibold text-ink hover:bg-background transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Download size={13} /> Export Selected ({selected.size})
+                </button>
+                <button
+                  onClick={() => exportCsv(false)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-background hover:bg-primary-dark transition-colors"
+                >
+                  <Download size={13} /> Export All CSV
+                </button>
+              </div>
+            </div>
+
             <div className="mt-3 overflow-x-auto rounded-lg border border-border">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-background/60 text-left text-xs font-semibold text-muted uppercase tracking-wide">
+                    <th className="px-3.5 py-2.5 w-8">
+                      {detail.donations.length > 0 && (
+                        <input
+                          type="checkbox"
+                          checked={selected.size === detail.donations.length}
+                          onChange={toggleAll}
+                          className="h-4 w-4 rounded border-border accent-primary"
+                          aria-label="Select all donations"
+                        />
+                      )}
+                    </th>
                     <th className="px-3.5 py-2.5">Donor</th>
                     <th className="px-3.5 py-2.5">Amount</th>
                     <th className="px-3.5 py-2.5">Method</th>
@@ -2107,15 +2165,27 @@ function CaseDonationDetailModal({ caseId, onClose }: { caseId: string; onClose:
                 </thead>
                 <tbody className="divide-y divide-border">
                   {detail.donations.length === 0 ? (
-                    <tr><td colSpan={5} className="px-3.5 py-6 text-center text-muted">No donations submitted for this case yet.</td></tr>
+                    <tr><td colSpan={6} className="px-3.5 py-6 text-center text-muted">No donations submitted for this case yet.</td></tr>
                   ) : (
                     detail.donations.map((d) => (
-                      <tr key={d.id}>
+                      <tr key={d.id} className={selected.has(d.id) ? "bg-primary/5" : undefined}>
+                        <td className="px-3.5 py-3 align-top">
+                          <input
+                            type="checkbox"
+                            checked={selected.has(d.id)}
+                            onChange={() => toggleOne(d.id)}
+                            className="h-4 w-4 rounded border-border accent-primary"
+                            aria-label={`Select donation from ${d.donorName}`}
+                          />
+                        </td>
                         <td className="px-3.5 py-3 align-top">
                           <div className="font-medium text-ink">{d.donorName}</div>
                           <div className="text-xs text-muted">{d.donorEmail}</div>
                         </td>
-                        <td className="px-3.5 py-3 align-top text-ink">PKR {d.amount.toLocaleString()}</td>
+                        <td className="px-3.5 py-3 align-top text-ink">
+                          PKR {d.amount.toLocaleString()}
+                          {d.tipAmount > 0 && <div className="text-xs text-primary">+ PKR {d.tipAmount.toLocaleString()} tip</div>}
+                        </td>
                         <td className="px-3.5 py-3 align-top text-xs capitalize text-muted">{d.method.replace("_", " ")}</td>
                         <td className="px-3.5 py-3 align-top">
                           <span
@@ -3053,6 +3123,170 @@ type SuccessStoryRow = {
   beforeImage: string;
   afterImage: string;
 };
+
+// ─── Blogs management: Active posts / Bin (30-day soft delete) ───
+
+type AdminBlogRow = {
+  id: string;
+  title: string;
+  excerpt: string;
+  coverImage: string;
+  status: "draft" | "published";
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+function BlogsManagementPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
+  const [view, setView] = useState<"active" | "bin">("active");
+  const [search, setSearch] = useState("");
+  const [blogs, setBlogs] = useState<AdminBlogRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    const params = new URLSearchParams({ view });
+    if (search) params.set("search", search);
+    api
+      .get<{ blogs: AdminBlogRow[] }>(`/api/admin/blogs?${params}`)
+      .then((data) => setBlogs(data.blogs))
+      .finally(() => setLoading(false));
+  }, [view, search]);
+
+  useEffect(() => {
+    const timer = setTimeout(load, 250);
+    return () => clearTimeout(timer);
+  }, [load]);
+
+  async function moveToBin(id: string, title: string) {
+    if (!(await dialog.confirm(`Move "${title}" to the Bin? It'll be recoverable there for 30 days before being permanently deleted.`))) return;
+    await api.delete(`/api/admin/blogs/${id}`);
+    load();
+  }
+
+  async function restore(id: string) {
+    await api.post(`/api/admin/blogs/${id}/restore`);
+    load();
+  }
+
+  async function deleteForever(id: string, title: string) {
+    if (!(await dialog.confirm(`Permanently delete "${title}"? This can't be undone.`))) return;
+    await api.delete(`/api/admin/blogs/${id}/permanent`);
+    load();
+  }
+
+  return (
+    <div className="mt-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex rounded-full border border-border bg-white p-1">
+          {([
+            { key: "active", label: "All Posts" },
+            { key: "bin", label: "Bin" },
+          ] as { key: "active" | "bin"; label: string }[]).map((v) => (
+            <button
+              key={v.key}
+              onClick={() => setView(v.key)}
+              className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+                view === v.key ? "bg-primary text-background" : "text-ink/70 hover:bg-background"
+              }`}
+            >
+              {v.label}
+            </button>
+          ))}
+        </div>
+
+        {view === "active" && (
+          <a
+            href="/admin/blogs/new"
+            className="glass-surface inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-background hover:bg-primary-dark transition-colors"
+          >
+            <Plus size={15} /> New Post
+          </a>
+        )}
+      </div>
+
+      <div className="relative mt-4 max-w-sm">
+        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search posts by title..."
+          className="w-full rounded-lg border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+      </div>
+
+      {view === "bin" && (
+        <p className="mt-3 text-xs text-muted">Posts here are permanently deleted 30 days after being moved to the Bin.</p>
+      )}
+
+      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {loading ? (
+          <p className="text-muted">Loading...</p>
+        ) : blogs.length === 0 ? (
+          <p className="text-muted">{view === "bin" ? "Bin is empty." : "No blog posts yet."}</p>
+        ) : (
+          blogs.map((b) => (
+            <div key={b.id} className="glass-surface glass-surface-outline flex flex-col overflow-hidden rounded-xl border">
+              <div className="h-32 w-full overflow-hidden bg-background">
+                <img src={b.coverImage} alt="" className="h-full w-full object-cover" />
+              </div>
+              <div className="flex flex-1 flex-col p-4">
+                <span
+                  className={`inline-block w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                    b.status === "published" ? "bg-primary/10 text-primary" : "bg-amber-100 text-amber-700"
+                  }`}
+                >
+                  {b.status}
+                </span>
+                <p className="mt-1.5 font-display text-sm font-semibold text-ink line-clamp-2">{b.title}</p>
+                <p className="mt-1 text-xs text-muted line-clamp-2 flex-1">{b.excerpt}</p>
+                <p className="mt-2 text-[11px] text-muted">
+                  {view === "bin"
+                    ? `Deleted ${new Date(b.deletedAt!).toLocaleDateString()}`
+                    : `Updated ${new Date(b.updatedAt).toLocaleDateString()}`}
+                </p>
+
+                <div className="mt-3 flex gap-2">
+                  {view === "active" ? (
+                    <>
+                      <a
+                        href={`/admin/blogs/${b.id}/edit`}
+                        className="flex-1 rounded-full border border-border px-3 py-1.5 text-center text-xs font-semibold text-ink hover:bg-background transition-colors"
+                      >
+                        Edit
+                      </a>
+                      <button
+                        onClick={() => moveToBin(b.id, b.title)}
+                        className="flex-1 rounded-full border border-danger/30 px-3 py-1.5 text-xs font-semibold text-danger hover:bg-danger/10 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => restore(b.id)}
+                        className="flex-1 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-ink hover:bg-background transition-colors"
+                      >
+                        Restore
+                      </button>
+                      <button
+                        onClick={() => deleteForever(b.id, b.title)}
+                        className="flex-1 rounded-full border border-danger/30 px-3 py-1.5 text-xs font-semibold text-danger hover:bg-danger/10 transition-colors"
+                      >
+                        Delete Forever
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
 
 function SuccessStoriesManagementPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
   const [stories, setStories] = useState<SuccessStoryRow[]>([]);

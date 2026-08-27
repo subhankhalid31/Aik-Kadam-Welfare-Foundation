@@ -8,6 +8,7 @@ import {
   caseVolunteerRequests,
   galleryEvents,
   successStories,
+  blogs,
   donations,
   recurringDonations,
   bannedEmails,
@@ -20,6 +21,7 @@ import {
   type InsertCase,
   type GalleryEvent,
   type SuccessStory,
+  type Blog,
   type Donation,
   type RecurringDonation,
   type CaseVolunteerRequest,
@@ -700,6 +702,122 @@ export const storage = {
     await db.delete(successStories).where(eq(successStories.id, id));
   },
 
+  // ─── Blogs ─────────────────────────────────────────────────────────────
+
+  // Turns "Why Winter Aid Matters More Than Ever!" into "why-winter-aid-
+  // matters-more-than-ever", then appends -2/-3/... if that slug is already
+  // taken (by another live OR bin post — a restored post reusing a slug
+  // that's meanwhile been taken by a new post would otherwise collide).
+  async generateUniqueBlogSlug(title: string, excludeId?: string): Promise<string> {
+    const base =
+      title
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 80) || "post";
+
+    let slug = base;
+    let suffix = 2;
+    for (;;) {
+      const conflictConditions = excludeId
+        ? and(eq(blogs.slug, slug), sql`${blogs.id} != ${excludeId}`)
+        : eq(blogs.slug, slug);
+      const [existing] = await db.select({ id: blogs.id }).from(blogs).where(conflictConditions).limit(1);
+      if (!existing) return slug;
+      slug = `${base}-${suffix}`;
+      suffix += 1;
+    }
+  },
+
+  async createBlog(
+    authorId: string,
+    data: { title: string; excerpt: string; content: string; coverImage: string; status: "draft" | "published" },
+  ): Promise<Blog> {
+    const slug = await this.generateUniqueBlogSlug(data.title);
+    const [blog] = await db
+      .insert(blogs)
+      .values({ ...data, slug, authorId })
+      .returning();
+    return blog;
+  },
+
+  async updateBlog(
+    id: string,
+    data: Partial<{ title: string; excerpt: string; content: string; coverImage: string; status: "draft" | "published" }>,
+  ): Promise<Blog | undefined> {
+    const patch: Record<string, unknown> = { ...data, updatedAt: new Date() };
+    // Re-slugging on every title edit would break any link already shared
+    // to the old slug, so the slug is only ever (re)computed once, at
+    // creation — editing the title later never changes the URL.
+    const [updated] = await db.update(blogs).set(patch).where(eq(blogs.id, id)).returning();
+    return updated;
+  },
+
+  async getBlogById(id: string): Promise<Blog | undefined> {
+    const [blog] = await db.select().from(blogs).where(eq(blogs.id, id));
+    return blog;
+  },
+
+  // Public reads only ever see published, non-deleted posts — a draft or a
+  // soft-deleted post is never reachable by guessing its slug.
+  async getPublishedBlogBySlug(slug: string): Promise<Blog | undefined> {
+    const [blog] = await db
+      .select()
+      .from(blogs)
+      .where(and(eq(blogs.slug, slug), eq(blogs.status, "published"), sql`${blogs.deletedAt} is null`));
+    return blog;
+  },
+
+  async listPublishedBlogs(limit?: number): Promise<Blog[]> {
+    const query = db
+      .select()
+      .from(blogs)
+      .where(and(eq(blogs.status, "published"), sql`${blogs.deletedAt} is null`))
+      .orderBy(desc(blogs.createdAt));
+    if (limit) return query.limit(limit);
+    return query;
+  },
+
+  // Bin items older than 30 days are gone for good — this runs (cheaply;
+  // it's a no-op once nothing qualifies) every time the admin bin is
+  // opened, rather than needing a separate cron job wired up.
+  async purgeExpiredBlogBin(): Promise<void> {
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    await db.delete(blogs).where(sql`${blogs.deletedAt} is not null and ${blogs.deletedAt} < ${cutoff}`);
+  },
+
+  async listAdminBlogs(view: "active" | "bin", search?: string): Promise<Blog[]> {
+    if (view === "bin") await this.purgeExpiredBlogBin();
+
+    const conditions = [view === "bin" ? sql`${blogs.deletedAt} is not null` : sql`${blogs.deletedAt} is null`];
+    if (search && search.trim()) {
+      conditions.push(ilike(blogs.title, `%${search.trim()}%`));
+    }
+    return db
+      .select()
+      .from(blogs)
+      .where(and(...conditions))
+      .orderBy(desc(blogs.createdAt));
+  },
+
+  // Moves a live post to the Bin — recoverable for 30 days via
+  // restoreBlog, then auto-purged by purgeExpiredBlogBin.
+  async softDeleteBlog(id: string): Promise<void> {
+    await db.update(blogs).set({ deletedAt: new Date() }).where(eq(blogs.id, id));
+  },
+
+  async restoreBlog(id: string): Promise<void> {
+    await db.update(blogs).set({ deletedAt: null }).where(eq(blogs.id, id));
+  },
+
+  // Immediate, permanent removal — only ever called from within the Bin
+  // view, never from the main list, so this is always a deliberate
+  // "empty the trash" action rather than accidental.
+  async permanentlyDeleteBlog(id: string): Promise<void> {
+    await db.delete(blogs).where(eq(blogs.id, id));
+  },
+
   // ─── Donations (manual-confirm) ──────────────────────────────────────────
   async createDonation(
     userId: string,
@@ -1090,6 +1208,14 @@ export const storage = {
       .from(donations)
       .where(eq(donations.status, "confirmed"));
 
+    // Sum of every tip a donor has added, across every case — tips never
+    // belong to any single case's own total (see confirmDonation), so this
+    // is the only place their grand total is rolled up.
+    const [{ totalTips }] = await db
+      .select({ totalTips: sql<number>`coalesce(sum(${donations.tipAmount}), 0)` })
+      .from(donations)
+      .where(eq(donations.status, "confirmed"));
+
     const [{ totalDonors }] = await db
       .select({ totalDonors: sql<number>`count(distinct ${donations.userId})` })
       .from(donations)
@@ -1117,6 +1243,7 @@ export const storage = {
 
     return {
       totalRaised: Number(totalRaised),
+      totalTips: Number(totalTips),
       totalDonors: Number(totalDonors),
       activeCases: Number(activeCases),
       pendingApprovals: Number(pendingVolunteers) + Number(pendingCases) + Number(pendingDonations),

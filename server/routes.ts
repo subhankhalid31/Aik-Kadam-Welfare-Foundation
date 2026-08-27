@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import express from "express";
+import fs from "fs";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import rateLimit from "express-rate-limit";
@@ -33,6 +34,7 @@ import {
   inboxComposeSchema,
   toPublicUser,
   PLATFORM_FEE_RATE,
+  insertBlogSchema,
 } from "@shared/schema";
 
 const RESEND_COOLDOWN_MS = 45_000;
@@ -91,6 +93,44 @@ const publicFormLimiter = rateLimit({
   legacyHeaders: false,
   message: { message: "Too many submissions from this network. Please wait a while and try again." },
 });
+
+// Shared by both the global donations export and the per-case export (case
+// detail modal → "Export CSV") so the two can never drift into different
+// column sets/ordering.
+type DonationCsvRow = {
+  donation: { createdAt: Date | string; amount: number; tipAmount: number | null; platformFeeAmount: number | null; netCaseAmount: number | null; method: string; senderAccount: string; status: string; referenceNote: string | null; rejectionReason: string | null };
+  donorName: string;
+  donorEmail: string;
+  caseTitle: string;
+};
+
+function buildDonationsCsv(rows: DonationCsvRow[]): string {
+  const header = ["Date", "Donor Name", "Donor Email", "Case", "Amount (PKR)", "Tip (PKR)", "Platform Fee (PKR)", "Net to Case (PKR)", "Method", "Sender Account", "Status", "Reference", "Rejection Reason"];
+  const escapeCsv = (v: string) => `"${(v ?? "").replace(/"/g, '""')}"`;
+  const lines = [
+    header.join(","),
+    ...rows.map((r) =>
+      [
+        new Date(r.donation.createdAt).toISOString(),
+        r.donorName,
+        r.donorEmail,
+        r.caseTitle,
+        String(r.donation.amount),
+        String(r.donation.tipAmount ?? 0),
+        r.donation.platformFeeAmount != null ? String(r.donation.platformFeeAmount) : "",
+        r.donation.netCaseAmount != null ? String(r.donation.netCaseAmount) : "",
+        r.donation.method,
+        r.donation.senderAccount,
+        r.donation.status,
+        r.donation.referenceNote || "",
+        r.donation.rejectionReason || "",
+      ]
+        .map(escapeCsv)
+        .join(","),
+    ),
+  ];
+  return lines.join("\n");
+}
 
 export function registerRoutes(app: Express) {
   // ─── Auth ─────────────────────────────────────────────────────────────
@@ -778,6 +818,20 @@ export function registerRoutes(app: Express) {
     res.json({ stories: await storage.listSuccessStories() });
   });
 
+  // ─── Blogs (public) ─────────────────────────────────────────────────────
+
+  app.get("/api/blogs", async (req, res) => {
+    const limit = req.query.limit ? Number(req.query.limit) : undefined;
+    const blogList = await storage.listPublishedBlogs(limit && Number.isFinite(limit) ? limit : undefined);
+    res.json({ blogs: blogList });
+  });
+
+  app.get("/api/blogs/:slug", async (req, res) => {
+    const blog = await storage.getPublishedBlogBySlug(String(req.params.slug));
+    if (!blog) return res.status(404).json({ message: "Blog post not found" });
+    res.json({ blog });
+  });
+
   // ─── Admin ────────────────────────────────────────────────────────────
 
   app.get("/api/admin/stats", requireAuth, requireRole("admin"), async (_req, res) => {
@@ -1077,35 +1131,11 @@ export function registerRoutes(app: Express) {
     const from = req.query.from as string | undefined;
     const to = req.query.to as string | undefined;
     const rows = await storage.listDonationsFiltered({ status: status as any, search, from, to });
-
-    const header = ["Date", "Donor Name", "Donor Email", "Case", "Amount (PKR)", "Tip (PKR)", "Platform Fee (PKR)", "Net to Case (PKR)", "Method", "Sender Account", "Status", "Reference", "Rejection Reason"];
-    const escapeCsv = (v: string) => `"${(v ?? "").replace(/"/g, '""')}"`;
-    const lines = [
-      header.join(","),
-      ...rows.map((r) =>
-        [
-          new Date(r.donation.createdAt).toISOString(),
-          r.donorName,
-          r.donorEmail,
-          r.caseTitle,
-          String(r.donation.amount),
-          String(r.donation.tipAmount ?? 0),
-          r.donation.platformFeeAmount != null ? String(r.donation.platformFeeAmount) : "",
-          r.donation.netCaseAmount != null ? String(r.donation.netCaseAmount) : "",
-          r.donation.method,
-          r.donation.senderAccount,
-          r.donation.status,
-          r.donation.referenceNote || "",
-          r.donation.rejectionReason || "",
-        ]
-          .map(escapeCsv)
-          .join(","),
-      ),
-    ];
+    const csv = buildDonationsCsv(rows.map((r) => ({ donation: r.donation, donorName: r.donorName, donorEmail: r.donorEmail, caseTitle: r.caseTitle })));
 
     res.setHeader("Content-Type", "text/csv");
     res.setHeader("Content-Disposition", `attachment; filename="donations-${status}-${Date.now()}.csv"`);
-    res.send(lines.join("\n"));
+    res.send(csv);
   });
 
   // ─── Admin: Donations grouped by case ("By Case" view) ─────────────────
@@ -1147,6 +1177,26 @@ export function registerRoutes(app: Express) {
         totalTips,
       },
     });
+  });
+
+  // Export just this case's donations — either every donation against it,
+  // or (when the admin has ticked specific rows in the case-detail table
+  // and clicked "Export Selected") only those, via ?ids=a,b,c.
+  app.get("/api/admin/donations/cases/:caseId/export", requireAuth, requireRole("admin"), async (req, res) => {
+    const detail = await storage.getCaseDonationDetail(String(req.params.caseId));
+    if (!detail) return res.status(404).json({ message: "Case not found" });
+
+    const idsParam = req.query.ids as string | undefined;
+    const idSet = idsParam ? new Set(idsParam.split(",").map((s) => s.trim()).filter(Boolean)) : null;
+    const rows = detail.donations
+      .filter((d) => !idSet || idSet.has(d.donation.id))
+      .map((d) => ({ donation: d.donation, donorName: d.donorName, donorEmail: d.donorEmail, caseTitle: detail.case.title }));
+    const csv = buildDonationsCsv(rows);
+
+    const safeTitle = detail.case.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "case";
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", `attachment; filename="donations-${safeTitle}-${Date.now()}.csv"`);
+    res.send(csv);
   });
 
   app.post("/api/admin/donations/:id/confirm", requireAuth, requireRole("admin"), async (req, res) => {
@@ -1363,6 +1413,99 @@ export function registerRoutes(app: Express) {
   app.delete("/api/admin/success-stories/:id", requireAuth, requireRole("admin"), async (req, res) => {
     await storage.deleteSuccessStory(String(req.params.id));
     res.json({ message: "Success story deleted" });
+  });
+
+  // ─── Admin: Blogs ───────────────────────────────────────────────────────
+
+  app.get("/api/admin/blogs", requireAuth, requireRole("admin"), async (req, res) => {
+    const view = req.query.view === "bin" ? "bin" : "active";
+    const search = (req.query.search as string) || undefined;
+    const blogList = await storage.listAdminBlogs(view, search);
+    res.json({ blogs: blogList });
+  });
+
+  app.get("/api/admin/blogs/:id", requireAuth, requireRole("admin"), async (req, res) => {
+    const blog = await storage.getBlogById(String(req.params.id));
+    if (!blog) return res.status(404).json({ message: "Blog post not found" });
+    res.json({ blog });
+  });
+
+  app.post(
+    "/api/admin/blogs",
+    requireAuth,
+    requireRole("admin"),
+    uploadImage.single("coverImage"),
+    verifyIsRealImage,
+    async (req, res) => {
+      if (!req.file) return res.status(400).json({ message: "A cover image is required" });
+      const parsed = insertBlogSchema.safeParse(req.body);
+      if (!parsed.success) {
+        fs.unlink(req.file.path, () => {});
+        return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid blog post" });
+      }
+      const blog = await storage.createBlog((req as any).user.id, {
+        ...parsed.data,
+        coverImage: uploadedFileUrl(req.file.filename),
+      });
+      res.status(201).json({ blog });
+    },
+  );
+
+  app.patch(
+    "/api/admin/blogs/:id",
+    requireAuth,
+    requireRole("admin"),
+    uploadImage.single("coverImage"),
+    verifyIsRealImage,
+    async (req, res) => {
+      const existing = await storage.getBlogById(String(req.params.id));
+      if (!existing) {
+        if (req.file) fs.unlink(req.file.path, () => {});
+        return res.status(404).json({ message: "Blog post not found" });
+      }
+      const patch: Record<string, unknown> = {};
+      if (typeof req.body.title === "string" && req.body.title) patch.title = req.body.title;
+      if (typeof req.body.excerpt === "string" && req.body.excerpt) patch.excerpt = req.body.excerpt;
+      if (typeof req.body.content === "string" && req.body.content) patch.content = req.body.content;
+      if (req.body.status === "draft" || req.body.status === "published") patch.status = req.body.status;
+      if (req.file) patch.coverImage = uploadedFileUrl(req.file.filename);
+
+      const updated = await storage.updateBlog(String(req.params.id), patch as any);
+      res.json({ blog: updated });
+    },
+  );
+
+  // Dedicated single-image upload used by the post body editor's "Insert
+  // image" button — separate from the cover image, since it's dropped
+  // in-place between two paragraphs while the admin is still writing,
+  // before the post itself has necessarily been saved yet.
+  app.post(
+    "/api/admin/blogs/upload-image",
+    requireAuth,
+    requireRole("admin"),
+    uploadImage.single("image"),
+    verifyIsRealImage,
+    async (req, res) => {
+      if (!req.file) return res.status(400).json({ message: "No image uploaded" });
+      res.status(201).json({ url: uploadedFileUrl(req.file.filename) });
+    },
+  );
+
+  // Moves a live post to the Bin (recoverable for 30 days).
+  app.delete("/api/admin/blogs/:id", requireAuth, requireRole("admin"), async (req, res) => {
+    await storage.softDeleteBlog(String(req.params.id));
+    res.json({ message: "Blog post moved to Bin" });
+  });
+
+  app.post("/api/admin/blogs/:id/restore", requireAuth, requireRole("admin"), async (req, res) => {
+    await storage.restoreBlog(String(req.params.id));
+    res.json({ message: "Blog post restored" });
+  });
+
+  // Immediate, permanent removal — only ever exposed from the Bin view.
+  app.delete("/api/admin/blogs/:id/permanent", requireAuth, requireRole("admin"), async (req, res) => {
+    await storage.permanentlyDeleteBlog(String(req.params.id));
+    res.json({ message: "Blog post permanently deleted" });
   });
 
   // ─── Admin: Cases (delete) ────────────────────────────────────────────

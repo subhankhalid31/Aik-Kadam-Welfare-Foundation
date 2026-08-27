@@ -10,6 +10,8 @@ import VolunteerRegister from "@/pages/volunteer-register";
 import CompletedProjects from "@/pages/completed-projects";
 import ProjectMap from "@/pages/project-map";
 import SuccessStories from "@/pages/success-stories";
+import BlogList from "@/pages/blog";
+import BlogPost from "@/pages/blog-post";
 import OngoingProjects from "@/pages/ongoing-projects";
 import CaseDetail from "@/pages/case-detail";
 import PostCase from "@/pages/post-case";
@@ -22,6 +24,7 @@ import ForgotPassword from "@/pages/forgot-password";
 import Admin from "@/pages/admin";
 import AdminGalleryNew from "@/pages/admin/gallery-new";
 import AdminSuccessStoryNew from "@/pages/admin/success-story-new";
+import AdminBlogEditor from "@/pages/admin/blog-editor";
 import Account from "@/pages/account";
 import AccountSettings from "@/pages/account-settings";
 import Donate from "@/pages/donate";
@@ -43,6 +46,8 @@ export default function App() {
         <Route path="/completed-projects" component={CompletedProjects} />
         <Route path="/project-map" component={ProjectMap} />
         <Route path="/success-stories" component={SuccessStories} />
+        <Route path="/blog" component={BlogList} />
+        <Route path="/blog/:slug" component={BlogPost} />
         <Route path="/ongoing-projects" component={OngoingProjects} />
         <Route path="/cases/:id" component={CaseDetail} />
         <Route path="/post-case" component={PostCase} />
@@ -78,6 +83,8 @@ export default function App() {
         <Route path="/admin" component={Admin} />
         <Route path="/admin/gallery/new" component={AdminGalleryNew} />
         <Route path="/admin/success-stories/new" component={AdminSuccessStoryNew} />
+        <Route path="/admin/blogs/new" component={AdminBlogEditor} />
+        <Route path="/admin/blogs/:id/edit" component={AdminBlogEditor} />
         <Route path="/account" component={Account} />
         <Route path="/account/settings" component={AccountSettings} />
         <Route path="/donate" component={Donate} />
