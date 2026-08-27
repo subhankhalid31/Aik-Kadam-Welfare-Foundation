@@ -23,6 +23,8 @@ import {
   Mail,
   Menu,
   X,
+  Newspaper,
+  Gift,
 } from "lucide-react";
 
 export type AdminTabKey =
@@ -34,6 +36,7 @@ export type AdminTabKey =
   | "approved"
   | "gallery"
   | "stories"
+  | "blogs"
   | "users"
   | "summary"
   | "namechange"
@@ -76,11 +79,12 @@ const NAV_ITEMS: NavEntry[] = [
   { type: "tab", label: "Donations", icon: Wallet, key: "donations" },
   { type: "tab", label: "Monthly Pledges", icon: Repeat, key: "recurring" },
   { type: "tab", label: "Success Stories", icon: Heart, key: "stories" },
+  { type: "tab", label: "Blog", icon: Newspaper, key: "blogs" },
   { type: "tab", label: "All Users", icon: ShieldOff, key: "users" },
   { type: "tab", label: "Daily Summary", icon: BarChart3, key: "summary" },
 ];
 
-type Stats = { totalRaised: number; totalDonors: number; activeCases: number; pendingApprovals: number };
+type Stats = { totalRaised: number; totalTips: number; totalDonors: number; activeCases: number; pendingApprovals: number };
 
 export function AdminLayout({
   activeTab,
@@ -248,6 +252,10 @@ export function AdminLayout({
               <StatCard icon={Users} label="Total Donors" value={stats.totalDonors} />
               <StatCard icon={Briefcase} label="Active Cases" value={stats.activeCases} />
               <StatCard icon={Clock4} label="Pending Approvals" value={stats.pendingApprovals} />
+              {/* Sum of every tip ever confirmed, across every case — kept
+                  as its own card since tips never count toward any case's
+                  own collected total (see confirmDonation on the server). */}
+              <StatCard icon={Gift} label="Total Tips Collected" value={`PKR ${stats.totalTips.toLocaleString()}`} />
             </>
           ) : (
             <p className="text-background/70 text-sm">Loading...</p>

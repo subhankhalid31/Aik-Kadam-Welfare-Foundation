@@ -306,6 +306,42 @@ export const successStories = pgTable("success_stories", {
 
 export type SuccessStory = typeof successStories.$inferSelect;
 
+// ─── Blogs ─────────────────────────────────────────────────────────────
+// `content` is a JSON-encoded array of "blocks" (see client's blog-blocks
+// helper) rather than one big HTML/markdown string — that's what lets the
+// admin editor insert an image *between* two paragraphs and have it land
+// exactly there, both while editing and when the post is later rendered.
+// Soft-deleted posts (deletedAt set) sit in the admin "Bin" for 30 days —
+// see storage.purgeExpiredBlogBin — before being permanently removed.
+
+export const blogStatusEnum = pgEnum("blog_status", ["draft", "published"]);
+
+export const blogs = pgTable("blogs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
+  excerpt: text("excerpt").notNull(),
+  coverImage: text("cover_image").notNull(),
+  content: text("content").notNull(),
+  status: blogStatusEnum("status").notNull().default("published"),
+  authorId: varchar("author_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  // Set the moment an admin deletes the post — null means it's live/active.
+  // A post sitting here for 30+ days gets purged for good; see
+  // storage.purgeExpiredBlogBin.
+  deletedAt: timestamp("deleted_at"),
+});
+
+export type Blog = typeof blogs.$inferSelect;
+
+export const insertBlogSchema = z.object({
+  title: z.string().min(3, "Title needs to be at least 3 characters"),
+  excerpt: z.string().min(1, "Add a short excerpt readers see before opening the post").max(300),
+  content: z.string().min(1, "The post can't be empty"),
+  status: z.enum(["draft", "published"]).optional().default("published"),
+});
+
 // ─── Platform fee ──────────────────────────────────────────────────────────
 // The cut kept from every confirmed donation to cover payment verification,
 // hosting, and the volunteers/staff who keep cases moving — the rest goes

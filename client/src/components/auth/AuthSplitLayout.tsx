@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 // decoded its first frame. Using the same hands photo the rest of the
 // site already ships (attached_assets/gallery) as the poster fixes that,
 // and it doubles as the true "no video present" fallback too.
-import authBackdrop from "@assets/hero/postcase-hands.webp";
+import authBackdrop from "@assets/gallery/diverse_hands_joining_together_in_unity_against_blue_sky.webp";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared visual frame for login / signup / forgot-password.
@@ -153,60 +153,59 @@ export function AuthSplitLayout({
     // `transparentHero navTheme="light"` on the page's PageLayout call makes
     // the nav render with no background of its own and white text/logo, so
     // this main needs to run full-bleed behind it (no top spacer) — same
-    // pattern as volunteer-register.tsx's HeroShell. `min-h-dvh` (dynamic
-    // viewport height, not the old plain `100vh`) is what actually fixes
-    // the "gap above the footer" / scroll-jump bug on mobile: `100vh`
-    // includes the space the browser's address bar covers even while
-    // it's visible, so as that bar shows/hides during a scroll gesture,
-    // a plain-`vh` box doesn't match the real visible viewport and a
-    // sliver of the page underneath peeks through right at the
-    // boundary. `dvh` tracks the actual visible height instead, so
-    // there's nothing to peek through in the first place.
-    // `overflow-x-hidden` (not `overflow-hidden`) so tall content can
-    // grow/scroll normally instead of having its top clipped off — that
-    // was the earlier "screen box going out" bug: with `overflow-hidden`
-    // + a vertically-centered card taller than the viewport, the
-    // centering pushed the top of the card above y=0 and it just
-    // vanished.
-    <main className="relative min-h-dvh overflow-x-hidden bg-background">
-      {/* Mobile backdrop — same video as the desktop panel when one's been
-          dropped into client/src/assets/auth-video/, falling back to the
-          still photo if that folder's empty. Darkened ~25% and softly
-          blurred either way so the glass inputs stay readable sitting
-          directly on top of it.
-          `pointer-events-none` is the fix for "scrolling only drags the
-          background instead of the page" — this div (and the <video> in
-          particular) is purely decorative, but without this a touch-drag
-          that starts on top of the video could get captured by the video
-          element itself on some mobile browsers instead of scrolling the
-          page underneath it. */}
-      {/* `top-0 left-0` + an explicit `h-[100svh]` — NOT `inset-0` sized
-          with `dvh` like before — is what actually stops the zoom-on-
-          scroll. `svh` is the *smallest* possible viewport height (i.e.
-          it already assumes the address bar is fully visible), so unlike
-          `dvh` it never changes while you scroll, so this box's size —
-          and therefore the video's object-cover framing inside it —
-          never visibly jumps/grows either. Worst case on a browser that
-          hides its address bar is a few invisible pixels of this backdrop
-          extending past the bottom of the screen, which is unnoticeable
-          on a full-bleed decorative background. */}
-      <div className="fixed top-0 left-0 h-[100svh] w-screen pointer-events-none lg:hidden">
+    // pattern as volunteer-register.tsx's HeroShell.
+    <main className="relative overflow-x-hidden bg-background">
+      {/* ── Mobile: ONE real section, not a fixed layer ──────────────────
+          Previously the video/photo was `position: fixed` covering the
+          whole page while the form + footer scrolled over it as a
+          separate layer. That's what caused every symptom reported:
+          a blank gap appearing between the backdrop and the footer once
+          the page was taller than one screen (the fixed layer always
+          covers exactly one viewport, no more — it doesn't grow to match
+          the page), and scrolling behaving differently depending on
+          whether the drag started over the video vs. over the form.
+          Now the video and the sign-in form both live *inside* this one
+          normal-flow section, sized with `min-h-[100svh]`. Since nothing
+          here is `position: fixed` anymore, there's only ever one
+          scrollable thing — the whole page — and this section (video +
+          form together) scrolls up as a single block, with the footer
+          starting immediately where it ends. `min-h` (not a fixed `h-`)
+          rather than a fixed height is what guarantees that: it never
+          traps the form in an internally-scrolling box on a short
+          screen/large text size — the section just grows a little
+          taller instead, and the page below still simply continues.
+          `svh` (not `dvh`) is carried over from the earlier zoom-on-
+          scroll fix — it's a size that's set once and never live-
+          recalculates while scrolling, so there's nothing to visibly
+          jump either way. */}
+      <div className="relative min-h-[100svh] overflow-hidden lg:hidden">
         <AutoBackgroundVideo src={AUTH_VIDEO_SRC} poster={authBackdrop} />
         <div className="absolute inset-0 bg-ink/25" />
         <div className="absolute inset-0 bg-gradient-to-b from-ink/10 via-transparent to-ink/40" />
+
+        {/* Scrim so the transparent white nav stays legible sitting on
+            top of this section — scoped to this section now (not fixed
+            to the whole page), since the section itself is always at
+            least one screen tall. */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-32 bg-gradient-to-b from-black/45 to-transparent" />
+
+        {/* The actual sign-in/up form — same glass card as before, just
+            now a normal-flow child of this section instead of a sibling
+            layered on top of a fixed backdrop. `items-start` (not
+            `items-center`) plus balanced top/bottom padding is what
+            keeps a form taller than the viewport from having its top
+            clipped off by a centered-but-overflowing flex box. */}
+        <div className="relative z-10 flex min-h-[100svh] items-start justify-center px-6 pb-16 pt-32">{children}</div>
       </div>
 
-      {/* Full-width scrim so the transparent white nav stays legible over
-          BOTH columns — the video panel is already dark enough on its own,
-          but without this the nav's white logo/links would sit directly on
-          the plain light form column with no contrast at the top of the
-          page (before the user scrolls and the nav picks up its own
-          backdrop). Pointer-events-none so it never blocks clicks. */}
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-20 h-32 bg-gradient-to-b from-black/45 to-transparent lg:absolute lg:h-40" />
+      {/* ── Desktop: split layout, unchanged — the video panel here was
+          always a normal-flow grid column, never `position: fixed`, so
+          it never had this bug. ── */}
+      <div className="relative z-10 hidden min-h-dvh lg:grid lg:grid-cols-[1.35fr_1fr]">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-40 bg-gradient-to-b from-black/45 to-transparent" />
 
-      <div className="relative z-10 grid min-h-dvh lg:grid-cols-[1.35fr_1fr]">
-        {/* ── Left: video panel + hardcoded step cards (desktop only) ── */}
-        <div className="relative hidden overflow-hidden lg:block">
+        {/* ── Left: video panel + hardcoded step cards ── */}
+        <div className="relative overflow-hidden">
           <AutoBackgroundVideo src={AUTH_VIDEO_SRC} poster={authBackdrop} />
           <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/25 to-ink/45" />
 
@@ -242,12 +241,8 @@ export function AuthSplitLayout({
           </div>
         </div>
 
-        {/* ── Right: the actual form (unchanged inputs/motion) ──
-            `items-start` (not `items-center`) is the actual fix for the
-            mobile clipping bug — see the note on `main` above. Padding does
-            the visual centering instead: pt-32 clears the transparent nav,
-            pb-16 balances it out underneath. */}
-        <div className="relative flex items-start justify-center px-6 pb-16 pt-32 lg:items-center lg:px-8 lg:pb-16 lg:pt-28">{children}</div>
+        {/* ── Right: the actual form (unchanged inputs/motion) ── */}
+        <div className="relative flex items-center justify-center px-8 pb-16 pt-28">{children}</div>
       </div>
     </main>
   );
