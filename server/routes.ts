@@ -692,6 +692,8 @@ export function registerRoutes(app: Express) {
       senderAccount: req.body.senderAccount,
       referenceNote: req.body.referenceNote || undefined,
       recurringDonationId: req.body.recurringDonationId || undefined,
+      donorMessage: req.body.donorMessage || undefined,
+      showInTopDonors: req.body.showInTopDonors === "true" || req.body.showInTopDonors === true,
     });
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Invalid input" });
@@ -830,6 +832,15 @@ export function registerRoutes(app: Express) {
     const blog = await storage.getPublishedBlogBySlug(String(req.params.slug));
     if (!blog) return res.status(404).json({ message: "Blog post not found" });
     res.json({ blog });
+  });
+
+  // ─── Top Donors (public) ────────────────────────────────────────────────
+  // See shared/schema.ts for the consent model — only donors who
+  // personally opted in, and haven't been hidden by an admin, ever appear
+  // here. Never exposes email or full name (see truncateDonorName).
+
+  app.get("/api/top-donors", async (_req, res) => {
+    res.json({ donors: await storage.getTopDonors(10) });
   });
 
   // ─── Admin ────────────────────────────────────────────────────────────
@@ -1507,6 +1518,33 @@ export function registerRoutes(app: Express) {
     await storage.permanentlyDeleteBlog(String(req.params.id));
     res.json({ message: "Blog post permanently deleted" });
   });
+
+  // ─── Admin: Top Donors carousel ─────────────────────────────────────────
+  // Every donor listed here has already personally opted in (see
+  // getAdminDonorCarouselList) — this is moderation/curation only. There is
+  // deliberately no endpoint that can turn `donorShowInCarousel` on for a
+  // donor who never consented themselves.
+
+  app.get("/api/admin/donor-carousel", requireAuth, requireRole("admin"), async (_req, res) => {
+    res.json({ donors: await storage.getAdminDonorCarouselList() });
+  });
+
+  app.patch(
+    "/api/admin/donor-carousel/:userId",
+    requireAuth,
+    requireRole("admin"),
+    uploadImage.single("photo"),
+    verifyIsRealImage,
+    async (req, res) => {
+      const patch: Record<string, unknown> = {};
+      if (typeof req.body.donorMessage === "string") patch.donorMessage = req.body.donorMessage.trim().slice(0, 220) || null;
+      if (req.body.hidden === "true" || req.body.hidden === "false") patch.donorCarouselHidden = req.body.hidden === "true";
+      if (req.file) patch.donorDisplayPhoto = uploadedFileUrl(req.file.filename);
+
+      await storage.updateDonorCarouselOverride(String(req.params.userId), patch as any);
+      res.json({ message: "Updated" });
+    },
+  );
 
   // ─── Admin: Cases (delete) ────────────────────────────────────────────
 

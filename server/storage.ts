@@ -28,6 +28,8 @@ import {
   type InboxMessage,
   type InboxThreadMessage,
   PLATFORM_FEE_RATE,
+  truncateDonorName,
+  type PublicTopDonor,
 } from "@shared/schema";
 
 // Emails are matched case-insensitively everywhere and always stored
@@ -821,7 +823,18 @@ export const storage = {
   // ─── Donations (manual-confirm) ──────────────────────────────────────────
   async createDonation(
     userId: string,
-    data: { caseId: string; amount: number; tipAmount?: number; method: string; senderAccount: string; receiptImage: string; referenceNote?: string; recurringDonationId?: string },
+    data: {
+      caseId: string;
+      amount: number;
+      tipAmount?: number;
+      method: string;
+      senderAccount: string;
+      receiptImage: string;
+      referenceNote?: string;
+      recurringDonationId?: string;
+      donorMessage?: string;
+      showInTopDonors?: boolean;
+    },
   ): Promise<Donation> {
     const [donation] = await db
       .insert(donations)
@@ -837,7 +850,103 @@ export const storage = {
         referenceNote: data.referenceNote,
       })
       .returning();
+
+    // Independent of whether this specific donation ever gets confirmed —
+    // consent and a message are profile-level choices the donor is making
+    // right now, not something that should wait on admin approval of the
+    // payment itself.
+    await this.recordDonorCarouselPreference(userId, data.donorMessage, data.showInTopDonors ?? false);
+
     return donation;
+  },
+
+  // Consent (`donorShowInCarousel`) always reflects the donor's latest
+  // choice — checking or unchecking the box on any future donation takes
+  // effect immediately, since withdrawing consent has to actually work.
+  // The message text is the opposite: first-write-wins, permanently — see
+  // the column comment on `users.donorMessage` for why.
+  async recordDonorCarouselPreference(userId: string, message: string | undefined, optIn: boolean): Promise<void> {
+    const user = await this.getUserById(userId);
+    if (!user) return;
+    const patch: Record<string, unknown> = { donorShowInCarousel: optIn };
+    if (message && message.trim() && !user.donorMessage) {
+      patch.donorMessage = message.trim().slice(0, 220);
+    }
+    await db.update(users).set(patch).where(eq(users.id, userId));
+  },
+
+  // Public, unauthenticated — home page Top Donors carousel. Only donors
+  // who (a) personally opted in on a donation form, (b) haven't been
+  // hidden by an admin, and (c) have at least one confirmed donation ever
+  // show up here. Ranked by total confirmed amount given; capped at 10 so
+  // this never turns into a long scrolling list.
+  async getTopDonors(limit = 10): Promise<PublicTopDonor[]> {
+    const rows = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        avatarUrl: users.avatarUrl,
+        donorDisplayPhoto: users.donorDisplayPhoto,
+        donorMessage: users.donorMessage,
+        totalDonated: sql<number>`coalesce(sum(${donations.amount}), 0)`,
+        casesFunded: sql<number>`count(distinct ${donations.caseId})`,
+      })
+      .from(users)
+      .innerJoin(donations, and(eq(donations.userId, users.id), eq(donations.status, "confirmed")))
+      .where(and(eq(users.donorShowInCarousel, true), eq(users.donorCarouselHidden, false)))
+      .groupBy(users.id)
+      .having(sql`coalesce(sum(${donations.amount}), 0) > 0`)
+      .orderBy(desc(sql`sum(${donations.amount})`))
+      .limit(limit);
+
+    return rows.map((r) => ({
+      id: r.id,
+      displayName: truncateDonorName(r.name),
+      photoUrl: r.donorDisplayPhoto || r.avatarUrl || null,
+      message: r.donorMessage,
+      totalDonated: Number(r.totalDonated),
+      casesFunded: Number(r.casesFunded),
+    }));
+  },
+
+  // Admin management list — every donor who has ever opted in (regardless
+  // of whether an admin has since hidden them, so the admin can see and
+  // reverse their own past hides), with the real name/email for
+  // identification and the current hidden state. Deliberately does NOT
+  // include donors who never personally consented — there is no way for
+  // this list to surface someone who didn't opt in themselves.
+  async getAdminDonorCarouselList() {
+    const rows = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        avatarUrl: users.avatarUrl,
+        donorDisplayPhoto: users.donorDisplayPhoto,
+        donorMessage: users.donorMessage,
+        donorCarouselHidden: users.donorCarouselHidden,
+        totalDonated: sql<number>`coalesce(sum(${donations.amount}), 0)`,
+        casesFunded: sql<number>`count(distinct ${donations.caseId})`,
+      })
+      .from(users)
+      .innerJoin(donations, and(eq(donations.userId, users.id), eq(donations.status, "confirmed")))
+      .where(eq(users.donorShowInCarousel, true))
+      .groupBy(users.id)
+      .having(sql`coalesce(sum(${donations.amount}), 0) > 0`)
+      .orderBy(desc(sql`sum(${donations.amount})`));
+
+    return rows.map((r) => ({ ...r, totalDonated: Number(r.totalDonated), casesFunded: Number(r.casesFunded) }));
+  },
+
+  // Admin-only edits — a caption/photo override and/or the hide toggle.
+  // Never touches `donorShowInCarousel` itself: that flag is the donor's
+  // own consent and this function has no way to turn it on for someone
+  // who hasn't opted in (see the moral note on the schema column).
+  async updateDonorCarouselOverride(
+    userId: string,
+    patch: Partial<{ donorMessage: string | null; donorDisplayPhoto: string | null; donorCarouselHidden: boolean }>,
+  ): Promise<void> {
+    await db.update(users).set(patch).where(eq(users.id, userId));
   },
 
   async countRecentPendingDonations(userId: string, sinceHours: number): Promise<number> {

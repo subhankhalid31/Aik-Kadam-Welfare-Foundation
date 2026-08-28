@@ -9,6 +9,7 @@ import { BlogsTeaser } from "@/components/sections/BlogsTeaser";
 import { CompletedProjectsTeaser } from "@/components/sections/CompletedProjectsTeaser";
 import { VolunteersTeaser } from "@/components/sections/VolunteersTeaser";
 import { OngoingTeaser } from "@/components/sections/OngoingTeaser";
+import { TopDonorsSection } from "@/components/sections/TopDonorsSection";
 
 export default function Home() {
   return (
@@ -24,6 +25,7 @@ export default function Home() {
         <CompletedProjectsTeaser />
         <VolunteersTeaser />
         <OngoingTeaser />
+        <TopDonorsSection />
       </main>
     </PageLayout>
   );

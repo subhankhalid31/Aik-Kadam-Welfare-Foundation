@@ -61,6 +61,28 @@ export const users = pgTable("users", {
   isBanned: boolean("is_banned").notNull().default(false),
   banReason: text("ban_reason"),
 
+  // ─── Top Donors carousel (home page) ──────────────────────────────────
+  // A donor's message is captured on the donation form, but only ever
+  // set ONCE — see storage.recordDonorCarouselPreference — so donating
+  // again later never overwrites what they originally wrote.
+  donorMessage: text("donor_message"),
+  // The donor's own current consent, taken from the checkbox on whichever
+  // donation form they most recently submitted. This is what actually
+  // gates whether they can appear at all — re-checked/unchecked freely,
+  // and always honored immediately, because withdrawing consent to be
+  // shown publicly has to actually take effect right away.
+  donorShowInCarousel: boolean("donor_show_in_carousel").notNull().default(false),
+  // Admin-only override to remove a specific consenting donor from the
+  // carousel (e.g. an inappropriate message). Deliberately one-directional:
+  // there's no equivalent "force someone in" flag — the admin tooling can
+  // only ever narrow the pool a donor already opted into, never add
+  // someone who didn't consent. See getAdminTopDonorsList/getTopDonors.
+  donorCarouselHidden: boolean("donor_carousel_hidden").notNull().default(false),
+  // Admin-settable photo shown in the carousel instead of the donor's own
+  // avatarUrl (e.g. if they signed up without a profile picture and the
+  // admin wants a picture there rather than a plain initials placeholder).
+  donorDisplayPhoto: text("donor_display_photo"),
+
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => [
   uniqueIndex("users_email_lower_unique_idx").on(sql`lower(${table.email})`),
@@ -93,6 +115,30 @@ export type PublicUser = Omit<User, "passwordHash">;
 export function toPublicUser(user: User): PublicUser {
   const { passwordHash, ...publicUser } = user;
   return publicUser;
+}
+
+// Deliberately narrow — this is what the *unauthenticated* Top Donors
+// carousel on the home page actually sends to the browser. No email, no
+// user id beyond what's needed for the `key` prop, and the name is
+// truncated (see truncateDonorName) rather than shown in full, since the
+// donor consented to appearing on a leaderboard, not to their full legal
+// name and email being publicly readable.
+export type PublicTopDonor = {
+  id: string;
+  displayName: string;
+  photoUrl: string | null;
+  message: string | null;
+  totalDonated: number;
+  casesFunded: number;
+};
+
+// "Ahmed Raza" -> "Ahmed R." — enough to feel personal without publishing
+// someone's full name next to how much money they gave.
+export function truncateDonorName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "A Kind Donor";
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.`;
 }
 
 // ─── OTP codes ────────────────────────────────────────────────────────────
@@ -400,6 +446,13 @@ export const insertDonationSchema = z.object({
   // pledge is verified server-side against the authenticated user, never
   // trusted from the client alone.
   recurringDonationId: z.string().optional(),
+  // Top Donors carousel — both optional. `donorMessage` only ever takes
+  // effect on the donor's very first donation that includes one (see
+  // storage.recordDonorCarouselPreference); `showInTopDonors` is re-read
+  // fresh on every donation, since consent should always reflect the
+  // donor's most recent choice.
+  donorMessage: z.string().trim().max(220, "Keep it under 220 characters").optional(),
+  showInTopDonors: z.coerce.boolean().optional().default(false),
 });
 
 export const rejectWithReasonSchema = z.object({

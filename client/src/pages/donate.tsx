@@ -35,6 +35,8 @@ export default function DonatePage() {
   const [amount, setAmount] = useState("");
   const [tipEnabled, setTipEnabled] = useState(false);
   const [tipAmount, setTipAmount] = useState("");
+  const [showInTopDonors, setShowInTopDonors] = useState(false);
+  const [donorMessage, setDonorMessage] = useState("");
   const [method, setMethod] = useState<keyof typeof PAYMENT_DETAILS>("bank_transfer");
   const [senderAccount, setSenderAccount] = useState("");
   const [referenceNote, setReferenceNote] = useState("");
@@ -90,6 +92,8 @@ export default function DonatePage() {
       formData.append("caseId", caseId);
       formData.append("amount", amount);
       if (tipEnabled && tipAmount) formData.append("tipAmount", tipAmount);
+      formData.append("showInTopDonors", String(showInTopDonors));
+      if (showInTopDonors && donorMessage.trim()) formData.append("donorMessage", donorMessage.trim());
       formData.append("method", method);
       formData.append("senderAccount", senderAccount);
       if (referenceNote) formData.append("referenceNote", referenceNote);
@@ -291,6 +295,41 @@ export default function DonatePage() {
                   <p className="mt-1.5 text-xs text-muted leading-relaxed">
                     This goes entirely to keeping Aik Kadam running, on top of your donation above, not
                     deducted from it. Include it in the same payment you send, then enter it here.
+                  </p>
+                </div>
+              )}
+            </FormField>
+
+            <FormField label="Top Donors carousel (optional)">
+              <label className="flex items-start gap-3 rounded-xl border border-border bg-white px-4 py-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showInTopDonors}
+                  onChange={(e) => setShowInTopDonors(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+                />
+                <span className="text-sm text-ink">
+                  Show me on the home page's Top Donors list
+                  <span className="block mt-1 text-xs text-muted leading-relaxed">
+                    If confirmed, we'll show your first name and last initial, a photo (from your account, or
+                    none), how much you've given, and how many cases you've funded. You can withdraw this any
+                    time by unchecking it on a future donation.
+                  </span>
+                </span>
+              </label>
+              {showInTopDonors && (
+                <div className="mt-3">
+                  <textarea
+                    value={donorMessage}
+                    onChange={(e) => setDonorMessage(e.target.value.slice(0, 220))}
+                    rows={2}
+                    maxLength={220}
+                    className={`${inputClass} resize-none`}
+                    placeholder="A short message to go with your name (optional)"
+                  />
+                  <p className="mt-1 text-right text-[11px] text-muted">{donorMessage.length}/220</p>
+                  <p className="text-xs text-muted leading-relaxed">
+                    Only used if this is the first time you've added one — later donations won't change it.
                   </p>
                 </div>
               )}
