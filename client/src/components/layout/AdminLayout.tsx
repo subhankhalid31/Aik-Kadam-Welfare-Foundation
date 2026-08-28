@@ -25,6 +25,7 @@ import {
   X,
   Newspaper,
   Gift,
+  Star,
 } from "lucide-react";
 
 export type AdminTabKey =
@@ -37,6 +38,7 @@ export type AdminTabKey =
   | "gallery"
   | "stories"
   | "blogs"
+  | "donorCarousel"
   | "users"
   | "summary"
   | "namechange"
@@ -78,6 +80,7 @@ const NAV_ITEMS: NavEntry[] = [
   { type: "tab", label: "Inbox", icon: Mail, key: "inboxContact", group: INBOX_SUBTABS.map((t) => t.key) },
   { type: "tab", label: "Donations", icon: Wallet, key: "donations" },
   { type: "tab", label: "Monthly Pledges", icon: Repeat, key: "recurring" },
+  { type: "tab", label: "Donor Carousel", icon: Star, key: "donorCarousel" },
   { type: "tab", label: "Success Stories", icon: Heart, key: "stories" },
   { type: "tab", label: "Blog", icon: Newspaper, key: "blogs" },
   { type: "tab", label: "All Users", icon: ShieldOff, key: "users" },
