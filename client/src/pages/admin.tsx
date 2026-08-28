@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useMemo, useRef, type Dispatch, type 
 import { AdminLayout, type AdminTabKey, PillTabs, VOLUNTEER_SUBTABS, PROJECT_SUBTABS, INBOX_SUBTABS } from "@/components/layout/AdminLayout";
 import { CityPicker } from "@/components/ui/CityPicker";
 import { ImageCarousel } from "@/components/ui/ImageCarousel";
+import { inputClass } from "@/components/ui/FormField";
 import { useAuth } from "@/lib/auth-context";
 import { useDialog } from "@/lib/dialog-context";
 import { api, ApiError } from "@/lib/api";
@@ -701,6 +702,17 @@ export default function AdminPage() {
             send and confirm it, this is just the standing commitment.
           </p>
           <RecurringDonationsPanel dialog={dialog} />
+        </div>
+      )}
+
+      {tab === "donorCarousel" && (
+        <div>
+          <h1 className="font-display text-2xl text-ink">Donor Carousel</h1>
+          <p className="text-sm text-muted mt-1">
+            Everyone here chose to be featured — none of these donors can be added without their own consent.
+            You can only edit their photo/message or hide them from the home page.
+          </p>
+          <DonorCarouselPanel />
         </div>
       )}
 
@@ -3136,6 +3148,146 @@ type AdminBlogRow = {
   updatedAt: string;
   deletedAt: string | null;
 };
+
+// ─── Donor Carousel management ───
+// Every row here already opted in themselves on a donation form — this
+// panel can only narrow that set (hide someone, override their photo or
+// message) or reverse a previous hide. There's deliberately no "add a
+// donor" control, because that would mean putting someone on a public
+// leaderboard of what they gave without their own consent.
+
+type AdminDonorRow = {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  donorDisplayPhoto: string | null;
+  donorMessage: string | null;
+  donorCarouselHidden: boolean;
+  totalDonated: number;
+  casesFunded: number;
+};
+
+function DonorCarouselPanel() {
+  const [donors, setDonors] = useState<AdminDonorRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    api
+      .get<{ donors: AdminDonorRow[] }>("/api/admin/donor-carousel")
+      .then((data) => setDonors(data.donors))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(load, [load]);
+
+  async function toggleHidden(userId: string, hidden: boolean) {
+    const formData = new FormData();
+    formData.append("hidden", String(hidden));
+    await api.patchForm(`/api/admin/donor-carousel/${userId}`, formData);
+    load();
+  }
+
+  return (
+    <div className="mt-5">
+      {loading ? (
+        <p className="text-muted">Loading...</p>
+      ) : donors.length === 0 ? (
+        <p className="text-muted">No donor has opted into the carousel yet — nothing to manage here until one does.</p>
+      ) : (
+        <div className="space-y-3">
+          {donors.map((d) => (
+            <div key={d.id} className="glass-surface glass-surface-outline flex flex-wrap items-center gap-4 rounded-xl border p-4">
+              <img
+                src={d.donorDisplayPhoto || d.avatarUrl || undefined}
+                alt=""
+                className="h-12 w-12 shrink-0 rounded-full border border-border object-cover bg-background"
+                style={{ display: d.donorDisplayPhoto || d.avatarUrl ? "block" : "none" }}
+              />
+              {!d.donorDisplayPhoto && !d.avatarUrl && (
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/15 font-display text-sm font-bold text-primary">
+                  {d.name.slice(0, 1).toUpperCase()}
+                </div>
+              )}
+
+              <div className="min-w-[180px] flex-1">
+                <p className="font-display text-sm font-semibold text-ink">{d.name}</p>
+                <p className="text-xs text-muted">{d.email}</p>
+                <p className="mt-1 text-xs text-muted">
+                  {d.casesFunded} case{d.casesFunded === 1 ? "" : "s"} funded · PKR {d.totalDonated.toLocaleString()} total
+                </p>
+                {d.donorMessage && <p className="mt-1 text-xs italic text-ink/70">"{d.donorMessage}"</p>}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${d.donorCarouselHidden ? "bg-danger/10 text-danger" : "bg-primary/10 text-primary"}`}>
+                  {d.donorCarouselHidden ? "Hidden" : "Visible"}
+                </span>
+                <button
+                  onClick={() => setEditingId(editingId === d.id ? null : d.id)}
+                  className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-ink hover:bg-background transition-colors"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => toggleHidden(d.id, !d.donorCarouselHidden)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    d.donorCarouselHidden ? "border-primary/30 text-primary hover:bg-primary/10" : "border-danger/30 text-danger hover:bg-danger/10"
+                  }`}
+                >
+                  {d.donorCarouselHidden ? "Unhide" : "Hide"}
+                </button>
+              </div>
+
+              {editingId === d.id && <DonorCarouselEditRow donor={d} onSaved={() => { setEditingId(null); load(); }} />}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DonorCarouselEditRow({ donor, onSaved }: { donor: AdminDonorRow; onSaved: () => void }) {
+  const [message, setMessage] = useState(donor.donorMessage ?? "");
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    setSaving(true);
+    const formData = new FormData();
+    formData.append("donorMessage", message);
+    if (photo) formData.append("photo", photo);
+    await api.patchForm(`/api/admin/donor-carousel/${donor.id}`, formData);
+    setSaving(false);
+    onSaved();
+  }
+
+  return (
+    <div className="mt-1 w-full basis-full rounded-lg border border-dashed border-border p-3.5">
+      <label className="block text-xs font-medium text-ink">Message shown in the carousel</label>
+      <textarea
+        value={message}
+        onChange={(e) => setMessage(e.target.value.slice(0, 220))}
+        rows={2}
+        maxLength={220}
+        className={`${inputClass} mt-1 resize-none text-sm`}
+        placeholder="No message set"
+      />
+      <label className="mt-3 block text-xs font-medium text-ink">Replace photo (optional)</label>
+      <input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} className={`${inputClass} mt-1 py-1.5 text-xs`} />
+      <button
+        onClick={save}
+        disabled={saving}
+        className="mt-3 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60"
+      >
+        {saving ? "Saving..." : "Save"}
+      </button>
+    </div>
+  );
+}
 
 function BlogsManagementPanel({ dialog }: { dialog: ReturnType<typeof useDialog> }) {
   const [view, setView] = useState<"active" | "bin">("active");
