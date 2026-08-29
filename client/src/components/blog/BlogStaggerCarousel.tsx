@@ -106,7 +106,10 @@ export const BlogStaggerCarousel: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get<{ blogs: BlogCarouselItem[] }>("/api/blogs?limit=12").then((data) => {
+    // Admin-curated selection if one exists (Blogs tab → "Feature on
+    // homepage"), otherwise the 20 most recent — see
+    // storage.listHomeCarouselBlogs.
+    api.get<{ blogs: BlogCarouselItem[] }>("/api/blogs?home=1").then((data) => {
       setBlogList(data.blogs.map((b, i) => ({ ...b, tempId: i })));
       setLoading(false);
     });
@@ -138,7 +141,7 @@ export const BlogStaggerCarousel: React.FC = () => {
       // Smaller than the original testimonial cards (365/290) — a photo
       // card this size read as oversized for a "browse the blog" teaser
       // sitting mid-page rather than a full hero.
-      setCardSize(matches ? 280 : 230);
+      setCardSize(matches ? 300 : 250);
     };
     updateSize();
     window.addEventListener("resize", updateSize);
