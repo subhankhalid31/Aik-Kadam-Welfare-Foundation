@@ -61,6 +61,13 @@ export const users = pgTable("users", {
   isBanned: boolean("is_banned").notNull().default(false),
   banReason: text("ban_reason"),
 
+  // Admin-only override to remove a specific volunteer from the home page
+  // carousel (e.g. they'd rather not be featured) without touching their
+  // actual approval status — same one-directional pattern as the donor
+  // carousel's hide flag: this can only remove someone who'd otherwise
+  // qualify (approved/alumni), never add someone who doesn't.
+  volunteerCarouselHidden: boolean("volunteer_carousel_hidden").notNull().default(false),
+
   // ─── Top Donors carousel (home page) ──────────────────────────────────
   // A donor's message is captured on the donation form, but only ever
   // set ONCE — see storage.recordDonorCarouselPreference — so donating
@@ -370,6 +377,10 @@ export const blogs = pgTable("blogs", {
   coverImage: text("cover_image").notNull(),
   content: text("content").notNull(),
   status: blogStatusEnum("status").notNull().default("published"),
+  // Admin-curated home page carousel selection — see
+  // storage.listHomeCarouselBlogs for how this interacts with the
+  // "just show the latest ones" fallback.
+  featuredHome: boolean("featured_home").notNull().default(false),
   authorId: varchar("author_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
