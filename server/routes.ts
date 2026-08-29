@@ -506,6 +506,27 @@ export function registerRoutes(app: Express) {
     res.json({ volunteers: publicList });
   });
 
+  // Home page volunteer carousel — top volunteers by hours contributed
+  // (the same ranking used everywhere else), capped short, admin-hidden
+  // ones excluded. Auto-updates as hours change — there's no separate
+  // "rank" number that could go stale.
+  app.get("/api/volunteers/top-carousel", async (_req, res) => {
+    const list = await storage.listTopVolunteersForCarousel(8);
+    res.json({
+      volunteers: list.map((v) => ({
+        id: v.id,
+        badgeId: v.badgeId,
+        name: v.name,
+        city: v.city,
+        avatarUrl: v.avatarUrl,
+        motto: v.volunteerMotto,
+        category: v.volunteerCategory,
+        hours: v.totalHoursContributed,
+        casesCompleted: v.totalCasesCompleted,
+      })),
+    });
+  });
+
   app.post("/api/volunteers/apply", requireAuth, async (req, res) => {
     const parsed = volunteerApplySchema.safeParse(req.body);
     if (!parsed.success) {
@@ -823,6 +844,11 @@ export function registerRoutes(app: Express) {
   // ─── Blogs (public) ─────────────────────────────────────────────────────
 
   app.get("/api/blogs", async (req, res) => {
+    // Home page carousel: admin-curated selection if one exists, otherwise
+    // the 20 most recent — see storage.listHomeCarouselBlogs.
+    if (req.query.home === "1") {
+      return res.json({ blogs: await storage.listHomeCarouselBlogs() });
+    }
     const limit = req.query.limit ? Number(req.query.limit) : undefined;
     const blogList = await storage.listPublishedBlogs(limit && Number.isFinite(limit) ? limit : undefined);
     res.json({ blogs: blogList });
@@ -1156,7 +1182,10 @@ export function registerRoutes(app: Express) {
 
   app.get("/api/admin/donations/cases", requireAuth, requireRole("admin"), async (req, res) => {
     const search = (req.query.search as string) || undefined;
-    const rows = await storage.getCasesWithDonationTotals(search);
+    const validSorts = ["funded_desc", "funded_asc", "newest", "oldest", "name_asc"] as const;
+    const sortParam = req.query.sort as string;
+    const sort = (validSorts as readonly string[]).includes(sortParam) ? (sortParam as (typeof validSorts)[number]) : "funded_desc";
+    const rows = await storage.getCasesWithDonationTotals(search, sort);
     res.json({ cases: rows });
   });
 
@@ -1479,12 +1508,22 @@ export function registerRoutes(app: Express) {
       if (typeof req.body.excerpt === "string" && req.body.excerpt) patch.excerpt = req.body.excerpt;
       if (typeof req.body.content === "string" && req.body.content) patch.content = req.body.content;
       if (req.body.status === "draft" || req.body.status === "published") patch.status = req.body.status;
+      if (req.body.featuredHome === "true" || req.body.featuredHome === "false") patch.featuredHome = req.body.featuredHome === "true";
       if (req.file) patch.coverImage = uploadedFileUrl(req.file.filename);
 
       const updated = await storage.updateBlog(String(req.params.id), patch as any);
       res.json({ blog: updated });
     },
   );
+
+  // Lightweight toggle for the Blogs list's "Feature on homepage" checkbox
+  // — plain JSON, not multipart, so flipping it doesn't need to touch the
+  // cover image upload machinery at all.
+  app.patch("/api/admin/blogs/:id/featured-home", requireAuth, requireRole("admin"), async (req, res) => {
+    const updated = await storage.updateBlog(String(req.params.id), { featuredHome: Boolean(req.body.featuredHome) });
+    if (!updated) return res.status(404).json({ message: "Blog post not found" });
+    res.json({ blog: updated });
+  });
 
   // Dedicated single-image upload used by the post body editor's "Insert
   // image" button — separate from the cover image, since it's dropped
@@ -1545,6 +1584,39 @@ export function registerRoutes(app: Express) {
       res.json({ message: "Updated" });
     },
   );
+
+  // ─── Admin: Volunteer carousel ──────────────────────────────────────────
+  // Ranking here is always live (hours contributed) — there's no manual
+  // rank number to keep in sync, so a volunteer logging more hours moves
+  // up automatically. The admin can edit the public motto and hide a
+  // volunteer from the carousel; a volunteer who's rejected, banned, or
+  // deleted simply stops appearing here too, since this is a live query
+  // over the same users table, not a separate list that could go stale.
+
+  app.get("/api/admin/volunteer-carousel", requireAuth, requireRole("admin"), async (_req, res) => {
+    const list = await storage.listVolunteerCarouselAdmin();
+    res.json({
+      volunteers: list.map((v) => ({
+        id: v.id,
+        name: v.name,
+        email: v.email,
+        avatarUrl: v.avatarUrl,
+        volunteerMotto: v.volunteerMotto,
+        volunteerCarouselHidden: v.volunteerCarouselHidden,
+        hours: v.totalHoursContributed,
+        casesCompleted: v.totalCasesCompleted,
+      })),
+    });
+  });
+
+  app.patch("/api/admin/volunteer-carousel/:userId", requireAuth, requireRole("admin"), async (req, res) => {
+    const patch: Record<string, unknown> = {};
+    if (typeof req.body.volunteerMotto === "string") patch.volunteerMotto = req.body.volunteerMotto.trim().slice(0, 160) || null;
+    if (req.body.hidden === "true" || req.body.hidden === "false") patch.volunteerCarouselHidden = req.body.hidden === "true";
+
+    await storage.updateVolunteerCarouselOverride(String(req.params.userId), patch as any);
+    res.json({ message: "Updated" });
+  });
 
   // ─── Admin: Cases (delete) ────────────────────────────────────────────
 

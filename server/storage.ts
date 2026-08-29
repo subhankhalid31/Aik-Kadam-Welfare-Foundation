@@ -128,6 +128,46 @@ export const storage = {
       .orderBy(desc(users.totalHoursContributed));
   },
 
+  // Home page volunteer carousel — the same ranking as listApprovedVolunteers
+  // (hours contributed, so it moves automatically as a volunteer logs more
+  // hours — no separate "rank" number to keep in sync), just capped short
+  // and with anyone an admin has hidden filtered out.
+  async listTopVolunteersForCarousel(limit = 8) {
+    return db
+      .select()
+      .from(users)
+      .where(
+        and(
+          or(eq(users.volunteerStatus, "approved"), eq(users.volunteerStatus, "alumni")),
+          eq(users.volunteerCarouselHidden, false),
+        ),
+      )
+      .orderBy(desc(users.totalHoursContributed))
+      .limit(limit);
+  },
+
+  // Admin management list — every volunteer who'd be *eligible* for the
+  // carousel (approved/alumni), hidden or not, ranked the same way, so the
+  // admin can see exactly who's about to bump someone else out of the top
+  // slots and toggle visibility accordingly. A volunteer who stops being
+  // approved (rejected, banned, deleted) simply stops appearing here on
+  // its own, same as the public list — there's no separate table to fall
+  // out of sync.
+  async listVolunteerCarouselAdmin() {
+    return db
+      .select()
+      .from(users)
+      .where(or(eq(users.volunteerStatus, "approved"), eq(users.volunteerStatus, "alumni")))
+      .orderBy(desc(users.totalHoursContributed));
+  },
+
+  async updateVolunteerCarouselOverride(
+    userId: string,
+    patch: Partial<{ volunteerMotto: string | null; volunteerCarouselHidden: boolean }>,
+  ): Promise<void> {
+    await db.update(users).set(patch).where(eq(users.id, userId));
+  },
+
   // "Top Projects" for a volunteer's public card — ranked by the hours they
   // logged on that specific case, then by how much the case raised. This is
   // real, derived data (not admin-typed), and reflects contribution, not recency.
@@ -746,7 +786,7 @@ export const storage = {
 
   async updateBlog(
     id: string,
-    data: Partial<{ title: string; excerpt: string; content: string; coverImage: string; status: "draft" | "published" }>,
+    data: Partial<{ title: string; excerpt: string; content: string; coverImage: string; status: "draft" | "published"; featuredHome: boolean }>,
   ): Promise<Blog | undefined> {
     const patch: Record<string, unknown> = { ...data, updatedAt: new Date() };
     // Re-slugging on every title edit would break any link already shared
@@ -779,6 +819,20 @@ export const storage = {
       .orderBy(desc(blogs.createdAt));
     if (limit) return query.limit(limit);
     return query;
+  },
+
+  // Home page carousel: if an admin has hand-picked specific posts
+  // (featuredHome = true on any of them), show exactly that curated set —
+  // otherwise fall back to simply the 20 most recent published posts, so
+  // the carousel is never empty just because nobody's curated it yet.
+  async listHomeCarouselBlogs(): Promise<Blog[]> {
+    const curated = await db
+      .select()
+      .from(blogs)
+      .where(and(eq(blogs.status, "published"), eq(blogs.featuredHome, true), sql`${blogs.deletedAt} is null`))
+      .orderBy(desc(blogs.createdAt));
+    if (curated.length > 0) return curated;
+    return this.listPublishedBlogs(20);
   },
 
   // Bin items older than 30 days are gone for good — this runs (cheaply;
@@ -1027,7 +1081,7 @@ export const storage = {
   // title/location/city/category) with how much it's collected so far and
   // how many confirmed donations back that number, so an admin can scan
   // for a case without opening each one.
-  async getCasesWithDonationTotals(search?: string) {
+  async getCasesWithDonationTotals(search?: string, sort: "funded_desc" | "funded_asc" | "newest" | "oldest" | "name_asc" = "funded_desc") {
     const conditions = [];
     if (search && search.trim()) {
       const term = `%${search.trim()}%`;
@@ -1040,6 +1094,17 @@ export const storage = {
         ),
       );
     }
+
+    // "funded_desc" (most funded first) is the default — matches what an
+    // admin almost always wants when scanning this list — but every
+    // option here is exposed as a sort control on the frontend too.
+    const orderByClause = {
+      funded_desc: desc(cases.amountCollected),
+      funded_asc: cases.amountCollected,
+      newest: desc(cases.createdAt),
+      oldest: cases.createdAt,
+      name_asc: cases.title,
+    }[sort];
 
     const query = db
       .select({
@@ -1055,7 +1120,7 @@ export const storage = {
         donationCount: sql<number>`(select count(*)::int from ${donations} where ${donations.caseId} = ${cases.id} and ${donations.status} = 'confirmed')`,
       })
       .from(cases)
-      .orderBy(desc(cases.amountCollected));
+      .orderBy(orderByClause);
 
     if (conditions.length > 0) {
       return query.where(and(...conditions));

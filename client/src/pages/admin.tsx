@@ -9,7 +9,7 @@ import { api, ApiError } from "@/lib/api";
 import { compressImage, compressImages } from "@/lib/compress-image";
 import {
   Check, X, ShieldAlert, Pencil, Wallet, Users, Briefcase, Clock4, CircleCheckBig, Send,
-  Undo2, Download, Search, Plus, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, EyeOff, Eye,
+  Undo2, Download, Search, Plus, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, EyeOff, Eye, ArrowUpDown,
 } from "lucide-react";
 import { PLATFORM_FEE_RATE } from "@shared/schema";
 
@@ -713,6 +713,17 @@ export default function AdminPage() {
             You can only edit their photo/message or hide them from the home page.
           </p>
           <DonorCarouselPanel />
+        </div>
+      )}
+
+      {tab === "volunteerCarousel" && (
+        <div>
+          <h1 className="font-display text-2xl text-ink">Volunteer Carousel</h1>
+          <p className="text-sm text-muted mt-1">
+            Ranked automatically by hours contributed — moves on its own as volunteers log more hours. You can
+            edit a volunteer's public motto or hide them from the home page carousel.
+          </p>
+          <VolunteerCarouselPanel />
         </div>
       )}
 
@@ -1958,20 +1969,32 @@ const CASE_STATUS_STYLES: Record<CaseDonationSummaryRow["status"], string> = {
   rejected: "bg-danger/10 text-danger",
 };
 
+type CaseSortOption = "funded_desc" | "funded_asc" | "newest" | "oldest" | "name_asc";
+
+const CASE_SORT_LABELS: Record<CaseSortOption, string> = {
+  funded_desc: "Most funded first",
+  funded_asc: "Least funded first",
+  newest: "Newest first",
+  oldest: "Oldest first",
+  name_asc: "Name (A–Z)",
+};
+
 function CaseDonationsPanel() {
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<CaseSortOption>("funded_desc");
   const [cases, setCases] = useState<CaseDonationSummaryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [openCaseId, setOpenCaseId] = useState<string | null>(null);
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ sort });
     if (search) params.set("search", search);
     const data = await api.get<{ cases: CaseDonationSummaryRow[] }>(`/api/admin/donations/cases?${params}`);
     setCases(data.cases);
     setLoading(false);
-  }, [search]);
+  }, [search, sort]);
 
   useEffect(() => {
     const timer = setTimeout(load, 300);
@@ -1980,14 +2003,44 @@ function CaseDonationsPanel() {
 
   return (
     <div className="mt-4">
-      <div className="relative">
-        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search cases by title, city, or category..."
-          className="w-full rounded-lg border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-        />
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[240px]">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search cases by title, city, or category..."
+            className="w-full rounded-lg border border-border bg-white pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+        </div>
+
+        {/* Sort — defaults to most-funded-first automatically (matches
+            what an admin scanning this list almost always wants), with
+            the other options one click away here. */}
+        <div className="relative">
+          <button
+            onClick={() => setSortMenuOpen((v) => !v)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white px-3.5 py-2.5 text-sm font-medium text-ink hover:bg-background transition-colors"
+          >
+            <ArrowUpDown size={14} /> {CASE_SORT_LABELS[sort]} <ChevronDown size={14} />
+          </button>
+          {sortMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setSortMenuOpen(false)} />
+              <div className="absolute right-0 z-20 mt-1.5 w-48 rounded-lg border border-border bg-white py-1.5 shadow-lg">
+                {(Object.keys(CASE_SORT_LABELS) as CaseSortOption[]).map((opt) => (
+                  <button
+                    key={opt}
+                    onClick={() => { setSort(opt); setSortMenuOpen(false); }}
+                    className={`block w-full px-3.5 py-2 text-left text-sm hover:bg-background transition-colors ${sort === opt ? "font-semibold text-primary" : "text-ink"}`}
+                  >
+                    {CASE_SORT_LABELS[opt]}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -3144,6 +3197,7 @@ type AdminBlogRow = {
   excerpt: string;
   coverImage: string;
   status: "draft" | "published";
+  featuredHome: boolean;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -3167,6 +3221,140 @@ type AdminDonorRow = {
   totalDonated: number;
   casesFunded: number;
 };
+
+// ─── Volunteer Carousel management ───
+// Ranking is always the live "hours contributed" order (same as the public
+// list) — there's no separate rank number to edit, so a volunteer moves up
+// or down on their own as their hours change elsewhere in the admin. This
+// panel only edits the motto shown publicly and the hide toggle. A
+// volunteer who's rejected, banned, or deleted stops appearing here
+// automatically, same as on the home page — it's a live query, not a
+// separate list.
+
+type AdminVolunteerCarouselRow = {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  volunteerMotto: string | null;
+  volunteerCarouselHidden: boolean;
+  hours: number;
+  casesCompleted: number;
+};
+
+function VolunteerCarouselPanel() {
+  const [volunteers, setVolunteers] = useState<AdminVolunteerCarouselRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    api
+      .get<{ volunteers: AdminVolunteerCarouselRow[] }>("/api/admin/volunteer-carousel")
+      .then((data) => setVolunteers(data.volunteers))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(load, [load]);
+
+  async function toggleHidden(userId: string, hidden: boolean) {
+    await api.patch(`/api/admin/volunteer-carousel/${userId}`, { hidden });
+    load();
+  }
+
+  return (
+    <div className="mt-5">
+      {loading ? (
+        <p className="text-muted">Loading...</p>
+      ) : volunteers.length === 0 ? (
+        <p className="text-muted">No approved volunteers yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {volunteers.map((v, i) => (
+            <div key={v.id} className="glass-surface glass-surface-outline flex flex-wrap items-center gap-4 rounded-xl border p-4">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-background text-xs font-bold text-muted">
+                #{i + 1}
+              </span>
+              {v.avatarUrl ? (
+                <img src={v.avatarUrl} alt="" className="h-12 w-12 shrink-0 rounded-full border border-border object-cover" />
+              ) : (
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/15 font-display text-sm font-bold text-primary">
+                  {v.name.slice(0, 1).toUpperCase()}
+                </div>
+              )}
+
+              <div className="min-w-[180px] flex-1">
+                <p className="font-display text-sm font-semibold text-ink">{v.name}</p>
+                <p className="text-xs text-muted">{v.email}</p>
+                <p className="mt-1 text-xs text-muted">
+                  {v.hours} hrs · {v.casesCompleted} case{v.casesCompleted === 1 ? "" : "s"} completed
+                </p>
+                {v.volunteerMotto && <p className="mt-1 text-xs italic text-ink/70">"{v.volunteerMotto}"</p>}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${v.volunteerCarouselHidden ? "bg-danger/10 text-danger" : "bg-primary/10 text-primary"}`}>
+                  {v.volunteerCarouselHidden ? "Hidden" : "Visible"}
+                </span>
+                <button
+                  onClick={() => setEditingId(editingId === v.id ? null : v.id)}
+                  className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-ink hover:bg-background transition-colors"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => toggleHidden(v.id, !v.volunteerCarouselHidden)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    v.volunteerCarouselHidden ? "border-primary/30 text-primary hover:bg-primary/10" : "border-danger/30 text-danger hover:bg-danger/10"
+                  }`}
+                >
+                  {v.volunteerCarouselHidden ? "Unhide" : "Hide"}
+                </button>
+              </div>
+
+              {editingId === v.id && (
+                <VolunteerCarouselEditRow volunteer={v} onSaved={() => { setEditingId(null); load(); }} />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VolunteerCarouselEditRow({ volunteer, onSaved }: { volunteer: AdminVolunteerCarouselRow; onSaved: () => void }) {
+  const [motto, setMotto] = useState(volunteer.volunteerMotto ?? "");
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    setSaving(true);
+    await api.patch(`/api/admin/volunteer-carousel/${volunteer.id}`, { volunteerMotto: motto });
+    setSaving(false);
+    onSaved();
+  }
+
+  return (
+    <div className="mt-1 w-full basis-full rounded-lg border border-dashed border-border p-3.5">
+      <label className="block text-xs font-medium text-ink">Public motto (shown in the carousel)</label>
+      <textarea
+        value={motto}
+        onChange={(e) => setMotto(e.target.value.slice(0, 160))}
+        rows={2}
+        maxLength={160}
+        className={`${inputClass} mt-1 resize-none text-sm`}
+        placeholder="No motto set"
+      />
+      <button
+        onClick={save}
+        disabled={saving}
+        className="mt-3 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-background hover:bg-primary-dark transition-colors disabled:opacity-60"
+      >
+        {saving ? "Saving..." : "Save"}
+      </button>
+    </div>
+  );
+}
 
 function DonorCarouselPanel() {
   const [donors, setDonors] = useState<AdminDonorRow[]>([]);
@@ -3327,6 +3515,14 @@ function BlogsManagementPanel({ dialog }: { dialog: ReturnType<typeof useDialog>
     load();
   }
 
+  async function toggleFeatured(id: string, featured: boolean) {
+    // Optimistic update so the checkbox doesn't lag behind a click.
+    setBlogs((prev) => prev.map((b) => (b.id === id ? { ...b, featuredHome: featured } : b)));
+    await api.patch(`/api/admin/blogs/${id}/featured-home`, { featuredHome: featured });
+  }
+
+  const featuredCount = blogs.filter((b) => b.featuredHome).length;
+
   return (
     <div className="mt-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -3371,6 +3567,14 @@ function BlogsManagementPanel({ dialog }: { dialog: ReturnType<typeof useDialog>
         <p className="mt-3 text-xs text-muted">Posts here are permanently deleted 30 days after being moved to the Bin.</p>
       )}
 
+      {view === "active" && (
+        <p className="mt-3 text-xs text-muted">
+          {featuredCount > 0
+            ? `The home page carousel is showing exactly the ${featuredCount} post${featuredCount === 1 ? "" : "s"} you've checked "Feature on homepage" below.`
+            : "Nothing is hand-picked yet, so the home page carousel is showing the 20 most recent posts automatically. Check \"Feature on homepage\" on any post to switch to a curated selection instead."}
+        </p>
+      )}
+
       <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {loading ? (
           <p className="text-muted">Loading...</p>
@@ -3397,6 +3601,18 @@ function BlogsManagementPanel({ dialog }: { dialog: ReturnType<typeof useDialog>
                     ? `Deleted ${new Date(b.deletedAt!).toLocaleDateString()}`
                     : `Updated ${new Date(b.updatedAt).toLocaleDateString()}`}
                 </p>
+
+                {view === "active" && b.status === "published" && (
+                  <label className="mt-2 flex items-center gap-1.5 text-xs text-ink cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={b.featuredHome}
+                      onChange={(e) => toggleFeatured(b.id, e.target.checked)}
+                      className="h-3.5 w-3.5 rounded border-border accent-primary"
+                    />
+                    Feature on homepage
+                  </label>
+                )}
 
                 <div className="mt-3 flex gap-2">
                   {view === "active" ? (
