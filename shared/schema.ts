@@ -381,6 +381,13 @@ export const blogs = pgTable("blogs", {
   // storage.listHomeCarouselBlogs for how this interacts with the
   // "just show the latest ones" fallback.
   featuredHome: boolean("featured_home").notNull().default(false),
+  // The /blog page's "Featured Stories" strip — separate from
+  // featuredHome above (that one is for the home page carousel). Set by
+  // the admin at save time (see the editor's feature-decision popup) and
+  // expires on its own 7 days later — there's no separate "unfeature"
+  // action, it just stops counting once this passes. Re-featuring on a
+  // later edit sets a fresh 7-day window.
+  featuredUntil: timestamp("featured_until"),
   authorId: varchar("author_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -406,6 +413,10 @@ export const insertBlogSchema = z.object({
 // compute what gets added to a case's total) and the client (to show the
 // same number to donors and admins), so the two can never drift apart.
 export const PLATFORM_FEE_RATE = 0.03;
+
+// How long a blog post stays in the /blog page's "Featured Stories" strip
+// once an admin features it — see blogs.featuredUntil.
+export const BLOG_FEATURED_DAYS = 7;
 
 // ─── Donations (manual-confirm: user submits, admin verifies receipt) ────
 

@@ -854,6 +854,13 @@ export function registerRoutes(app: Express) {
     res.json({ blogs: blogList });
   });
 
+  // Registered ahead of "/api/blogs/:slug" on purpose — Express would
+  // otherwise match "featured" as a slug value on that route below and
+  // this one would never be reached.
+  app.get("/api/blogs/featured", async (_req, res) => {
+    res.json({ blogs: await storage.listFeaturedBlogs(6) });
+  });
+
   app.get("/api/blogs/:slug", async (req, res) => {
     const blog = await storage.getPublishedBlogBySlug(String(req.params.slug));
     if (!blog) return res.status(404).json({ message: "Blog post not found" });
@@ -1486,6 +1493,10 @@ export function registerRoutes(app: Express) {
       const blog = await storage.createBlog((req as any).user.id, {
         ...parsed.data,
         coverImage: uploadedFileUrl(req.file.filename),
+        // "true"/"false" from the editor's save-time feature decision
+        // (see the popup in admin/blog-editor.tsx) — undefined (neither
+        // string) leaves it unfeatured, same as false.
+        featured: req.body.featured === "true",
       });
       res.status(201).json({ blog });
     },
@@ -1509,6 +1520,11 @@ export function registerRoutes(app: Express) {
       if (typeof req.body.content === "string" && req.body.content) patch.content = req.body.content;
       if (req.body.status === "draft" || req.body.status === "published") patch.status = req.body.status;
       if (req.body.featuredHome === "true" || req.body.featuredHome === "false") patch.featuredHome = req.body.featuredHome === "true";
+      // Same save-time decision as create — "true" starts a fresh 7-day
+      // Featured Stories window, "false" clears it, and leaving the field
+      // out entirely leaves whatever's currently running untouched (see
+      // storage.updateBlog).
+      if (req.body.featured === "true" || req.body.featured === "false") patch.featured = req.body.featured === "true";
       if (req.file) patch.coverImage = uploadedFileUrl(req.file.filename);
 
       const updated = await storage.updateBlog(String(req.params.id), patch as any);
