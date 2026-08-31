@@ -6,17 +6,22 @@ import foodImg from "@assets/gallery/volunteers_handing_out_food_to_community.we
 import familyImg from "@assets/gallery/family_enjoying_a_healthy_meal_together.webp";
 import { motion } from "framer-motion";
 import { NgoImageSlideshow } from "@/components/ui/NgoImageSlideshow";
+import { ABOUT_MEDIA_ITEMS, type AboutMediaItem } from "@/lib/about-media";
 
-// Placeholder set — swap these for real NGO/on-the-ground photos any time
-// by replacing the files under client/src/attached_assets/gallery.
-const NGO_IMAGES = [
-  { src: unityImg, caption: "Volunteers and donors, united behind one mission" },
-  { src: foodImg, caption: "Food drives reaching families across Pakistan" },
-  { src: girlImg, caption: "Education support for children in need" },
-  { src: elderlyImg, caption: "Care and companionship for the elderly" },
-  { src: pakistanImg, caption: "On the ground, wherever the need is greatest" },
-  { src: familyImg, caption: "A healthy meal, made possible by your donation" },
+// Fallback set, only used if client/src/assets/about-media/ is empty — see
+// that folder's README for how to replace these with real photos/videos
+// without touching any code. Once at least one file is dropped in there,
+// these are never shown.
+const FALLBACK_MEDIA: AboutMediaItem[] = [
+  { type: "image", src: unityImg, caption: "Volunteers and donors, united behind one mission" },
+  { type: "image", src: foodImg, caption: "Food drives reaching families across Pakistan" },
+  { type: "image", src: girlImg, caption: "Education support for children in need" },
+  { type: "image", src: elderlyImg, caption: "Care and companionship for the elderly" },
+  { type: "image", src: pakistanImg, caption: "On the ground, wherever the need is greatest" },
+  { type: "image", src: familyImg, caption: "A healthy meal, made possible by your donation" },
 ];
+
+const ABOUT_MEDIA = ABOUT_MEDIA_ITEMS.length > 0 ? ABOUT_MEDIA_ITEMS : FALLBACK_MEDIA;
 
 const milestones = [
   { year: "2024", label: "Founded in Lahore with a single case funded by 12 donors" },
@@ -33,7 +38,7 @@ export function About() {
       </svg>
 
       <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-14 items-center">
-        <NgoImageSlideshow images={NGO_IMAGES} />
+        <NgoImageSlideshow items={ABOUT_MEDIA} />
 
         <motion.div
           initial={{ opacity: 0, y: 24 }}
