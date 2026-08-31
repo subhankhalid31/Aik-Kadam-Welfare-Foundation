@@ -4,10 +4,12 @@ import { AdminLayout, type AdminTabKey } from "@/components/layout/AdminLayout";
 import { FormField, inputClass } from "@/components/ui/FormField";
 import { BlogBlockEditor } from "@/components/admin/BlogBlockEditor";
 import { useAuth } from "@/lib/auth-context";
+import { useDialog } from "@/lib/dialog-context";
 import { api, ApiError } from "@/lib/api";
 import { compressImage } from "@/lib/compress-image";
-import { ShieldAlert } from "lucide-react";
+import { ShieldAlert, Star } from "lucide-react";
 import { parseBlogBlocks, serializeBlogBlocks, emptyParagraphBlock, type BlogBlock } from "@shared/blog-blocks";
+import { BLOG_FEATURED_DAYS } from "@shared/schema";
 
 function goToAdminTab(navigate: (path: string) => void, tab: AdminTabKey) {
   sessionStorage.setItem("adminTab", tab);
@@ -21,10 +23,12 @@ type ApiBlog = {
   coverImage: string;
   content: string;
   status: "draft" | "published";
+  featuredUntil: string | null;
 };
 
 export default function AdminBlogEditorPage() {
   const { user, loading: authLoading } = useAuth();
+  const dialog = useDialog();
   const [, navigate] = useLocation();
   const { id } = useParams<{ id?: string }>();
   const isEditing = Boolean(id);
@@ -39,6 +43,18 @@ export default function AdminBlogEditorPage() {
   const [loading, setLoading] = useState(false);
   const [loadingPost, setLoadingPost] = useState(isEditing);
 
+  // `featured` reflects whether the post is *currently* in the Featured
+  // Stories window (starts checked if editing a still-featured post,
+  // unchecked otherwise). `featuredTouched` tracks whether the admin has
+  // actually interacted with the checkbox this session — that's what
+  // distinguishes "explicitly decided not to feature it" (touched, still
+  // unchecked → save as normal, no prompt) from "never even looked at
+  // it" (untouched, unchecked → this is the "forgot to decide" case, so
+  // we ask via a popup at save time instead of silently defaulting to
+  // "not featured").
+  const [featured, setFeatured] = useState(false);
+  const [featuredTouched, setFeaturedTouched] = useState(false);
+
   useEffect(() => {
     if (!id) return;
     api.get<{ blog: ApiBlog }>(`/api/admin/blogs/${id}`).then((data) => {
@@ -47,6 +63,7 @@ export default function AdminBlogEditorPage() {
       setStatus(data.blog.status);
       setBlocks(parseBlogBlocks(data.blog.content));
       setExistingCoverUrl(data.blog.coverImage);
+      setFeatured(Boolean(data.blog.featuredUntil && new Date(data.blog.featuredUntil) > new Date()));
       setLoadingPost(false);
     });
   }, [id]);
@@ -65,6 +82,18 @@ export default function AdminBlogEditorPage() {
       return;
     }
 
+    // The actual "forgot to decide" popup: only fires when the box is
+    // unchecked AND the admin never touched it — an explicit uncheck of a
+    // previously-featured post skips straight to saving as normal, no
+    // extra prompt needed since that was already a real decision.
+    let finalFeatured = featured;
+    if (!featured && !featuredTouched) {
+      finalFeatured = await dialog.confirm(
+        `Feature this post in "Featured Stories" on the Blog page for the next ${BLOG_FEATURED_DAYS} days?`,
+        "Feature this post?",
+      );
+    }
+
     setLoading(true);
     try {
       const formData = new FormData();
@@ -72,6 +101,7 @@ export default function AdminBlogEditorPage() {
       formData.append("excerpt", excerpt);
       formData.append("status", status);
       formData.append("content", serializeBlogBlocks(nonEmptyBlocks));
+      formData.append("featured", String(finalFeatured));
       if (cover) formData.append("coverImage", cover);
 
       if (isEditing) {
@@ -144,6 +174,27 @@ export default function AdminBlogEditorPage() {
                   Draft (not shown publicly)
                 </button>
               </div>
+            </FormField>
+
+            <FormField label="Featured Stories">
+              <label className="flex items-start gap-3 rounded-xl border border-border bg-white px-4 py-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={featured}
+                  onChange={(e) => {
+                    setFeatured(e.target.checked);
+                    setFeaturedTouched(true);
+                  }}
+                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+                />
+                <span className="text-sm text-ink">
+                  <span className="inline-flex items-center gap-1.5"><Star size={14} className="text-primary" /> Feature this post</span>
+                  <span className="block mt-1 text-xs text-muted leading-relaxed">
+                    Shown in the "Featured Stories" row at the top of the Blog page for {BLOG_FEATURED_DAYS} days
+                    from when you save. If you leave this unchecked, you'll be asked to confirm when you save.
+                  </span>
+                </span>
+              </label>
             </FormField>
 
             <FormField label="Post body">

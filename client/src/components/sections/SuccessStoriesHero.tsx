@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { BookHeart, ArrowRight } from "lucide-react";
+import { HeroDecorativeShapes } from "@/components/sections/HeroDecorativeShapes";
 import heroImg from "@assets/gallery/success_stories_hero.webp";
 
 // Aligns text with the standard page container (max-w-6xl / px-6) while this
@@ -54,6 +55,8 @@ export function SuccessStoriesHero() {
       </div>
 
       <div className="relative min-h-[420px] sm:min-h-[480px] lg:min-h-[520px] flex items-center py-14">
+        <HeroDecorativeShapes />
+
         <div className="pr-6 max-w-xl" style={{ paddingLeft: CONTAINER_INSET }}>
           <motion.span
             className="inline-flex items-center gap-2 text-xs font-semibold tracking-wide text-primary uppercase"
@@ -66,7 +69,7 @@ export function SuccessStoriesHero() {
           </motion.span>
 
           {/* Word-by-word cinematic reveal */}
-          <h1 className="mt-4 font-display text-4xl sm:text-5xl leading-[1.08] text-ink">
+          <h1 className="mt-4 font-display font-bold text-4xl sm:text-5xl leading-[1.08] text-ink">
             <span className="block">
               {HEADLINE_WORDS.slice(0, 2).map((word, i) => (
                 <motion.span
@@ -118,7 +121,7 @@ export function SuccessStoriesHero() {
           </h1>
 
           <motion.p
-            className="mt-5 text-muted max-w-md leading-relaxed"
+            className="mt-5 text-muted max-w-md leading-relaxed hidden sm:block"
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.25, ease: "easeOut" }}

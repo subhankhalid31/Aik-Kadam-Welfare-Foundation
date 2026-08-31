@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { FileEdit } from "lucide-react";
+import { HeroDecorativeShapes } from "@/components/sections/HeroDecorativeShapes";
 import unityImg from "@assets/gallery/ongoing_cases_hero_hands_reaching.webp";
 
 // Aligns text with the standard page container (max-w-6xl / px-6) while this
@@ -36,6 +37,10 @@ export function OngoingHero({ showSubmitCta }: { showSubmitCta: boolean }) {
       </div>
 
       <div className="relative min-h-[420px] sm:min-h-[480px] lg:min-h-[520px] flex flex-col sm:flex-row sm:items-center gap-8 sm:gap-0 pt-16 sm:pt-14 pb-10 sm:pb-14">
+        {/* Same looping curved-line + blob treatment as the other content
+            page heroes (Blog, Success Stories, Completed Projects). */}
+        <HeroDecorativeShapes />
+
         {/* Text, aligned to the page's standard left inset */}
         <div className="pr-6 max-w-xl" style={{ paddingLeft: CONTAINER_INSET }}>
           <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-wide text-primary uppercase">
@@ -43,7 +48,7 @@ export function OngoingHero({ showSubmitCta }: { showSubmitCta: boolean }) {
             Ongoing Cases
           </span>
 
-          <h1 className="mt-4 font-display text-4xl sm:text-5xl leading-[1.08] text-ink">
+          <h1 className="mt-4 font-display font-bold text-4xl sm:text-5xl leading-[1.08] text-ink">
             <motion.span
               className="block"
               initial={{ opacity: 0, y: 12 }}
@@ -80,7 +85,7 @@ export function OngoingHero({ showSubmitCta }: { showSubmitCta: boolean }) {
             </span>
           </h1>
 
-          <p className="mt-5 text-muted max-w-md leading-relaxed">
+          <p className="mt-5 text-muted max-w-md leading-relaxed hidden sm:block">
             We are currently working on verified cases.
             <br />
             Browse below or{" "}

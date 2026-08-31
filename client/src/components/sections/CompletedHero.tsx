@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { ShieldCheck } from "lucide-react";
+import { HeroDecorativeShapes } from "@/components/sections/HeroDecorativeShapes";
 import volunteersImg from "@assets/gallery/completed_projects_hero_high_five.webp";
 
 const fadeUp = {
@@ -36,6 +37,8 @@ export function CompletedHero() {
       </div>
 
       <div className="relative min-h-[420px] sm:min-h-[480px] lg:min-h-[520px] flex flex-col sm:flex-row sm:items-center gap-8 sm:gap-0 pt-24 sm:pt-28 pb-10 sm:pb-14">
+        <HeroDecorativeShapes />
+
         <div className="pr-6 max-w-xl" style={{ paddingLeft: CONTAINER_INSET }}>
           <motion.span
             className="inline-flex items-center gap-2 text-xs font-semibold tracking-wide text-primary uppercase"
@@ -49,7 +52,7 @@ export function CompletedHero() {
           </motion.span>
 
           <motion.h1
-            className="mt-4 font-display text-4xl sm:text-5xl leading-[1.08] text-ink"
+            className="mt-4 font-display font-bold text-4xl sm:text-5xl leading-[1.08] text-ink"
             initial="hidden"
             animate="visible"
             variants={fadeUp}
@@ -72,7 +75,7 @@ export function CompletedHero() {
           </motion.h1>
 
           <motion.p
-            className="mt-5 text-muted max-w-md leading-relaxed"
+            className="mt-5 text-muted max-w-md leading-relaxed hidden sm:block"
             initial="hidden"
             animate="visible"
             variants={fadeUp}
