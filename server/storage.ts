@@ -28,6 +28,7 @@ import {
   type InboxMessage,
   type InboxThreadMessage,
   PLATFORM_FEE_RATE,
+  BLOG_FEATURED_DAYS,
   truncateDonorName,
   type PublicTopDonor,
 } from "@shared/schema";
@@ -774,21 +775,37 @@ export const storage = {
 
   async createBlog(
     authorId: string,
-    data: { title: string; excerpt: string; content: string; coverImage: string; status: "draft" | "published" },
+    data: { title: string; excerpt: string; content: string; coverImage: string; status: "draft" | "published"; featured?: boolean },
   ): Promise<Blog> {
     const slug = await this.generateUniqueBlogSlug(data.title);
+    const { featured, ...rest } = data;
     const [blog] = await db
       .insert(blogs)
-      .values({ ...data, slug, authorId })
+      .values({ ...rest, slug, authorId, featuredUntil: featured ? this.blogFeaturedUntilDate() : null })
       .returning();
     return blog;
   },
 
+  // `BLOG_FEATURED_DAYS` (currently 7) out from right now — a fresh window
+  // every time a post is (re-)featured, not extended from whenever it was
+  // first featured.
+  blogFeaturedUntilDate(): Date {
+    return new Date(Date.now() + BLOG_FEATURED_DAYS * 24 * 60 * 60 * 1000);
+  },
+
   async updateBlog(
     id: string,
-    data: Partial<{ title: string; excerpt: string; content: string; coverImage: string; status: "draft" | "published"; featuredHome: boolean }>,
+    data: Partial<{ title: string; excerpt: string; content: string; coverImage: string; status: "draft" | "published"; featuredHome: boolean; featured: boolean }>,
   ): Promise<Blog | undefined> {
-    const patch: Record<string, unknown> = { ...data, updatedAt: new Date() };
+    const { featured, ...rest } = data;
+    const patch: Record<string, unknown> = { ...rest, updatedAt: new Date() };
+    // `featured` (the editor's save-time decision, see the admin routes)
+    // is a one-way write, not stored as-is — `true` starts a fresh 7-day
+    // window, `false` clears it immediately, and leaving it out of the
+    // patch entirely (undefined) leaves whatever window is already
+    // running untouched.
+    if (featured === true) patch.featuredUntil = this.blogFeaturedUntilDate();
+    else if (featured === false) patch.featuredUntil = null;
     // Re-slugging on every title edit would break any link already shared
     // to the old slug, so the slug is only ever (re)computed once, at
     // creation — editing the title later never changes the URL.
@@ -819,6 +836,26 @@ export const storage = {
       .orderBy(desc(blogs.createdAt));
     if (limit) return query.limit(limit);
     return query;
+  },
+
+  // /blog page's "Featured Stories" strip — a handful of normal-sized
+  // cards, not one big hero card. A post falls out of here on its own
+  // once featuredUntil passes; no cron/cleanup needed since this is
+  // always filtered live at read time.
+  async listFeaturedBlogs(limit = 6): Promise<Blog[]> {
+    return db
+      .select()
+      .from(blogs)
+      .where(
+        and(
+          eq(blogs.status, "published"),
+          sql`${blogs.deletedAt} is null`,
+          sql`${blogs.featuredUntil} is not null`,
+          sql`${blogs.featuredUntil} > now()`,
+        ),
+      )
+      .orderBy(desc(blogs.featuredUntil))
+      .limit(limit);
   },
 
   // Home page carousel: if an admin has hand-picked specific posts
