@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { UserPlus, ShieldCheck, ArrowRight } from "lucide-react";
+import { HeroDecorativeShapes } from "@/components/sections/HeroDecorativeShapes";
 import teamImg from "@assets/gallery/volunteers_hero_team.webp";
 
 const fadeUp = {
@@ -35,6 +36,8 @@ export function VolunteersHero({ ctaLabel, ctaHref, ctaDisabled, ctaHidden }: { 
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
     >
+      <HeroDecorativeShapes />
+
       <div ref={imgWrapRef} className="absolute inset-0 -z-10">
         <motion.img
           src={teamImg}
@@ -54,7 +57,7 @@ export function VolunteersHero({ ctaLabel, ctaHref, ctaDisabled, ctaHidden }: { 
         />
       </div>
 
-      <div className="pr-6 py-16 sm:py-20 max-w-2xl" style={{ paddingLeft: CONTAINER_INSET }}>
+      <div className="relative pr-6 py-16 sm:py-20 max-w-2xl" style={{ paddingLeft: CONTAINER_INSET }}>
         <motion.span
           className="inline-flex items-center gap-2 text-xs font-semibold tracking-wide text-primary uppercase"
           initial="hidden"
@@ -67,7 +70,7 @@ export function VolunteersHero({ ctaLabel, ctaHref, ctaDisabled, ctaHidden }: { 
         </motion.span>
 
         <motion.h1
-          className="mt-4 font-display text-4xl sm:text-5xl leading-[1.08] text-ink"
+          className="mt-4 font-display font-bold text-4xl sm:text-5xl leading-[1.08] text-ink"
           initial="hidden"
           animate="visible"
           variants={fadeUp}
@@ -79,7 +82,7 @@ export function VolunteersHero({ ctaLabel, ctaHref, ctaDisabled, ctaHidden }: { 
         </motion.h1>
 
         <motion.p
-          className="mt-5 text-muted max-w-md leading-relaxed"
+          className="mt-5 text-muted max-w-md leading-relaxed hidden sm:block"
           initial="hidden"
           animate="visible"
           variants={fadeUp}
