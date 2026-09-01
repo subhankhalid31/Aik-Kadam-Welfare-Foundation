@@ -36,7 +36,7 @@ export default function BlogPostPage() {
 
   return (
     <PageLayout>
-      <main className="max-w-3xl mx-auto px-6 pt-32 pb-24">
+      <main className="max-w-3xl mx-auto px-6 pt-16 pb-24">
         <Link href="/blog" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-ink transition-colors">
           <ArrowLeft size={15} /> Back to Blog
         </Link>
