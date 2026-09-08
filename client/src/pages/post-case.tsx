@@ -53,6 +53,7 @@ export default function PostCasePage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
+  const [tagline, setTagline] = useState("");
   const [city, setCity] = useState("");
   const [province, setProvince] = useState("");
   const [contactPhone, setContactPhone] = useState("");
@@ -100,6 +101,7 @@ export default function PostCasePage() {
     try {
       const formData = new FormData();
       formData.append("title", title);
+      if (tagline.trim()) formData.append("tagline", tagline.trim());
       formData.append("city", city);
       formData.append("province", province);
       formData.append("contactPhone", contactPhone);
@@ -193,6 +195,17 @@ export default function PostCasePage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           <Field label="Case title">
             <input required type="text" value={title} onChange={(e) => setTitle(e.target.value)} className={fieldClass} placeholder="e.g. Medical support for a family in Multan" />
+          </Field>
+
+          <Field label="Short tagline (optional)">
+            <input
+              type="text"
+              maxLength={160}
+              value={tagline}
+              onChange={(e) => setTagline(e.target.value)}
+              className={fieldClass}
+              placeholder="One appealing line on why funds are needed — shown on the home page"
+            />
           </Field>
 
           <Field label="City & Province">

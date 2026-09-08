@@ -565,6 +565,7 @@ export function registerRoutes(app: Express) {
       contactPhone: req.body.contactPhone,
       amountNeeded: Number(req.body.amountNeeded),
       category: req.body.category || undefined,
+      tagline: req.body.tagline || undefined,
     });
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Invalid input" });
@@ -1074,6 +1075,7 @@ export function registerRoutes(app: Express) {
     }
     const parsed = updateCaseSchema.safeParse({
       title: req.body.title || undefined,
+      tagline: typeof req.body.tagline === "string" ? req.body.tagline : undefined,
       description: req.body.description || undefined,
       city: req.body.city || undefined,
       province: req.body.province || undefined,

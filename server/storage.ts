@@ -619,7 +619,7 @@ export const storage = {
 
   async updateCaseAdmin(
     caseId: string,
-    data: Partial<{ title: string; description: string; city: string; province: string; contactPhone: string; amountNeeded: number; imageUrl: string | null; images: string[]; category: string }>,
+    data: Partial<{ title: string; tagline: string | null; description: string; city: string; province: string; contactPhone: string; amountNeeded: number; imageUrl: string | null; images: string[]; category: string }>,
   ): Promise<Case> {
     const patch: Record<string, unknown> = { ...data };
     if (data.city || data.province) {

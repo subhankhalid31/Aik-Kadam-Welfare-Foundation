@@ -168,6 +168,12 @@ export type OtpCode = typeof otpCodes.$inferSelect;
 export const cases = pgTable("cases", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
+  // Short, appealing one-liner shown on the home page carousel under the
+  // title (e.g. "Winter is coming and this family has no heater") — set
+  // by whoever submits the case, editable by an admin either before
+  // approving it or any time while it's ongoing. Optional: falls back to
+  // a plain excerpt of the description wherever it's displayed.
+  tagline: text("tagline"),
   description: text("description").notNull(),
   location: text("location").notNull(), // derived display string, e.g. "Lahore, Punjab"
   city: text("city"),
@@ -253,6 +259,7 @@ export const insertCaseSchema = createInsertSchema(cases).pick({
   province: z.string().min(1, "Select a province"),
   contactPhone: z.string().min(7, "Enter a valid phone number").max(20),
   category: z.enum(CASE_CATEGORIES).optional(),
+  tagline: z.string().trim().max(160, "Keep it under 160 characters").optional(),
 });
 
 export type InsertCase = z.infer<typeof insertCaseSchema>;
@@ -260,6 +267,7 @@ export type Case = typeof cases.$inferSelect;
 
 export const updateCaseSchema = z.object({
   title: z.string().min(1).optional(),
+  tagline: z.string().trim().max(160, "Keep it under 160 characters").optional(),
   description: z.string().min(1).optional(),
   city: z.string().min(1).optional(),
   province: z.string().min(1).optional(),
