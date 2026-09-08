@@ -49,6 +49,7 @@ type PendingVolunteer = {
 type CaseRow = {
   id: string;
   title: string;
+  tagline?: string | null;
   description: string;
   location: string;
   city?: string | null;
@@ -642,6 +643,10 @@ export default function AdminPage() {
               caseRow={reviewCase}
               busy={busy === reviewCase.id}
               onClose={() => setReviewCase(null)}
+              onSaved={(updated) => {
+                setReviewCase(updated);
+                loadAll();
+              }}
               onApprove={async () => {
                 if (!(await dialog.confirm(`Approve "${reviewCase.title}" and make it live?`))) return;
                 await act(reviewCase.id, () => api.post(`/api/admin/cases/${reviewCase.id}/approve`));
@@ -835,6 +840,7 @@ function OngoingRow({
   const [hours, setHours] = useState("0");
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(caseRow.title);
+  const [tagline, setTagline] = useState(caseRow.tagline ?? "");
   const [description, setDescription] = useState(caseRow.description);
   const [city, setCity] = useState(caseRow.city ?? caseRow.location.split(",")[0]?.trim() ?? "");
   const [province, setProvince] = useState(caseRow.province ?? caseRow.location.split(",")[1]?.trim() ?? "");
@@ -893,6 +899,14 @@ function OngoingRow({
     setExistingImages((prev) => prev.filter((u) => u !== url));
   }
 
+  // Whichever image ends up first becomes `images[0]`/`imageUrl` — the
+  // cover used everywhere, including the home page carousel — see the
+  // admin PATCH route, which always derives the cover from the first
+  // entry of whatever's kept here.
+  function makeCoverImage(url: string) {
+    setExistingImages((prev) => [url, ...prev.filter((u) => u !== url)]);
+  }
+
   function removeNewImage(index: number) {
     setNewImagePreviews((prev) => {
       URL.revokeObjectURL(prev[index]);
@@ -903,6 +917,7 @@ function OngoingRow({
 
   function cancelEdit() {
     setTitle(caseRow.title);
+    setTagline(caseRow.tagline ?? "");
     setDescription(caseRow.description);
     setCity(caseRow.city ?? caseRow.location.split(",")[0]?.trim() ?? "");
     setProvince(caseRow.province ?? caseRow.location.split(",")[1]?.trim() ?? "");
@@ -919,6 +934,7 @@ function OngoingRow({
   async function saveEdit() {
     const formData = new FormData();
     formData.append("title", title);
+    formData.append("tagline", tagline);
     formData.append("description", description);
     formData.append("city", city);
     formData.append("province", province);
@@ -966,6 +982,7 @@ function OngoingRow({
       {editing && (
         <div className="mt-4 pt-4 border-t border-border space-y-3">
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
+          <input value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="Short tagline (shown on home page carousel)" maxLength={160} className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
           <CityPicker city={city} province={province} onChange={(c, p) => { setCity(c); setProvince(p); }} />
           <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="Contact phone" className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" rows={3} className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
@@ -979,9 +996,21 @@ function OngoingRow({
           <div>
             <label className="text-xs font-medium text-ink block mb-1.5">Photos</label>
             <div className="flex flex-wrap gap-2">
-              {existingImages.map((url) => (
+              {existingImages.map((url, i) => (
                 <div key={url} className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-border">
                   <img src={url} alt="" className="h-full w-full object-cover" />
+                  {i === 0 ? (
+                    <span className="absolute bottom-0.5 left-0.5 rounded bg-primary/90 px-1 text-[9px] font-semibold text-white">Cover</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => makeCoverImage(url)}
+                      title="Use as cover photo"
+                      className="absolute bottom-0.5 left-0.5 rounded bg-black/60 px-1 py-0.5 text-[9px] font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/80"
+                    >
+                      Set as cover
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => removeExistingImage(url)}
@@ -1238,14 +1267,95 @@ function PendingCaseReviewModal({
   onClose,
   onApprove,
   onReject,
+  onSaved,
 }: {
   caseRow: CaseRow;
   busy: boolean;
   onClose: () => void;
   onApprove: () => void;
   onReject: () => void;
+  onSaved: (updated: CaseRow) => void;
 }) {
-  const images = caseRow.images?.length ? caseRow.images : caseRow.imageUrl ? [caseRow.imageUrl] : [];
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(caseRow.title);
+  const [tagline, setTagline] = useState(caseRow.tagline ?? "");
+  const [description, setDescription] = useState(caseRow.description);
+  const [amountNeeded, setAmountNeeded] = useState(String(caseRow.amountNeeded));
+  const [category, setCategory] = useState(caseRow.category ?? "Other");
+
+  const initialImages = caseRow.images?.length ? caseRow.images : caseRow.imageUrl ? [caseRow.imageUrl] : [];
+  const [existingImages, setExistingImages] = useState<string[]>(initialImages);
+  const [newImages, setNewImages] = useState<File[]>([]);
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleAddImages(e: React.ChangeEvent<HTMLInputElement>) {
+    const room = Math.max(0, 5 - newImages.length);
+    const picked = await compressImages(Array.from(e.target.files ?? []).slice(0, room));
+    setNewImages((prev) => [...prev, ...picked]);
+    setNewImagePreviews((prev) => [...prev, ...picked.map((f) => URL.createObjectURL(f))]);
+    e.target.value = "";
+  }
+
+  function removeExistingImage(url: string) {
+    setExistingImages((prev) => prev.filter((u) => u !== url));
+  }
+
+  // Whichever image ends up first becomes `images[0]`/`imageUrl` — the
+  // cover used everywhere, including the home page carousel.
+  function makeCoverImage(url: string) {
+    setExistingImages((prev) => [url, ...prev.filter((u) => u !== url)]);
+  }
+
+  function removeNewImage(index: number) {
+    setNewImagePreviews((prev) => {
+      URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, i) => i !== index);
+    });
+    setNewImages((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function cancelEdit() {
+    setTitle(caseRow.title);
+    setTagline(caseRow.tagline ?? "");
+    setDescription(caseRow.description);
+    setAmountNeeded(String(caseRow.amountNeeded));
+    setCategory(caseRow.category ?? "Other");
+    setExistingImages(initialImages);
+    newImagePreviews.forEach((url) => URL.revokeObjectURL(url));
+    setNewImages([]);
+    setNewImagePreviews([]);
+    setEditing(false);
+  }
+
+  // Saving here does NOT approve/reject anything — it's purely "fix up
+  // the submission before deciding", exactly the "admin can edit before
+  // approving" ask. The case stays pending; Approve/Reject below still
+  // need to be clicked separately once the admin's happy with it.
+  async function saveEdit() {
+    setSaving(true);
+    try {
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("tagline", tagline);
+      formData.append("description", description);
+      formData.append("amountNeeded", amountNeeded);
+      formData.append("category", category);
+      formData.append("existingImages", JSON.stringify(existingImages));
+      newImages.forEach((img) => formData.append("images", img));
+      const { case: updated } = await api.patchForm<{ case: CaseRow }>(`/api/admin/cases/${caseRow.id}`, formData);
+      newImagePreviews.forEach((url) => URL.revokeObjectURL(url));
+      setNewImages([]);
+      setNewImagePreviews([]);
+      setEditing(false);
+      onSaved(updated);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const images = existingImages;
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-ink/50 backdrop-blur-sm" onClick={onClose} />
@@ -1254,41 +1364,131 @@ function PendingCaseReviewModal({
           <X size={16} />
         </button>
 
-        {images.length > 0 && <ImageCarousel images={images} alt={caseRow.title} className="w-full h-56 object-cover rounded-xl" />}
+        {!editing && images.length > 0 && <ImageCarousel images={images} alt={caseRow.title} className="w-full h-56 object-cover rounded-xl" />}
 
-        <span className="mt-4 inline-block text-xs font-semibold tracking-wide text-primary uppercase">{caseRow.category ?? "Case"}</span>
-        <h2 className="mt-1 font-display text-2xl text-ink">{caseRow.title}</h2>
-        <p className="mt-1 text-sm text-muted">{caseRow.location} &middot; PKR {caseRow.amountNeeded.toLocaleString()} needed</p>
+        {!editing ? (
+          <>
+            <div className="mt-4 flex items-start justify-between gap-3">
+              <div>
+                <span className="inline-block text-xs font-semibold tracking-wide text-primary uppercase">{caseRow.category ?? "Case"}</span>
+                <h2 className="mt-1 font-display text-2xl text-ink">{caseRow.title}</h2>
+              </div>
+              <button onClick={() => setEditing(true)} className="glass-surface glass-surface-outline shrink-0 h-9 w-9 rounded-lg border flex items-center justify-center hover:bg-background" title="Edit before deciding">
+                <Pencil size={15} />
+              </button>
+            </div>
+            {caseRow.tagline && <p className="mt-1.5 text-sm italic text-primary/90">"{caseRow.tagline}"</p>}
+            <p className="mt-1 text-sm text-muted">{caseRow.location} &middot; PKR {caseRow.amountNeeded.toLocaleString()} needed</p>
 
-        <p className="mt-4 text-sm text-ink/85 leading-relaxed whitespace-pre-wrap">{caseRow.description}</p>
+            <p className="mt-4 text-sm text-ink/85 leading-relaxed whitespace-pre-wrap">{caseRow.description}</p>
 
-        <div className="mt-5 rounded-xl bg-background p-4 grid sm:grid-cols-2 gap-3 text-sm">
-          <div>
-            <p className="text-xs text-muted">Submitted by</p>
-            <p className="font-semibold text-ink">{caseRow.submitterName ?? "N/A"}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted">Email</p>
-            <p className="font-semibold text-ink">{caseRow.submitterEmail ?? "N/A"}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted">Phone</p>
-            <p className="font-semibold text-ink">{caseRow.contactPhone ?? "N/A"}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted">Submitted on</p>
-            <p className="font-semibold text-ink">{caseRow.createdAt ? new Date(caseRow.createdAt).toLocaleDateString() : "N/A"}</p>
-          </div>
-        </div>
+            <div className="mt-5 rounded-xl bg-background p-4 grid sm:grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-xs text-muted">Submitted by</p>
+                <p className="font-semibold text-ink">{caseRow.submitterName ?? "N/A"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted">Email</p>
+                <p className="font-semibold text-ink">{caseRow.submitterEmail ?? "N/A"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted">Phone</p>
+                <p className="font-semibold text-ink">{caseRow.contactPhone ?? "N/A"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted">Submitted on</p>
+                <p className="font-semibold text-ink">{caseRow.createdAt ? new Date(caseRow.createdAt).toLocaleDateString() : "N/A"}</p>
+              </div>
+            </div>
 
-        <div className="mt-6 flex gap-3">
-          <button disabled={busy} onClick={onApprove} className="glass-surface flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-success px-5 py-3 text-sm font-semibold text-white hover:bg-success-dark disabled:opacity-50">
-            <Check size={16} /> Approve
-          </button>
-          <button disabled={busy} onClick={onReject} className="glass-surface flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-danger/10 px-5 py-3 text-sm font-semibold text-danger hover:bg-danger/20 disabled:opacity-50">
-            <X size={16} /> Reject
-          </button>
-        </div>
+            <div className="mt-6 flex gap-3">
+              <button disabled={busy} onClick={onApprove} className="glass-surface flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-success px-5 py-3 text-sm font-semibold text-white hover:bg-success-dark disabled:opacity-50">
+                <Check size={16} /> Approve
+              </button>
+              <button disabled={busy} onClick={onReject} className="glass-surface flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-danger/10 px-5 py-3 text-sm font-semibold text-danger hover:bg-danger/20 disabled:opacity-50">
+                <X size={16} /> Reject
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="mt-4 space-y-3">
+            <h2 className="font-display text-lg text-ink mb-1">Edit before deciding</h2>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
+            <input value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="Short tagline (shown on home page carousel)" maxLength={160} className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" rows={4} className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
+            <input type="number" value={amountNeeded} onChange={(e) => setAmountNeeded(e.target.value)} onWheel={(e) => e.currentTarget.blur()} placeholder="Amount needed" className="block w-40 rounded-lg border border-border px-3 py-2 text-sm" />
+            <select value={category} onChange={(e) => setCategory(e.target.value)} className="block w-48 rounded-lg border border-border px-3 py-2 text-sm bg-white">
+              {["Medical", "Food Drive", "Education", "Shelter", "Emergency Relief", "Other"].map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+
+            <div>
+              <label className="text-xs font-medium text-ink block mb-1.5">Photos (first one is used as the cover)</label>
+              <div className="flex flex-wrap gap-2">
+                {existingImages.map((url, i) => (
+                  <div key={url} className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-border">
+                    <img src={url} alt="" className="h-full w-full object-cover" />
+                    {i === 0 ? (
+                      <span className="absolute bottom-0.5 left-0.5 rounded bg-primary/90 px-1 text-[9px] font-semibold text-white">Cover</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => makeCoverImage(url)}
+                        title="Use as cover photo"
+                        className="absolute bottom-0.5 left-0.5 rounded bg-black/60 px-1 py-0.5 text-[9px] font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/80"
+                      >
+                        Set as cover
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeExistingImage(url)}
+                      title="Remove photo"
+                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
+                ))}
+                {newImagePreviews.map((url, i) => (
+                  <div key={url} className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-primary/40">
+                    <img src={url} alt="" className="h-full w-full object-cover" />
+                    <span className="absolute bottom-0.5 left-0.5 rounded bg-primary/90 px-1 text-[9px] font-semibold text-white">New</span>
+                    <button
+                      type="button"
+                      onClick={() => removeNewImage(i)}
+                      title="Remove photo"
+                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
+                ))}
+                {existingImages.length + newImages.length < 8 && (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Add photos"
+                    className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-border text-muted transition-colors hover:border-primary hover:text-primary"
+                  >
+                    <Plus size={20} />
+                  </button>
+                )}
+                <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleAddImages} className="hidden" />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <button disabled={saving} onClick={saveEdit} className="glass-surface rounded-full bg-primary px-4 py-2 text-sm font-semibold text-background hover:bg-primary-dark disabled:opacity-50">
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+              <button type="button" disabled={saving} onClick={cancelEdit} className="glass-surface glass-surface-outline rounded-full border px-4 py-2 text-sm font-semibold text-ink hover:bg-background disabled:opacity-50">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1370,6 +1570,7 @@ function CompletedCaseRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(caseRow.title);
+  const [tagline, setTagline] = useState(caseRow.tagline ?? "");
   const [description, setDescription] = useState(caseRow.description);
   const [city, setCity] = useState(caseRow.city ?? caseRow.location.split(",")[0]?.trim() ?? "");
   const [province, setProvince] = useState(caseRow.province ?? caseRow.location.split(",")[1]?.trim() ?? "");
@@ -1395,6 +1596,14 @@ function CompletedCaseRow({
     setExistingImages((prev) => prev.filter((u) => u !== url));
   }
 
+  // Whichever image ends up first becomes `images[0]`/`imageUrl` — the
+  // cover used everywhere, including the home page carousel — see the
+  // admin PATCH route, which always derives the cover from the first
+  // entry of whatever's kept here.
+  function makeCoverImage(url: string) {
+    setExistingImages((prev) => [url, ...prev.filter((u) => u !== url)]);
+  }
+
   function removeNewImage(index: number) {
     setNewImagePreviews((prev) => {
       URL.revokeObjectURL(prev[index]);
@@ -1405,6 +1614,7 @@ function CompletedCaseRow({
 
   function cancelEdit() {
     setTitle(caseRow.title);
+    setTagline(caseRow.tagline ?? "");
     setDescription(caseRow.description);
     setCity(caseRow.city ?? caseRow.location.split(",")[0]?.trim() ?? "");
     setProvince(caseRow.province ?? caseRow.location.split(",")[1]?.trim() ?? "");
@@ -1421,6 +1631,7 @@ function CompletedCaseRow({
   async function saveEdit() {
     const formData = new FormData();
     formData.append("title", title);
+    formData.append("tagline", tagline);
     formData.append("description", description);
     formData.append("city", city);
     formData.append("province", province);
@@ -1475,6 +1686,7 @@ function CompletedCaseRow({
       {editing && (
         <div className="mt-4 pt-4 border-t border-border space-y-3">
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
+          <input value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="Short tagline (shown on home page carousel)" maxLength={160} className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
           <CityPicker city={city} province={province} onChange={(c, p) => { setCity(c); setProvince(p); }} />
           <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="Contact phone" className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" rows={3} className="block w-full rounded-lg border border-border px-3 py-2 text-sm" />
@@ -1488,9 +1700,21 @@ function CompletedCaseRow({
           <div>
             <label className="text-xs font-medium text-ink block mb-1.5">Photos</label>
             <div className="flex flex-wrap gap-2">
-              {existingImages.map((url) => (
+              {existingImages.map((url, i) => (
                 <div key={url} className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-border">
                   <img src={url} alt="" className="h-full w-full object-cover" />
+                  {i === 0 ? (
+                    <span className="absolute bottom-0.5 left-0.5 rounded bg-primary/90 px-1 text-[9px] font-semibold text-white">Cover</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => makeCoverImage(url)}
+                      title="Use as cover photo"
+                      className="absolute bottom-0.5 left-0.5 rounded bg-black/60 px-1 py-0.5 text-[9px] font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/80"
+                    >
+                      Set as cover
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => removeExistingImage(url)}
